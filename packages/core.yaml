@@ -218,7 +218,7 @@ esphome:
           // The board states its density with the decimals it has (DISPLAY_DPI); the firmware scales by the nearest
           // whole number, the look took the exact one for its sizes.
           ui::configure(atoi("${ (DISPLAY_DPI | float) | round | int }"), "${LOOK}");
-          runtime_tiles::grid_bind(id(tile_scroll), atoi("${GRID_MARGIN}"), atoi("${PAGE_BAR_H}"));
+          runtime_tiles::grid_bind(id(tile_scroll), atoi("${GRID_MARGIN}"), atoi("${PAGE_BAR_H}") + atoi("${PAGE_GAP}"));
           // The alert card, laid out on the glass it landed on (firmware 0.2.103+): screen_alert::layout works every
           // size out from the canvas, the look and the fonts, lying down or standing up, and runtime_tiles::alert_place
           // puts the parts; an alert with a camera image lays it out again with room for the picture.

@@ -12,9 +12,9 @@ substitutions:
   BEDSIDE_MM7: ${ (DISPLAY_DPI | float) * 7 / 25 }
   BEDSIDE_MM12: ${ (DISPLAY_DPI | float) * 12 / 25 }
   BEDSIDE_LW: ${ ([PANEL_W | int, PANEL_H | int] | max) - 2 * (GRID_MARGIN | int) - 2 - 2 * (TILE_PAD | int) }
-  BEDSIDE_LC: ${ ([PANEL_W | int, PANEL_H | int] | min) - (SCROLL_Y | int) - (PAGE_BAR_H | int) - 2 }
+  BEDSIDE_LC: ${ ([PANEL_W | int, PANEL_H | int] | min) - (SCROLL_Y | int) - (PAGE_BAR_H | int) - (PAGE_GAP | int) - 2 }
   BEDSIDE_PW: ${ ([PANEL_W | int, PANEL_H | int] | min) - 2 * (GRID_MARGIN | int) - 2 - 2 * (TILE_PAD | int) }
-  BEDSIDE_PC: ${ ([PANEL_W | int, PANEL_H | int] | max) - (SCROLL_Y | int) - (PAGE_BAR_H | int) - 2 }
+  BEDSIDE_PC: ${ ([PANEL_W | int, PANEL_H | int] | max) - (SCROLL_Y | int) - (PAGE_BAR_H | int) - (PAGE_GAP | int) - 2 }
   BEDSIDE_LD: ${ [BEDSIDE_MM7 | float, [BEDSIDE_MM12 | float, 0.28 * ((BEDSIDE_LC | float) - 2 * (TILE_PAD | int))] | min] | max }
   BEDSIDE_PD: ${ [BEDSIDE_MM7 | float, [BEDSIDE_MM12 | float, 0.28 * ((BEDSIDE_PC | float) - 2 * (TILE_PAD | int))] | min] | max }
   BEDSIDE_LG: ${ (BEDSIDE_LC | float) - (BEDSIDE_LD | float) - (BEDSIDE_NAMES | float) - 3 * ([8 * (LOOK_SCALE | float), 0.07 * (BEDSIDE_LC | float)] | max) }

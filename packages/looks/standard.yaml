@@ -28,9 +28,9 @@ substitutions:
   TILE_PAD: ${ (12 * LOOK_SCALE | float) | round | int }       # inside a tile
   TILE_ICON_SIZE: ${ (54 * LOOK_SCALE | float) | round | int } # the icon circle
 
-  # The page bar under the tiles: the look's own height, but never more than 7 mm, the least a finger needs
-  # (ui::touch_min, firmware 0.14.0+)
-  PAGE_BAR_H: ${ [(60 * LOOK_SCALE | float) | round | int, ((DISPLAY_DPI | float) * 7 / 25.4) | round | int] | min }
+  # The page bar under the tiles (mockup D+2): the look's own height, about 9 mm, the size the touch guidelines
+  # recommend
+  PAGE_BAR_H: ${ (60 * LOOK_SCALE | float) | round | int }
   PAGE_NUMBER_W: ${ (160 * LOOK_SCALE | float) | round | int }     # the dots in the middle
 
   # Cards: the round keys and the brightness card
@@ -67,6 +67,9 @@ substitutions:
   # the bar's tallest ink (firmware 0.14.0+).
   HEADER_INSET: ${GRID_MARGIN}
   SCROLL_Y: ${ (GRID_MARGIN | int) + (((FONT_ICON_HOME_SIZE | int) * 17 / 24) | round | int) + (GRID_GAP_Y | int) }
+  # Free room between the last row of tiles and the page bar (mockup D+2), so a tap a little too high lands on
+  # nothing instead of on a tile: one row gap, but never at the cost of the tiles' height before (64 and 60 px).
+  PAGE_GAP: ${ [0, [GRID_GAP_Y | int, ((64 * LOOK_SCALE | float) | round | int) + ((60 * LOOK_SCALE | float) | round | int) - (SCROLL_Y | int) - (PAGE_BAR_H | int)] | min] | max }
   FONT_ICON_BIG_SIZE: ${ [8, (64 * LOOK_SCALE | float) | round | int] | max }     # full-page tiles
   FONT_WATCH_ICON_SIZE: ${ [8, (18 * LOOK_SCALE | float) | round | int] | max }
   # The starting screen's Tessera lockup: the mosaic mark beside the name, as on the website (firmware 0.3.8+)
