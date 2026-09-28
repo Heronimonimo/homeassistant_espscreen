@@ -26,7 +26,7 @@ In its board file under `packages/boards/`, next to its hardware:
 | the look (`packages/looks/`) | `standard` (the Guition's sizes) or `compact` (the CYD's, for glass too small for the standard); the board file includes one |
 | `GRID_COLS`, `GRID_ROWS` | the cells of a page lying down; the shared tree places every cell from these |
 | `GRID_COLS_PORTRAIT`, `GRID_ROWS_PORTRAIT` | the cells of a page standing up (a square board repeats the first pair) |
-| `GRID_MARGIN`, `GRID_GAP_X`, `GRID_GAP_Y` | the side margin and the gaps between cells, in pixels |
+| `GRID_MARGIN`, `GRID_GAP_X`, `GRID_GAP_Y` | the margin to the glass and the gaps between cells, worked out by the look (see "One margin" below) |
 | the sizes (`TILE_ICON_SIZE`, `FONT_*_SIZE`, …) | worked out by the look at this board's density; a board states one only when its glass asks for another |
 
 A board states no size that follows from its canvas. The tile area, the cells, the page keys, the strip that
@@ -36,6 +36,20 @@ LVGL hands the screen, which is why one firmware serves a board either way round
 `tools/propose_grid.py` proposes the grid from the resolution and the diagonal: as many cells as hold a
 standard tile of about 33 × 16 mm, never smaller than 30 × 12 mm. `tools/new_board.py` writes a board file
 for a new panel from the nearest real board; its sizes come from the look (docs/ADDING_A_BOARD.md).
+
+## One margin for the whole page
+
+Since firmware 0.14.0 the page keeps one margin all round. The top bar keeps `GRID_MARGIN` from the sides of the
+glass and from its top edge (measured to the home key, the bar's tallest ink), the cards keep it from the sides, and
+the page keys put the ink of their chevrons on it (`runtime_tiles::nav_align`). The tiles start one row gap under
+the home key, so `SCROLL_Y` is `GRID_MARGIN` + the key's height + `GRID_GAP_Y`, and the page bar is the look's
+own height but never more than 7 mm, the least a finger needs (`ui::touch_min`).
+
+The margin and the gaps keep their size in millimetres on every glass, but never take more pixels than the look
+gives them at its own density (16, 12 and 12 in the standard look, 9, 8 and 4 in the compact one). A denser glass
+therefore keeps the pixels it had and a less dense one gets the same millimetres in fewer pixels, so no board's
+tiles get smaller than before. A look states a size made of other sizes only after those sizes, because ESPHome
+works the substitutions of a file out in their order; tests/test_layout.py checks this.
 
 ## The cards are cells of an LVGL grid
 

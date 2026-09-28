@@ -6259,8 +6259,9 @@ inline bool check_tile_geometry() {
     if(w.wide && !w.full && grid.columns>1 && tile_grid){
       // A wide card is two cells of its row plus the gap between them.
       const int gap=lv_obj_get_style_pad_column(tile_grid,LV_PART_MAIN);
-      const int cell=(lv_obj_get_content_width(tile_grid)-(int)(grid.columns-1)*gap)/(int)grid.columns;
-      int expected=2*cell+gap;
+      // Two of the columns' free units: LVGL shares the room exactly and rounds each track, so the sum is rounded once.
+      const int room=lv_obj_get_content_width(tile_grid)-(int)(grid.columns-1)*gap;
+      int expected=(2*room+(int)grid.columns/2)/(int)grid.columns+gap;
       const bool width_ok=std::abs(lv_obj_get_width(w.tile)-expected)<=1;
       fits=fits && width_ok;
       if(!width_ok)ESP_LOGE("ui_test","Wide width FAIL slot=%u width=%d expected=%d",(unsigned)w.index,(int)lv_obj_get_width(w.tile),expected);
@@ -6404,7 +6405,8 @@ inline bool check_tile_geometry() {
     // The board's bedside digits fit its page in one of the three arrangements (FONT_BEDSIDE_SIZE, looks/shared/bedside.yaml).
     if(w.extra_mode=="bedside" && w.index<model.count){
       const auto l=bedside_layout(content_width(w),content_height(w),lv_obj_get_style_space_top(w.tile,LV_PART_MAIN),bedside_names(w.index));
-      if(!l.fits){fits=false;ESP_LOGE("ui_test","Bedside digits fit FAIL slot=%u",(unsigned)w.index);}
+      if(!l.fits){fits=false;ESP_LOGE("ui_test","Bedside digits fit FAIL slot=%u w=%d h=%d pad=%d digit_h=%d key=%d names=%d",(unsigned)w.index,
+        (int)content_width(w),(int)content_height(w),(int)lv_obj_get_style_space_top(w.tile,LV_PART_MAIN),l.digit_h,l.key,l.name_h);}
     }
     if(!fits)ESP_LOGE("ui_test","Tile geometry FAIL slot=%u mode=%s wide=%d title_y=%d..%d value_y=%d..%d content_y=%d..%d",(unsigned)w.index,w.extra_mode.c_str(),w.wide,(int)title.y1,(int)title.y2,(int)value.y1,(int)value.y2,(int)content.y1,(int)content.y2);
     if(w.index<model.count && model.tiles[w.index].background){
@@ -6717,8 +6719,17 @@ inline void forget_kept() {
   shelf.forget();
   for (auto *set : kept_sets) if (set) for (auto &w : *set) { w.index = grid.max_tiles(); w.cached_active = -1; }
 }
+// A page key's chevron with its ink on the tiles' margin (firmware 0.14.0+), the line the top bar and the cards keep
+// from the side of the glass, measured from the glyph itself so the font's side bearing does not push it inward.
+inline void nav_align(lv_obj_t *key,bool left){
+  auto *chevron=nav_glyph(key);if(!chevron)return;
+  const lv_font_t *font=lv_obj_get_style_text_font(chevron,LV_PART_MAIN);lv_font_glyph_dsc_t g;
+  if(!font||!lv_font_get_glyph_dsc(font,&g,left?0xF0141:0xF0142,0)||!g.box_w)return;
+  lv_obj_set_x(chevron,left?grid_margin-g.ofs_x:-(grid_margin-(int(g.adv_w)-g.ofs_x-int(g.box_w))));
+}
 inline void show_page(int &page, lv_obj_t *previous, lv_obj_t *next, lv_obj_t *number) {
   if(!nav_prev){nav_key_patch(previous);nav_key_patch(next);}
+  if(!nav_prev){nav_align(previous,true);nav_align(next,false);}
   nav_prev=previous;nav_next=next;nav_number=number;shown_page=&page;
   if(!nav_back_label && previous){
     nav_back_label=lv_label_create(previous);

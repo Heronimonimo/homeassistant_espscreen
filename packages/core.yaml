@@ -16,7 +16,7 @@
 # fonts/materialdesignicons-webfont.ttf (Apache 2.0, github.com/Templarian/MaterialDesign-Webfont).
 ############################################################
 substitutions:
-  SCREEN_FIRMWARE_VERSION: "0.13.0"
+  SCREEN_FIRMWARE_VERSION: "0.14.0"
   DASHBOARD_INBOX_INTERNAL: "false"
   CALIBRATION_ON_BOOT: "false"                     # a bench build: start on the touch test page
   ROOM_NAME: ""                                    # top left until ESP Screens sends the screen name
@@ -1808,7 +1808,8 @@ lvgl:
         - label:
             id: lbl_room
             x: ${HEADER_INSET}
-            y: ${HEADER_Y}
+            # page_header::Renderer moves it down until the top bar keeps HEADER_INSET from the top as well.
+            y: 0
             text: "${ROOM_NAME}"
             styles: style_room
 
@@ -1824,7 +1825,7 @@ lvgl:
             id: lbl_time
             align: TOP_RIGHT
             x: -${HEADER_INSET}
-            y: ${HEADER_Y}
+            y: 0
             text: ""
             styles: style_time
 
@@ -1901,7 +1902,7 @@ lvgl:
             widgets:
               - label:
                   align: LEFT_MID
-                  x: ${PAGE_CHEVRON_INSET}
+                  x: ${GRID_MARGIN}   # runtime_tiles::nav_align puts the ink on this line
                   text: "\U000F0141" # chevron-left
                   text_font: materialdesign_icons_mini
                   styles: paint_ink
@@ -1941,7 +1942,7 @@ lvgl:
             widgets:
               - label:
                   align: RIGHT_MID
-                  x: -${PAGE_CHEVRON_INSET}
+                  x: -${GRID_MARGIN}
                   text: "\U000F0142" # chevron-right
                   text_font: materialdesign_icons_mini
                   styles: paint_ink

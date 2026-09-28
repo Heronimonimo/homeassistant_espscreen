@@ -15,25 +15,23 @@ substitutions:
   LOOK: "standard"
   LOOK_SCALE: ${ (DISPLAY_DPI | float) / 170 }
 
-  # The page: where the tiles start, the top bar, and the strip whose hold opens the settings
-  SCROLL_Y: ${ (64 * LOOK_SCALE | float) | round | int }
-  HEADER_Y: ${ (14 * LOOK_SCALE | float) | round | int }
-  HEADER_INSET: ${ (16 * LOOK_SCALE | float) | round | int }   # the room name and the clock from the glass edge
+  # The page: the strip whose hold opens the settings (the top bar and where the tiles start follow the fonts below)
   SETTINGS_HOLD_DRIFT_PX: ${ (32 * LOOK_SCALE | float) | round | int }
-  # The tile grid around the cells (not scaled: the grid of each board was chosen with these)
-  GRID_MARGIN: "16"
-  GRID_GAP_X: "12"
-  GRID_GAP_Y: "12"
+  # Spacing (firmware 0.14.0+): the margin to the glass and the gaps between the cards keep their millimetres on
+  # every glass, but never take more pixels than they had (16, 12 and 12 at this look's own density), so no tile gets smaller.
+  GRID_MARGIN: ${ [(16 * LOOK_SCALE | float) | round | int, 16] | min }
+  GRID_GAP_X: ${ [(12 * LOOK_SCALE | float) | round | int, 12] | min }
+  GRID_GAP_Y: ${ [(12 * LOOK_SCALE | float) | round | int, 12] | min }
 
   # Tiles
   TILE_RADIUS: ${ (22 * LOOK_SCALE | float) | round | int }    # corner of a tile
   TILE_PAD: ${ (12 * LOOK_SCALE | float) | round | int }       # inside a tile
   TILE_ICON_SIZE: ${ (54 * LOOK_SCALE | float) | round | int } # the icon circle
 
-  # The page bar under the tiles
-  PAGE_BAR_H: ${ (60 * LOOK_SCALE | float) | round | int }
+  # The page bar under the tiles: the look's own height, but never more than 7 mm, the least a finger needs
+  # (ui::touch_min, firmware 0.14.0+)
+  PAGE_BAR_H: ${ [(60 * LOOK_SCALE | float) | round | int, ((DISPLAY_DPI | float) * 7 / 25.4) | round | int] | min }
   PAGE_NUMBER_W: ${ (160 * LOOK_SCALE | float) | round | int }     # the dots in the middle
-  PAGE_CHEVRON_INSET: ${ (24 * LOOK_SCALE | float) | round | int } # the chevrons from the outer edge
 
   # Cards: the round keys and the brightness card
   CARD_KEY_X: ${ (16 * LOOK_SCALE | float) | round | int }     # a card's round key from the side
@@ -64,6 +62,11 @@ substitutions:
   FONT_ICON_SIZE: ${ [8, (42 * LOOK_SCALE | float) | round | int] | max }         # tile icons
   FONT_ICON_MINI_SIZE: ${ [8, (26 * LOOK_SCALE | float) | round | int] | max }    # the top bar and card keys
   FONT_ICON_HOME_SIZE: ${ [8, (34 * LOOK_SCALE | float) | round | int] | max }    # the home key in the top bar
+  # The top bar and where the tiles start, after the sizes they are made of (ESPHome works substitutions out in order):
+  # the bar keeps the tiles' margin from the glass, sides and top, and the tiles start one row gap below the home key,
+  # the bar's tallest ink (firmware 0.14.0+).
+  HEADER_INSET: ${GRID_MARGIN}
+  SCROLL_Y: ${ (GRID_MARGIN | int) + (((FONT_ICON_HOME_SIZE | int) * 17 / 24) | round | int) + (GRID_GAP_Y | int) }
   FONT_ICON_BIG_SIZE: ${ [8, (64 * LOOK_SCALE | float) | round | int] | max }     # full-page tiles
   FONT_WATCH_ICON_SIZE: ${ [8, (18 * LOOK_SCALE | float) | round | int] | max }
   # The starting screen's Tessera lockup: the mosaic mark beside the name, as on the website (firmware 0.3.8+)

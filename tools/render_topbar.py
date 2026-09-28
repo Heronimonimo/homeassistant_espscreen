@@ -28,7 +28,7 @@ FONTS = ('headline', 'time_label', 'sublabel_big', 'label', 'materialdesign_icon
 HEADER_SOURCES = {'__init__.py', 'screen_text_gen.py', 'screen_text.h', 'screen_text_keys.h',
                   'header_bar.h', 'page_header.h', 'theme.h', 'tile_icon.h'}
 # Header band per board: page width and height above the tiles.
-BANDS = {'guition': (480, 64), 'cyd': (320, 38)}
+BANDS = {'guition': (480, 52), 'cyd': (320, 31)}
 
 # (slug, title, items) with items as C++ expressions of the render lambda's helpers.
 SCENARIOS = (
@@ -57,8 +57,8 @@ def font_blocks(board):
 
 def band(board, y):
     width, height = BANDS[board]
-    margin, top = (16, 14) if board == 'guition' else (11, 12)
-    tile_y, tile_w, tile_h, col2, radius = (64, 218, 110, 246, 22) if board == 'guition' else (38, 147, 52, 164, 18)
+    margin, top = (16, 0) if board == 'guition' else (9, 0)
+    tile_y, tile_w, tile_h, col2, radius = (52, 218, 119, 246, 22) if board == 'guition' else (31, 148, 55, 163, 18)
     return f'''        - obj:
             id: {board}_page
             x: 0

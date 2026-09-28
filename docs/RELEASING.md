@@ -521,8 +521,8 @@ without the entity shows no row for it.
   places the page again when the bar comes or goes. `check_tile_geometry` checks that every card lies inside the tile
   area, clear of the bar and within the bottom margin.
 - Page bar: `page_prev` and `page_next` are the two halves of the band under the tiles, running from
-  `SCROLL_Y + SCROLL_H` to the bottom (Guition 240×60, CYD 160×36). Each holds a chevron in `materialdesign_icons_mini`
-  (F0141/F0142). `page_number` is a non-clickable `obj` that holds the dots (`settings_screen::page_dots`), so LVGL's
+  `SCROLL_Y + SCROLL_H` to the bottom (Guition 240×47, CYD 160×36; at most 7 mm since firmware 0.14.0). Each holds a
+  chevron in `materialdesign_icons_mini` (F0141/F0142) with its ink on the tiles' margin. `page_number` is a non-clickable `obj` that holds the dots (`settings_screen::page_dots`), so LVGL's
   hit test gives every point of the band to one of the halves. The settings page's pager uses the same chevrons and
   dots, with a dimmed chevron where it leads nowhere.
 - Editor: `strandedPages()` (`model/layout.ts`) and `pageReachWarning()` (`store.ts`) warn when page buttons and

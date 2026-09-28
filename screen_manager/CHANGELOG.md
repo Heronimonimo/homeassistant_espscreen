@@ -1,3 +1,16 @@
+## 0.4.23 (firmware 0.14.0)
+
+- **Taller tiles on every screen.** Less of the glass goes to space around the tiles, and more to the tiles
+  themselves. The bar with the page arrows and dots is now at most 7 mm high, enough for a finger, where it was about
+  9 mm. The tiles start right under the top bar, one gap below it. A Guition 4848S040 gets about 8 pixels more height
+  per tile, a Waveshare 4.3 about 13, the 10.1-inch Guition about 6, and no tile on any board gets smaller, lying
+  down or standing up.
+- **One line for the whole page.** The top bar, the tiles and the page arrows now keep the same distance from the edge
+  of the glass, and the top bar keeps it from the top as well. The margin and the gaps between the tiles keep their size
+  in millimetres on every screen, but never take more pixels than before.
+- Tested: tools/check.sh, and the host renders of the Guition 4848S040, the CYD, the Waveshare 4.3, the Waveshare 7 and
+  the 10.1-inch Guition: every self test passes, and the top bar, the tiles and the page arrows line up on each.
+
 ## 0.4.22 (firmware 0.13.0)
 
 - **A camera on full screen stays whole when Home Assistant or ESP Screens restarts.** A picture that broke off halfway

@@ -172,6 +172,19 @@ public:
     int page_w = lv_obj_get_width(page), left = lv_obj_get_x(room_label);
     // int32_t is long on the ESP32 toolchain: keep the arithmetic in int.
     int width = std::max(0, page_w + static_cast<int>(lv_obj_get_style_x(time_label, LV_PART_MAIN)) - left);
+    // The name's margin from the side of the glass, as the profile placed it before the key moved it along.
+    if (header_name_owner != room_label) { header_name_owner = room_label; header_name_left = left; }
+    // The key's slot: the mark's picture, or the house of the icon font. Back takes the same slot, so the title and
+    // the finger's area stay where they are when a detail page swaps the key for a chevron.
+    int slot_w = 0, slot_h = 0;
+    lv_font_glyph_dsc_t house, cap;
+    if (header_home_mark) { slot_w = home_mark->header.w; slot_h = home_mark->header.h; }
+    else if (lv_font_get_glyph_dsc(header_icon_font, &house, HOME_GLYPH, 0)) { slot_w = house.box_w; slot_h = house.box_h; }
+    // The bar keeps one margin all round (firmware 0.14.0+): the top of the key's slot, the tallest ink of the bar,
+    // lies as far below the top of the glass as the name lies from its side. The key stands on the capitals' line,
+    // so that line follows from the slot, whatever the fonts, and the bar stays put when the key is switched off.
+    if (slot_h && lv_font_get_glyph_dsc(name_font, &cap, 'H', 0) && cap.box_h)
+      lv_obj_set_y(room_label, header_name_left + slot_h + cap.ofs_y - (name_font->line_height - name_font->base_line));
     int baseline = lv_obj_get_y(room_label) + (name_font->line_height - name_font->base_line);
     lv_obj_set_pos(header_root, 0, 0);
     lv_obj_set_size(header_root, page_w, baseline + name_font->line_height);
@@ -211,18 +224,11 @@ public:
     }
     // The home key at the left, before the name (firmware 0.2.100+). It stands where the name starts, the name moves
     // behind it, and the items on the right keep their space: only the name gives room.
-    if (header_name_owner != room_label) { header_name_owner = room_label; header_name_left = left; }
     left = header_name_left;
     // The name may already stand behind the key from the last draw: the room is measured from the profile's own margin.
     width = std::max(0, page_w + static_cast<int>(lv_obj_get_style_x(time_label, LV_PART_MAIN)) - left);
     bool home_on = false, mark_on = false;
     const bool back = view.leading == Leading::back;
-    // The key's slot: the mark's picture, or the house of the icon font. Back takes the same slot, so the title and
-    // the finger's area stay where they are when a detail page swaps the key for a chevron.
-    int slot_w = 0, slot_h = 0;
-    lv_font_glyph_dsc_t house;
-    if (header_home_mark) { slot_w = home_mark->header.w; slot_h = home_mark->header.h; }
-    else if (lv_font_get_glyph_dsc(header_icon_font, &house, HOME_GLYPH, 0)) { slot_w = house.box_w; slot_h = house.box_h; }
     const bool draw_mark = header_home_mark && !back;
     const uint32_t leading_glyph = back ? 0xF0141 : HOME_GLYPH;
     const lv_font_t *leading_font = back && surface.back_font ? surface.back_font : header_icon_font;
@@ -232,7 +238,6 @@ public:
       // On the baseline of the name, not centred on it: the key stands on the line the capitals stand on and grows
       // upward from there, the way a taller letter would. Centring it would hang it below the line by half of what it
       // is taller, which is exactly the half pixel you see. Without a capital to measure, the digits of the bar.
-      lv_font_glyph_dsc_t cap;
       const int ink_bottom = lv_font_get_glyph_dsc(name_font, &cap, 'H', 0) && cap.box_h ? baseline - cap.ofs_y
                                                                                          : (middle2 + slot_h) / 2;
       if (draw_mark) {
