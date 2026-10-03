@@ -20,7 +20,7 @@ on the screen itself, and how updates work.
 ## What you can configure
 
 - **One tile per cell**, across up to eight fixed pages and 64 tiles: six cells a page on a CYD, a 4-inch Guition, the
-  [experimental Waveshare 4B](docs/WAVESHARE4B.md) or the [experimental M5Stack Tab5](docs/TAB5.md) (48 tiles), nine on
+  [experimental Waveshare 4B](docs/WAVESHARE4B.md) or the [M5Stack Tab5](docs/TAB5.md) (48 tiles), nine on
   the Waveshare 4.3-inch, twenty-five on the 10.1-inch Guition, sixteen on the
   [experimental Waveshare 7-inch](docs/WAVESHARE7.md), the [experimental Waveshare 7B](docs/WAVESHARE7B.md) and the [experimental Sunton 7-inch](docs/SUNTON8048S070.md), and four on the [Waveshare 3.5-inch](docs/WAVESHARE35.md) (32), lying down. A page need not be full: every screen has eight pages from firmware 0.18.0, where
   a bigger grid had fewer before (three on the 10.1-inch Guition, then five by four). Firmware 0.2.62+; twenty tiles before.

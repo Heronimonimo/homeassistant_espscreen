@@ -927,7 +927,7 @@
    "model": "Tab5 ST7121",
    "name": "M5Stack Tab5",
    "order": 16,
-   "status": "experimental",
+   "status": "new",
    "touch": "ST7121"
   },
   "chip": "ESP32-P4",
@@ -3145,7 +3145,7 @@
    "model": "Tab5 ST7121",
    "name": "M5Stack Tab5",
    "order": 16,
-   "status": "experimental",
+   "status": "new",
    "touch": "ST7121"
   },
   "chip": "ESP32-P4",
@@ -3743,7 +3743,7 @@
    "model": "Tab5 ST7121",
    "name": "M5Stack Tab5",
    "order": 16,
-   "status": "experimental",
+   "status": "new",
    "touch": "ST7121"
   },
   "chip": "ESP32-P4",

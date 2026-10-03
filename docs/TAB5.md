@@ -1,6 +1,6 @@
 # M5Stack Tab5, ST7121 variant
 
-This experimental profile is only for the M5Stack Tab5 variant whose factory firmware reports:
+This profile supports only the M5Stack Tab5 variant whose factory firmware reports:
 
 ```text
 Detected ST7121 touch controller (FW version: 1), using ST7121 display
@@ -13,10 +13,8 @@ blank, so check the factory log before choosing it.
 
 ## Install and test
 
-In **New screen**, choose **M5Stack Tab5**, model **Tab5 ST7121**. The board is marked experimental because the project
-has not yet tested this firmware on physical hardware. Its configuration is based on the factory log and the
-[community ESPHome configuration](https://github.com/Axellum/M5-Tab5-ESPHome-LVGL), not an acceptance test of this
-project's firmware.
+The Tab5 is listed as a new board after successful hardware testing. In **New screen**, choose **M5Stack Tab5**, model
+**Tab5 ST7121**. Other Tab5 display and touch variants are not covered by this hardware confirmation.
 
 The display uses the explicit ST7121 model. ESPHome's available touch platform is named `st7123`; it is configured
 here for the ST7121 controller using the community reference. The display and touch behavior on this board still needs
@@ -24,6 +22,9 @@ to be checked on glass.
 
 The landscape grid defaults to three rows of tiles. In **New screen**, choose four rows to fit more, smaller tiles on a
 page. The portrait grid remains one column by five rows.
+
+Camera tiles, live camera pictures, full-screen camera views, camera alerts and media artwork are enabled. Add a camera
+entity to a screen tile to use these features.
 
 The INA226 battery monitor exposes **Battery Voltage** as a diagnostic sensor and **Battery Level** as a percentage
 sensor in Home Assistant. The percentage is an estimate from the 2-cell lithium-ion pack voltage, using a piecewise

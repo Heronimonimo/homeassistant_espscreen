@@ -45,8 +45,9 @@ class Catalog(unittest.TestCase):
         self.assertEqual((big['name'], big['inch'], big['touch'], big['status'], big['calibrate']),
                          ('Guition', 10.1, 'GSL3670', 'new', False))
         tab5 = firmware_module.BOARD_CHOICES['tab5']
-        self.assertEqual((tab5['name'], tab5['model'], tab5['inch'], tab5['touch'], tab5['status'], tab5['calibrate']),
-                         ('M5Stack Tab5', 'Tab5 ST7121', 5.0, 'ST7121', 'experimental', False))
+        self.assertEqual((tab5['name'], tab5['model'], tab5['inch'], tab5['touch'], tab5['status'], tab5['calibrate'],
+                          tab5['camera']),
+                         ('M5Stack Tab5', 'Tab5 ST7121', 5.0, 'ST7121', 'new', False, True))
         source = profiles.BOARDS['tab5'].read_text()
         self.assertIn('model: M5STACK-TAB5-ST7121', source)
         self.assertIn('platform: st7123', source)
