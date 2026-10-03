@@ -1,0 +1,85 @@
+# ESP Screens - tab5: a 5.0-inch 1280 x 720 panel. Written by tools/new_board.py from the jc8012p4a1
+# board: its packages and its hardware sections are the template's until they are replaced by this board's
+# (docs/ADDING_A_BOARD.md). docs/PROFILES.md says how the files of a screen fit together.
+packages:
+  # The ESP32-P4, its memory, the ESP32-C6 for Wi-Fi and the touch bus, shared with the 7-inch JC1060P470.
+  hardware: !include ../hardware/guition-esp32p4.yaml
+  # The cards of this board's grid, one per cell (tools/generate_cells.py writes them; docs/RESPONSIVE.md).
+  cells: !include ../cells/6.yaml
+  look: !include ../looks/standard.yaml
+  touch: !include ../features/capacitive-touch.yaml
+  backlight: !include ../features/backlight.yaml
+  camera: !include ../features/camera.yaml
+  self_test: !include ../features/self-test.yaml
+  snapshot: !include ../features/snapshot.yaml
+
+substitutions:
+  # The key of this board file; the firmware reports it so ESP Screens knows what board a screen is.
+  BOARD_ID: "tab5"
+  DEVICE_NAME: "tab5-new"
+  DEVICE_FRIENDLY_NAME: "My tab5"
+
+  # The glass: the panel's own pixels and its density, 1469 diagonal pixels over 5.0 inches.
+  PANEL_W: "720"
+  PANEL_H: "1280"
+  DISPLAY_DPI: "293.721"
+  # The LVGL angle that lays this panel out lying down (1280 x 720). Standing up is a quarter further.
+  ROTATION_LANDSCAPE: "90"
+  # The tile grid: columns and rows of cells lying down, and standing up.
+  GRID_COLS: "3"
+  GRID_ROWS: "2"
+  GRID_COLS_PORTRAIT: "1"
+  GRID_ROWS_PORTRAIT: "5"
+  LVGL_BUFFER_SIZE: "50%"                       # LVGL's draw buffer as a share of the screen
+
+  # From the jc8012p4a1 board: its hardware values and the code it hands the shared lambdas. Replace them
+  # with this board's, as the hardware sections below.
+  # ESPHome's own preset for this panel (touchscreen: platform: gsl3670, model: GUITION-JC8012P4A1) reads the
+  # glass as the panel is built: turned a quarter against the picture. LVGL then turns picture and touch
+  # together (LVGL_ROTATION), as it does on the CYD.
+  TOUCH_SWAP_XY: "true"
+  TOUCH_MIRROR_X: "true"
+
+# ============================================================
+# No need to edit below this line.
+# ============================================================
+
+esphome:
+  # This board asks for more ESPHome than the packages' own min_version (2026.6.2, packages/core.yaml): its touch
+  # platform (gsl3670) arrived in 2026.7.0 and that platform's `model: GUITION-JC8012P4A1` in 2026.8.0, which is
+  # what this file uses. A board file's min_version wins over the core's, so the CYD, the Guition and the
+  # Waveshare keep building on an older ESPHome; only a 10.1-inch screen asks for 2026.8 or newer.
+  # docs/RELEASING.md says why the packages stay behind the add-on's ESPHome.
+  min_version: 2026.8.0
+
+text_sensor:
+  - platform: template
+    name: "Guition screen type"
+    entity_category: diagnostic
+    update_interval: never
+    lambda: 'return {"guition"};'
+
+# ESPHome's own gsl3670 platform (2026.7.0+) drives the GSL3680 on this panel. `model:` brings its pins and
+# the range the panel reports; the transform is this board's, because the shared tree reads those three names.
+# The driver loads a firmware table into the touch chip at boot, which ESPHome fetches from the release the
+# model points at and keeps in its own cache, so a build needs to reach GitHub once.
+touchscreen:
+  - platform: gsl3670
+    model: GUITION-JC8012P4A1
+    id: ts_touch
+    i2c_id: touch_bus
+    display: my_display
+    update_interval: 20ms
+    reset_pin: GPIO22
+    interrupt_pin: GPIO21
+
+# ESPHome's own mipi_dsi platform knows this panel by name: `model: JC8012P4A1` brings the JD9365's init
+# sequence, its timings and its reset pin. The panel is 800x1280; LVGL turns it a quarter (LVGL_ROTATION).
+display:
+  - platform: mipi_dsi
+    id: my_display
+    model: JC8012P4A1
+    dimensions: {width: 720, height: 1280}
+    lanes: 2
+    update_interval: never
+    auto_clear_enabled: false
