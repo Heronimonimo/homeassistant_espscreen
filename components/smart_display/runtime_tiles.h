@@ -284,11 +284,12 @@ inline std::string layout_rev;
 // History on a detail card (firmware 0.2.51+): the last history the manager sent (app 0.2.59+ answers
 // history_request with op "history"), for the card that asked.
 struct HistoryState { std::string label; uint32_t color = 0; uint32_t seconds = 0; };
+struct HistoryPoint { uint32_t start = 0, end = 0; float value = 0; bool has = false; };
 struct History {
   std::string entity, unit;
   uint32_t hours = 0, start = 0, end = 0, began = 0;
   int32_t offset = 0;
-  bool line = true, has_high = false, has_low = false;
+  bool line = true, step = false, has_high = false, has_low = false;
   float values[history_view::PARTS]{};
   bool has[history_view::PARTS]{};
   float bottom = 0, top = 1, high = 0, low = 0;
@@ -296,6 +297,8 @@ struct History {
   int decimals = 1, active = -1;
   std::vector<std::pair<float, std::string>> ticks;
   std::vector<uint32_t> times;
+  std::vector<std::pair<uint32_t, std::string>> step_times;
+  std::vector<HistoryPoint> points;
   uint16_t slots = 0;
   std::vector<history_view::Run> runs;
   std::vector<HistoryState> states;
@@ -306,7 +309,7 @@ inline History history;
 // The range the open card shows (1, 24 or 168 hours); what it asked for last and when; whether that answer came.
 inline uint32_t history_hours = 24, history_asked_at = 0, history_asked_hours = 0, history_received_at = 0;
 inline std::string history_asked_entity;
-inline bool history_answered = false;
+inline bool history_answered = false, history_asked_step = false;
 inline std::function<void()> layout_changed, refresh, dismiss, settings_changed;
 inline esphome::ESPPreferenceObject settings_preference;
 // The two extra values of 0.2.44+ in one record: going back to page 1 by itself, and after how long.
@@ -768,15 +771,18 @@ inline void library_art_request(const std::string &entity, const std::string &it
 }
 // A detail card asks the manager for its history (app 0.2.59+ answers with op "history"). An event, like
 // setting_event: it needs no permission to call Home Assistant actions.
-inline void history_request(const std::string &entity, uint32_t hours) {
+inline void history_request(const std::string &entity, uint32_t hours, bool step = false) {
   if (inbox.empty()) return;
   esphome::api::HomeassistantActionRequest request;
   request.service = esphome::StringRef("esphome.screen_history");
   request.is_event = true;
   const std::string span = std::to_string(hours);
-  const std::string keys[] = {"inbox", "entity", "hours", "session", "rev", "view"}, values[] = {inbox, entity, span, protocol_key(transfer.lease), layout_rev, std::to_string(++history_view_id)};
-  request.data.init(6);
-  for (int i = 0; i < 6; ++i) {
+  const std::string keys[] = {"inbox", "entity", "hours", "session", "rev", "view", "forecast", "clock24"};
+  const std::string values[] = {inbox, entity, span, protocol_key(transfer.lease), layout_rev, std::to_string(++history_view_id),
+                                step ? "1" : "0", screen_settings::current.clock_24h ? "1" : "0"};
+  const int count=step?8:6;
+  request.data.init(count);
+  for (int i = 0; i < count; ++i) {
     esphome::api::HomeassistantServiceMap entry;
     entry.key = esphome::StringRef(keys[i]);
     entry.value = esphome::StringRef(values[i]);
@@ -787,6 +793,7 @@ inline void history_request(const std::string &entity, uint32_t hours) {
   history_answered = false;
   history_asked_entity = entity;
   history_asked_hours = hours;
+  history_asked_step = step;
   ESP_LOGI("history", "asked for %u h of %s", static_cast<unsigned>(hours), entity.c_str());
 }
 inline void setting_event(const std::string &key, int value) {
@@ -3301,7 +3308,8 @@ inline float history_x(uint32_t at){
 // The history holds the open card's entity and range, and is new: the answer to this opening, or less than a
 // minute old (a card opened again shows it at once while it asks).
 inline bool history_fits(const Tile &t){
-  return history.entity==t.entity&&history.hours==history_hours&&
+  return history.entity==t.entity&&history.hours==(t.display=="price_forecast"?24:history_hours)&&
+    history.step==(t.display=="price_forecast")&&
     (history_answered||esphome::millis()-history_received_at<60000);
 }
 // Home Assistant's word for the state now: from this entity's history words, else the card's own. The history can
@@ -3359,6 +3367,15 @@ inline void history_scrub(lv_event_t *e){
   const float fraction=std::clamp(float(point.x-detail_screen_x(c.x))/float(std::max(1,c.w)),0.0f,1.0f);
   const bool week=h.hours==168;
   if(c.line){
+    if(h.step){
+      const uint32_t at=h.start+static_cast<uint32_t>(float(h.end-h.start)*fraction);
+      const HistoryPoint *selected=nullptr;
+      for(const auto &item:h.points)if(item.start<=at&&at<item.end){selected=&item;break;}
+      if(!selected&&at>=h.end&&!h.points.empty()&&h.points.back().end==h.end)selected=&h.points.back();
+      label(c.value,selected&&selected->has?history_view::number(selected->value,h.decimals,h.unit):std::string(tr(txt::history_no_data)));
+      lv_obj_set_style_text_color(c.value,lv_color_hex(selected&&selected->has?theme::foreground(c.accent):theme::hex(theme::SUBTLE)),0);
+      return;
+    }
     // A part without a value (before the sensor existed, while it was unavailable) says so.
     const int i=history_view::part_at(fraction);
     const uint64_t span=h.end-h.start;
@@ -3389,8 +3406,24 @@ inline void history_times(int x,int w,int y,const lv_font_t *font,bool large){
   const auto &h=history;
   const lv_font_t *bold=detail_font?detail_font:font;
   const int now_w=text_width(tr(txt::history_now),bold),gap=ui::px(large?10:6);
-  detail_text(detail_root,tr(txt::history_now),x+w-now_w,y,now_w+2,bold,LV_TEXT_ALIGN_LEFT,theme::INK);
+  if(h.step){
+    const std::string start=screen_settings::current.clock_24h?"00":std::string("12 ")+tr(txt::time_am);
+    const std::string finish=screen_settings::current.clock_24h?"24":std::string("12 ")+tr(txt::time_am);
+    detail_text(detail_root,start,x,y,text_width(start,font)+2,font,LV_TEXT_ALIGN_LEFT,theme::SUBTLE);
+    detail_text(detail_root,finish,x+w-text_width(finish,font),y,text_width(finish,font)+2,font,LV_TEXT_ALIGN_RIGHT,theme::SUBTLE);
+  }else detail_text(detail_root,tr(txt::history_now),x+w-now_w,y,now_w+2,bold,LV_TEXT_ALIGN_LEFT,theme::INK);
   int last=x-1000;
+  if(h.step){
+    for(const auto &[at,words]:h.step_times){
+      const int tw=text_width(words,font),cx=x+static_cast<int>(std::lround(float(at-h.start)/float(h.end-h.start)*w));
+      const int left=std::max(x,cx-tw/2);
+      if(left<=last+gap||left+tw>x+w-ui::px(large?18:10))continue;
+      detail_shape(detail_root,cx,y-(ui::px(large?7:4)),1,ui::px(large?5:3),theme::TICK,0);
+      detail_text(detail_root,words,left,y,tw+2,font,LV_TEXT_ALIGN_LEFT,theme::SUBTLE);
+      last=left+tw;
+    }
+    return;
+  }
   for(uint32_t at:h.times){
     if(at<=h.start||at>=h.end)continue;
     const std::string words=h.hours==168?history_view::clock(at,h.offset,true,true).substr(0,3)
@@ -3402,6 +3435,35 @@ inline void history_times(int x,int w,int y,const lv_font_t *font,bool large){
     detail_text(detail_root,words,left,y,tw+2,font,LV_TEXT_ALIGN_LEFT,theme::SUBTLE);
     last=left+tw;
   }
+}
+inline void history_step(lv_event_t *e){
+    const auto &h=history;const auto &c=history_chart;
+    if(!h.step||h.points.empty())return;
+    auto *obj=lv_event_get_current_target_obj(e);auto *layer=lv_event_get_layer(e);
+    lv_area_t area;lv_obj_get_coords(obj,&area);
+    lv_draw_rect_dsc_t dsc;lv_draw_rect_dsc_init(&dsc);dsc.bg_opa=LV_OPA_COVER;dsc.bg_color=lv_color_hex(c.accent);
+    const int thickness=ui::px(1);
+    auto segment=[&](int x1,int y1,int x2,int y2){
+      lv_area_t piece{std::min(x1,x2),std::min(y1,y2),std::max(x1,x2),std::max(y1,y2)};
+      if(y1==y2)piece.y2=piece.y1+thickness-1;
+      else if(x1==x2)piece.x2=piece.x1+thickness-1;
+      lv_draw_rect(layer,&dsc,&piece);
+    };
+    const HistoryPoint *previous=nullptr;
+    for(const auto &point:h.points){
+      if(!point.has){previous=nullptr;continue;}
+      const float y=history_y(point.value);
+      const int x1=area.x1+static_cast<int>(std::lround(history_x(point.start)));
+      const int x2=area.x1+static_cast<int>(std::lround(history_x(point.end)));
+      if(previous&&previous->end==point.start){
+        const int old_y=area.y1+static_cast<int>(std::lround(history_y(previous->value)-c.y));
+        const int new_y=area.y1+static_cast<int>(std::lround(y-c.y));
+        segment(x1,old_y,x1,new_y);
+      }
+      const int line_y=area.y1+static_cast<int>(std::lround(y-c.y));
+      segment(x1,line_y,x2,line_y);
+      previous=&point;
+    }
 }
 inline void render_history_line(bool large,int card_x,int card_y,int card_w,int card_h,const lv_font_t *small,float current){
   auto &c=history_chart;const auto &h=history;
@@ -3481,6 +3543,25 @@ inline void render_history_line(bool large,int card_x,int card_y,int card_w,int 
   history_times(c.x,c.w,c.y+c.h+(ui::px(large?8:4)),small,large);
   history_touch(c.x-(ui::px(large?14:8)),card_y,c.w+(ui::px(large?28:16)),card_h);
 }
+inline void render_history_step(bool large,int card_x,int card_y,int card_w,int card_h,const lv_font_t *small){
+  auto &c=history_chart;const auto &h=history;
+  c.bottom=h.bottom;c.top=h.top;
+  const int label_h=lv_font_get_line_height(small),edge=ui::px(large?14:8);
+  int label_w=0;for(const auto &tick:h.ticks)label_w=std::max(label_w,text_width(tick.second,small));
+  c.x=card_x+edge+label_w+(label_w?(ui::px(large?10:5)):0);c.w=card_x+card_w-(ui::px(large?18:10))-c.x;
+  c.y=card_y+(ui::px(large?22:10));c.h=card_y+card_h-(label_h+(ui::px(large?16:8)))-c.y;
+  if(c.w<40||c.h<24)return;
+  for(const auto &tick:h.ticks){
+    const int ty=static_cast<int>(std::lround(history_y(tick.first)));
+    detail_shape(detail_root,c.x,ty,c.w,1,theme::GRID,0);
+    detail_text(detail_root,tick.second,card_x+edge,ty-label_h/2,label_w+2,small,LV_TEXT_ALIGN_RIGHT,theme::SUBTLE);
+  }
+  c.area=lv_obj_create(detail_root);lv_obj_remove_style_all(c.area);lv_obj_set_pos(c.area,c.x,c.y);lv_obj_set_size(c.area,c.w,c.h);
+  lv_obj_remove_flag(c.area,LV_OBJ_FLAG_CLICKABLE);lv_obj_remove_flag(c.area,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_event_cb(c.area,history_step,LV_EVENT_DRAW_MAIN,nullptr);
+  history_times(c.x,c.w,c.y+c.h+(ui::px(large?8:4)),small,large);
+  history_touch(c.x-(ui::px(large?14:8)),card_y,c.w+(ui::px(large?28:16)),card_h);
+}
 inline void render_history_timeline(bool large,int card_x,int card_y,int card_w,int card_h,const lv_font_t *small){
   auto &c=history_chart;const auto &h=history;
   const int edge=ui::px(large?16:8),label_h=lv_font_get_line_height(small),times_gap=ui::px(large?8:4),legend_gap=ui::px(large?16:6);
@@ -3537,9 +3618,12 @@ inline void history_ranges(int x,int y,int w,int h){
 inline void render_history_detail(const Tile &t,bool large,int width,int height,int pad){
   auto &c=history_chart;const auto &h=history;auto d=t.domain();
   history_forget();
+  const bool forecast=t.display=="price_forecast";
+  const uint32_t requested_hours=forecast?24:history_hours;
   // Asked once per opening and range; again after 30 s without an answer (see tick).
-  if(history_asked_entity!=t.entity||history_asked_hours!=history_hours||(!history_fits(t)&&esphome::millis()-history_asked_at>30000))
-    history_request(t.entity,history_hours);
+  if(history_asked_entity!=t.entity||history_asked_hours!=requested_hours||history_asked_step!=forecast||
+     (!history_fits(t)&&esphome::millis()-history_asked_at>30000))
+    history_request(t.entity,requested_hours,forecast);
   c.ready=history_fits(t);
   const bool line=c.ready?h.line:history_line_guess(t);
   c.line=line;c.accent=tile_controls::accent(t);
@@ -3554,16 +3638,23 @@ inline void render_history_detail(const Tile &t,bool large,int width,int height,
   if(line){
     int decimals=0;const auto dot=t.state.find('.');if(dot!=std::string::npos)decimals=static_cast<int>(std::min<size_t>(4,t.state.size()-dot-1));
     if(c.ready)decimals=h.decimals;
-    c.value_text=!t.available()?std::string(tr(txt::ha_unavailable)):numeric?history_view::number(current,decimals,t.unit):t.state;
+    c.value_text=forecast?std::string(tr(txt::time_tomorrow)):
+      !t.available()?std::string(tr(txt::ha_unavailable)):numeric?history_view::number(current,decimals,t.unit):t.state;
     if(c.ready){
+      if(forecast){
+        c.first_text=h.unit;
+      }else{
       // The value now counts too: it can lie beyond the history (the running hour is not in the statistics yet).
       if(h.has_high){c.high=h.high;c.high_at=h.high_at;}
       if(h.has_low){c.low=h.low;c.low_at=h.low_at;}
       if(std::isfinite(current)&&std::isfinite(c.high)&&current>c.high){c.high=current;c.high_at=h.end;}
       if(std::isfinite(current)&&std::isfinite(c.low)&&current<c.low){c.low=current;c.low_at=h.end;}
+      }
     }
-    if(std::isfinite(c.high))c.first_text=fill(txt::history_high,"value",history_view::number(c.high,h.decimals,h.unit))+" \u00B7 "+history_clock(c.high_at,h.hours==168);
-    if(std::isfinite(c.low))c.second_text=fill(txt::history_low,"value",history_view::number(c.low,h.decimals,h.unit))+" \u00B7 "+history_clock(c.low_at,h.hours==168);
+    if(!forecast){
+      if(std::isfinite(c.high))c.first_text=fill(txt::history_high,"value",history_view::number(c.high,h.decimals,h.unit))+" \u00B7 "+history_clock(c.high_at,h.hours==168);
+      if(std::isfinite(c.low))c.second_text=fill(txt::history_low,"value",history_view::number(c.low,h.decimals,h.unit))+" \u00B7 "+history_clock(c.low_at,h.hours==168);
+    }
   }else{
     c.value_text=history_words(t);
     if(c.ready&&h.active>=0){
@@ -3616,19 +3707,21 @@ inline void render_history_detail(const Tile &t,bool large,int width,int height,
     lv_obj_add_event_cb(slider,slider_event,LV_EVENT_ALL,(void*)(uintptr_t)detail_index);
     top+=slider_h+(ui::px(large?22:12));
   }
-  const int range_h=ui::px(large?48:28),bottom=height-(ui::px(large?16:6)),range_y=bottom-range_h,card_h=range_y-(ui::px(large?10:5))-top;
+  const int range_h=forecast?0:ui::px(large?48:28),bottom=height-(ui::px(large?16:6)),range_y=bottom-range_h,card_h=range_y-(ui::px(large?10:5))-top;
   detail_card(pad,top,width-2*pad,card_h);
-  const bool empty=c.ready&&(line?std::none_of(h.has,h.has+history_view::PARTS,[](bool v){return v;}):h.states.empty());
+  const bool empty=c.ready&&(h.step?std::none_of(h.points.begin(),h.points.end(),[](const HistoryPoint &point){return point.has;}):
+    line?std::none_of(h.has,h.has+history_view::PARTS,[](bool v){return v;}):h.states.empty());
   if(!c.ready||empty){
     c.status=detail_text(detail_root,tr(!c.ready?txt::history_loading:txt::history_empty),pad,top+(card_h-text_h)/2,width-2*pad,text,LV_TEXT_ALIGN_CENTER,theme::SUBTLE);
   }else if(line){
-    render_history_line(large,pad,top,width-2*pad,card_h,small,current);
+    if(h.step)render_history_step(large,pad,top,width-2*pad,card_h,small);
+    else render_history_line(large,pad,top,width-2*pad,card_h,small,current);
   }else{
     render_history_timeline(large,pad,top,width-2*pad,card_h,small);
   }
   // The graph took the glass; the keys under it keep a hand's width and stand in the middle of the card.
   const auto keys=overlay_card::reach(width,width-2*pad);
-  history_ranges(keys.x,range_y,keys.w,range_h);
+  if(!forecast)history_ranges(keys.x,range_y,keys.w,range_h);
 }
 // ---- The media card (firmware 0.2.64+) ----
 // "Now playing" as a phone shows it: the album cover (app 0.2.77+ serves it, a Guition draws it; the CYD keeps the
@@ -4021,7 +4114,7 @@ inline void show_detail(unsigned index){
   if(alarm_pad.open&&model.tiles[index].entity!=alarm_pad.entity)alarm_close_pad();
   // A card that opens starts on a day (an hour for a tile whose graph shows one); switching ranges keeps it open.
   if(!detail_root||lv_obj_has_flag(detail_root,LV_OBJ_FLAG_HIDDEN)||detail_index!=index){
-    history_hours=model.tiles[index].history_hours==1?1:24;history_asked_entity.clear();weather_page=0;select_page=0;
+    history_hours=model.tiles[index].history_hours==1?1:24;history_asked_entity.clear();history_asked_step=false;weather_page=0;select_page=0;
   }
   detail_index=index;auto &t=model.tiles[index];
   if(!detail_font)detail_font=lv_obj_get_style_text_font(widgets[0].title,LV_PART_MAIN);
@@ -9848,7 +9941,7 @@ inline void cancel_layout_input(bool invalidate_widgets) {
   camera_close();
   cover_drop();
   live_release();
-  history_asked_entity.clear();
+  history_asked_entity.clear();history_asked_step=false;
   history = History{};
   if (invalidate_widgets) {
     for (auto &w : widgets) { w.index = grid.max_tiles(); w.cached_active = -1; }

@@ -347,7 +347,7 @@ const backgroundName = computed(() => state.inventory.backgrounds?.[props.tile.o
       <PropRow v-if="lookShown && pictureCard" :label="t('editor.tile.picture.overlay.label')" icon="format-title">
         <ChoiceField :choices="pictureChoices('overlay')" :value="current('overlay', 'name')" :tile="tile" preview-key="overlay" :aria-label="t('editor.tile.picture.overlay.label')" @pick="(v) => setTileOption(tile, 'overlay', v)" />
       </PropRow>
-      <PropRow v-if="lookShown && domain === 'sensor'" :label="t('editor.tile.history.label')" icon="clock-outline">
+      <PropRow v-if="lookShown && domain === 'sensor' && display !== 'price_forecast'" :label="t('editor.tile.history.label')" icon="clock-outline">
         <ChoiceField :choices="historyChoices" :value="history" :tile="tile" preview-key="history_hours" :aria-label="t('editor.tile.history.label')" @pick="(v) => setTileOption(tile, 'history_hours', Number(v))" />
       </PropRow>
     </Section>

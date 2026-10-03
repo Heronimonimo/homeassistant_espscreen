@@ -390,10 +390,25 @@ std::string receive(const std::string &payload) {
       next.end = root["end"] | 0u;
       next.offset = std::clamp(root["off"] | 0, -14 * 3600, 14 * 3600);
       if (next.end <= next.start) return false;
-      next.line = string(root["kind"], 12) != "timeline";
+      const std::string graph_kind = string(root["kind"], 12);
+      next.step = graph_kind == "step";
+      next.line = graph_kind != "timeline";
+      if (next.step != history_asked_step) {
+        result = model.ready() ? "Synced" : "Loading tiles";
+        return true;
+      }
+      if (next.step && next.hours != 24) return false;
       if (root["xt"].is<JsonArray>()) for (JsonVariant moment : root["xt"].as<JsonArray>()) {
-        if (next.times.size() == 8) break;
-        if (moment.is<unsigned>()) next.times.push_back(moment.as<uint32_t>());
+        if (next.step) {
+          if (next.step_times.size() == 4) break;
+          if (!moment.is<JsonArray>() || moment.size() != 2 || !moment[0].is<unsigned>()) return false;
+          const uint32_t at = moment[0].as<uint32_t>();
+          if (at <= next.start || at >= next.end) return false;
+          next.step_times.emplace_back(at, string(moment[1], 8));
+        } else {
+          if (next.times.size() == 8) break;
+          if (moment.is<unsigned>()) next.times.push_back(moment.as<uint32_t>());
+        }
       }
       if (next.line) {
         unsigned i = 0;
@@ -420,6 +435,24 @@ std::string receive(const std::string &payload) {
         next.low_at = root["lo"][1] | 0u;
         next.decimals = std::clamp(root["dec"] | 1, 0, 4);
         next.unit = string(root["unit"], 16);
+        if (next.step) {
+          if (!root["points"].is<JsonArray>()) return false;
+          uint32_t previous_end = next.start;
+          for (JsonVariant item : root["points"].as<JsonArray>()) {
+            if (next.points.size() == 100) break;
+            if (!item.is<JsonArray>() || item.size() != 3 || !item[0].is<unsigned>() || !item[1].is<unsigned>()) return false;
+            HistoryPoint point;
+            point.start = item[0].as<uint32_t>(); point.end = item[1].as<uint32_t>();
+            if (point.start < next.start || point.end > next.end || point.end <= point.start || point.start < previous_end) return false;
+            point.has = !item[2].isNull();
+            if (point.has) {
+              point.value = number(item[2]);
+              if (!std::isfinite(point.value)) return false;
+            }
+            previous_end = point.end;
+            next.points.push_back(point);
+          }
+        }
       } else {
         next.slots = static_cast<uint16_t>(std::clamp(root["slots"] | 96u, 1u, 96u));
         if (root["states"].is<JsonArray>()) for (JsonVariant state : root["states"].as<JsonArray>()) {

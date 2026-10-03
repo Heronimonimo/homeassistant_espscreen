@@ -21,6 +21,7 @@ import CoverTilePreview from "./CoverTilePreview.vue";
 import ModeBar from "./ModeBar.vue";
 import MarqueeText from "./MarqueeText.vue";
 import SensorHistory from './SensorHistory.vue';
+import PriceForecast from './PriceForecast.vue';
 import rules from "../model/page-rules.json";
 
 // `grid`: another screen's grid, for a card of that screen's home page on the overview (app 0.4.0); the editor's own
@@ -394,6 +395,10 @@ async function onKey(e: KeyboardEvent) {
     </template>
     <template v-else-if="display === 'digital' && domain === 'screen'">
       <span class="digital-clock"><span class="big">{{ clockText(clock24, now) }}</span><span class="st">{{ clockDate }}</span></span>
+    </template>
+    <template v-else-if="display === 'price_forecast' && domain === 'sensor'">
+      <span class="head"><span class="ic mdi">{{ glyph(tileIconCp(tile)) }}</span><span class="tx"><span class="nm">{{ name }}</span></span></span>
+      <PriceForecast :entity="tile.entity" />
     </template>
     <template v-else-if="display === 'graph' && domain === 'sensor'">
       <span class="head"><span class="ic mdi">{{ glyph(tileIconCp(tile)) }}</span><span class="tx"><span class="nm">{{ name }}</span><span class="st">{{ line }}</span></span></span>

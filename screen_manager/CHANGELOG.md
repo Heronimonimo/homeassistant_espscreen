@@ -1,3 +1,10 @@
+## 0.4.58 (firmware 0.34.0)
+
+- **Day-ahead power prices.** Sensor tiles from Nord Pool and ENTSO-E can show tomorrow's prices as a stepped graph.
+  Hourly and quarter-hour intervals keep their actual duration, missing intervals stay blank, and the time axis uses
+  the screen's local time, including daylight-saving days. The existing recorded-history graph is unchanged.
+- Needs firmware 0.34.0. Update the add-on first, then update the screen.
+
 ## 0.4.57 (firmware 0.33.0)
 
 - **Support Tessera every month.** The card on the editor's overview now offers a monthly membership first, with a

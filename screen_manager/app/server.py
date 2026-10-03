@@ -40,6 +40,7 @@ from core import (Grid, page_target, PAGE_TILE_REPEAT_MIN_FIRMWARE, ENTITY_REPEA
                   packed_slots, run_tile_event, screen_firmware, shape_of, turns_of, version_text)
 import header_bar
 import history_card
+import forecast_card
 import i18n
 from i18n import REQUEST_LANGUAGE, TRANSLATIONS, Region, english, screen_t, shown, t
 from zoneinfo import ZoneInfo
@@ -1898,14 +1899,26 @@ class Manager:
             return
         if entity not in {tile['entity'] for tile in layout['tiles']}:
             return
+        forecast = str(request.get('forecast', '')).lower() in ('1', 'true')
+        attrs = (self.ha.states.get(entity) or {}).get('attributes') or {}
+        if forecast and (hours != 24 or not any(
+                tile['entity'] == entity and (tile.get('options') or {}).get('display') == 'price_forecast'
+                for tile in layout['tiles'])):
+            return
         what = history_card.kind(entity, self.ha.states.get(entity))
         action = self.transport(inbox, screen)
-        if what is None or not action:
+        if (what is None and not forecast) or not action:
             return
         # Its words in the language of this screen's firmware (app 0.2.90).
         token = i18n.SCREEN.set(i18n.screen_context(screen))
         try:
-            await self.send_auxiliary(inbox, await self.card_history(entity, hours, what), action, request)
+            if forecast:
+                clock_24h = str(request.get('clock24', '1')).lower() in ('1', 'true')
+                message = forecast_card.message(entity, attrs, getattr(self.ha, 'time_zone', None),
+                                                clock_24h=clock_24h)
+            else:
+                message = await self.card_history(entity, hours, what)
+            await self.send_auxiliary(inbox, message, action, request)
         finally:
             i18n.SCREEN.reset(token)
 
@@ -3682,6 +3695,18 @@ def create_app(manager, development=False):
         async with preview_history_slots:
             return web.json_response({'history': await manager.card_history(entity, hours, 'line')})
 
+    async def preview_forecast(request):
+        """The current sensor's bounded day-ahead intervals for the editor mockup."""
+        entity = request.query.get('entity', '')
+        state = manager.ha.states.get(entity)
+        if not entity.startswith('sensor.') or not state or not forecast_card.supports(state.get('attributes')):
+           return web.json_response({'forecast': None})
+        async with preview_history_slots:
+           forecast = forecast_card.message(
+               entity, state.get('attributes'), getattr(manager.ha, 'time_zone', None),
+               clock_24h=manager.region.clock_24h())
+           return web.json_response({'forecast': forecast})
+
     async def media_art_preview(request):
         # The browser receives only prepared pixels, never HA tokens or source URLs.
         entity = request.query.get('entity', '')
@@ -4035,6 +4060,7 @@ def create_app(manager, development=False):
     app.router.add_get('/api/capabilities', capabilities)
     app.router.add_get('/api/states', states)
     app.router.add_get('/api/history-preview', preview_history)
+    app.router.add_get('/api/forecast-preview', preview_forecast)
     app.router.add_get('/api/media-art', media_art_preview)
     app.router.add_get('/api/camera-preview', camera_preview)
     app.router.add_get('/api/media/browse', media_browse)

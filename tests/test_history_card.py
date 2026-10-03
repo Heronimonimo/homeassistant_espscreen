@@ -12,7 +12,7 @@ import re
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -355,6 +355,35 @@ class Requests(unittest.IsolatedAsyncioTestCase):
             await m.answer_history({'inbox': 'text.screen', 'entity': 'sensor.t', 'hours': 24})
             self.assertEqual((m.ha.messages, m.ha.fetches), ([], []))
 
+    async def test_forecast_uses_day_ahead_attributes_only_for_selected_tile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            m = self.manager(tmp, firmware='0.34.0')
+            tomorrow = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            m.ha.states['sensor.t']['attributes']['raw_tomorrow'] = [
+                {'start': tomorrow.isoformat(), 'end': (tomorrow + timedelta(hours=1)).isoformat(), 'value': 0.2},
+                {'start': (tomorrow + timedelta(hours=1)).isoformat(),
+                 'end': (tomorrow + timedelta(hours=2)).isoformat(), 'value': 0.4},
+            ]
+            m.save('text.screen', {'title': 'Office 1', 'tiles': [
+                {'entity': 'sensor.t', 'name': '', 'options': {'display': 'price_forecast'}},
+                {'entity': 'binary_sensor.door', 'name': ''}, {'entity': 'light.a', 'name': ''},
+            ]})
+            await m.answer_history({'inbox': 'text.screen', 'entity': 'sensor.t', 'hours': '24',
+                                    'forecast': '1', 'clock24': '0'})
+            self.assertEqual(len(m.ha.messages), 1)
+            message = m.ha.messages[0][1]
+            self.assertEqual((message['kind'], message['unit'], [point[2] for point in message['points']]),
+                             ('step', '°C', [0.2, 0.4]))
+            self.assertEqual([label for _, label in message['xt']], ['6 AM', '12 PM', '6 PM'])
+            self.assertEqual(m.ha.fetches, [], 'forecast prices come from the current sensor attributes')
+            m.save('text.screen', {'title': 'Office 1', 'tiles': [
+                {'entity': 'sensor.t', 'name': '', 'options': {'display': 'graph'}},
+                {'entity': 'binary_sensor.door', 'name': ''}, {'entity': 'light.a', 'name': ''},
+            ]})
+            await m.answer_history({'inbox': 'text.screen', 'entity': 'sensor.t', 'hours': '24', 'forecast': '1'})
+            await m.answer_history({'inbox': 'text.other', 'entity': 'sensor.t', 'hours': '24', 'forecast': '1'})
+            self.assertEqual(len(m.ha.messages), 1, 'an unselected or foreign card cannot request its forecast')
+
     async def test_the_loop_answers_events_and_survives_a_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             m = self.manager(tmp)
@@ -378,11 +407,14 @@ class Firmware(unittest.TestCase):
         request = request[:request.index('\n}\n')]
         self.assertIn('request.service = esphome::StringRef("esphome.screen_history");', request)
         self.assertIn('request.is_event = true;', request, 'an event needs no permission to call actions')
-        self.assertIn('const std::string keys[] = {"inbox", "entity", "hours", "session", "rev", "view"}', request)
+        self.assertIn('"forecast", "clock24"', request)
         receive = RUNTIME[RUNTIME.index('if (op == "history") {'):]
         receive = receive[:receive.index('#ifdef SWIPE_PROFILE')]
-        self.assertIn('if (next.entity != history_asked_entity || next.hours != history_asked_hours) {', receive)
+        self.assertIn('next.step != history_asked_step', receive)
         self.assertIn('if (!valid_entity(next.entity) || (next.hours != 1 && next.hours != 24 && next.hours != 168)) return false;', receive)
+        self.assertIn('point.start < next.start || point.end > next.end', receive)
+        self.assertIn('lv_obj_add_event_cb(c.area,history_step,LV_EVENT_DRAW_MAIN,nullptr);', RUNTIME)
+        self.assertIn('if(h.step)render_history_step', RUNTIME)
 
     def test_the_card_opens_for_every_entity_with_history_and_keeps_its_range_keys_enabled(self):
         self.assertIn('return d=="sensor"||d=="binary_sensor"||d=="switch"||d=="input_boolean"||d=="person"||d=="number"||d=="input_number";', RUNTIME)

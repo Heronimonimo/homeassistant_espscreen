@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 import history_card
 import header_bar
+import i18n
 
 
 MAX_POINTS = 100
@@ -105,7 +106,7 @@ def message(entity, attributes, tz, today=None, clock_24h=True):
     """A bounded wire payload; empty lists remain explicit, valid forecast responses."""
     result = tomorrow(attributes, tz, today)
     values = [point[2] for point in result['points'] if point[2] is not None]
-    unit = str((attributes or {}).get('unit_of_measurement') or '')[:16]
+    unit = header_bar.clean_text(str((attributes or {}).get('unit_of_measurement') or ''))[:12]
     decimals = (attributes or {}).get('suggested_display_precision')
     if not isinstance(decimals, int) or isinstance(decimals, bool):
         decimals = 3 if any(value != round(value, 2) for value in values) else 2
@@ -122,7 +123,11 @@ def message(entity, attributes, tz, today=None, clock_24h=True):
     x_ticks = []
     for hour in (6, 12, 18):
         at = local_day.replace(hour=hour)
-        label = at.strftime('%H') if clock_24h else at.strftime('%I %p').lstrip('0')
+        if clock_24h:
+            label = at.strftime('%H')
+        else:
+            period = i18n.screen_t('screen.time.am' if hour < 12 else 'screen.time.pm')
+            label = f'{hour % 12 or 12} {period}'
         x_ticks.append([int(at.timestamp()), label])
     return {
         'v': 1, 'op': 'history', 'kind': 'step', 'entity': entity,

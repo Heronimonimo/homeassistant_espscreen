@@ -2,6 +2,7 @@
 from copy import deepcopy
 import asyncio
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -186,6 +187,23 @@ class PageApiTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(await (await self.client.get('/api/history-preview?' + query)).json(), {'history': None})
             self.assertEqual(fetch.await_count, 1)
             self.assertFalse(self.manager.ha.changed.is_set())
+
+    async def test_forecast_preview_reads_only_current_day_ahead_sensor_attributes(self):
+        tomorrow = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        self.manager.ha.states['sensor.price'] = {
+            'state': '0.2',
+            'attributes': {'unit_of_measurement': 'EUR/kWh', 'prices_tomorrow': [
+                {'time': tomorrow.isoformat(), 'price': 0.2},
+                {'time': (tomorrow + timedelta(hours=1)).isoformat(), 'price': 0.3},
+            ]},
+        }
+        response = await self.client.get('/api/forecast-preview?entity=sensor.price')
+        forecast = (await response.json())['forecast']
+        self.assertEqual((forecast['unit'], [point[2] for point in forecast['points']]), ('EUR/kWh', [0.2, 0.3]))
+        self.assertEqual([label for _, label in forecast['xt']], ['6 AM', '12 PM', '6 PM'])
+        for entity in ('sensor.unknown', 'light.a'):
+            result = await (await self.client.get(f'/api/forecast-preview?entity={entity}')).json()
+            self.assertIsNone(result['forecast'])
 
     async def test_a_grid_the_screen_reports_bigger_takes_the_saved_layout_along(self):
         # The screen reports more rows itself (the 10.1-inch Guition went from 5 x 4 to 5 x 5 in firmware 0.18.0): the

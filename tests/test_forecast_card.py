@@ -26,6 +26,8 @@ class ForecastCard(unittest.TestCase):
         self.assertEqual(result['unit'], 'EUR/kWh')
         self.assertEqual([point[2] for point in result['points']], [0.12, 0.31])
         self.assertEqual(result['points'][1][0] - result['points'][0][0], 3600)
+        self.assertEqual([label for _, label in result['xt']], ['06', '12', '18'])
+        self.assertEqual(len(result['yt']), 2)
 
     def test_entsoe_quarter_hour_data_preserves_missing_interval(self):
         rows = [
@@ -54,6 +56,18 @@ class ForecastCard(unittest.TestCase):
         self.assertEqual(result['end'] - result['start'], 25 * 3600)
         self.assertEqual(len(result['points']), 5)
         self.assertEqual(result['points'][3][0] - result['points'][2][0], 3600)
+        self.assertEqual([datetime.fromtimestamp(at, AMSTERDAM).hour for at, _ in result['xt']], [6, 12, 18])
+
+    def test_spring_forward_day_has_23_local_hours(self):
+        rows = [
+            {'time': '2026-03-29T00:00:00+01:00', 'price': 1},
+            {'time': '2026-03-29T01:00:00+01:00', 'price': 2},
+            {'time': '2026-03-29T03:00:00+02:00', 'price': 3},
+        ]
+        result = forecast_card.message(
+            'sensor.price', {'prices_tomorrow': rows}, AMSTERDAM, date(2026, 3, 28))
+        self.assertEqual(result['end'] - result['start'], 23 * 3600)
+        self.assertEqual([datetime.fromtimestamp(at, AMSTERDAM).hour for at, _ in result['xt']], [6, 12, 18])
 
     def test_missing_malformed_and_unavailable_data_is_empty(self):
         self.assertFalse(forecast_card.supports({'raw_tomorrow': None}))
@@ -65,6 +79,7 @@ class ForecastCard(unittest.TestCase):
         self.assertEqual(result['points'], [[int(datetime(2026, 10, 4, 1, tzinfo=AMSTERDAM).timestamp()),
                                              int(datetime(2026, 10, 4, 2, tzinfo=AMSTERDAM).timestamp()), None]])
         self.assertEqual(result['start'], int(datetime(2026, 10, 4, tzinfo=AMSTERDAM).timestamp()))
+        self.assertEqual(result['yt'], [])
 
     def test_points_and_encoded_message_stay_bounded(self):
         midnight = datetime(2026, 10, 4, tzinfo=AMSTERDAM)
