@@ -97,6 +97,18 @@ def price(message, model=MODEL):
     return total
 
 
+def from_now(entries):
+    """A forecast as an example holds it, moved to start just after now: the add-on leaves out the days and hours that are
+    past, so a forecast with fixed dates would price lower every hour (CI, 2026-10-03). The spacing stays as it was."""
+    from datetime import datetime, timedelta, timezone
+    stamps = [datetime.fromisoformat(e['datetime']) for e in entries if isinstance(e, dict) and e.get('datetime')]
+    if not stamps:
+        return entries
+    shift = datetime.now(timezone.utc) + timedelta(minutes=5) - min(stamps)
+    return [{**e, 'datetime': (datetime.fromisoformat(e['datetime']) + shift).isoformat()} if isinstance(e, dict) and e.get('datetime') else e
+            for e in entries]
+
+
 async def messages(examples):
     """The state message the add-on builds for each example, as a screen running the newest firmware gets it."""
     import test_scaling
@@ -107,8 +119,8 @@ async def messages(examples):
     for example in examples:
         ha.registry.append({'entity_id': example['entity'], 'platform': 'demo'})
         ha.states[example['entity']] = {'state': example['state'], 'attributes': example.get('attributes', {})}
-        forecasts[(example['entity'], 'daily')] = example.get('forecast', [])
-        forecasts[(example['entity'], 'hourly')] = example.get('hourly', [])
+        forecasts[(example['entity'], 'daily')] = from_now(example.get('forecast', []))
+        forecasts[(example['entity'], 'hourly')] = from_now(example.get('hourly', []))
 
     async def forecast(entity, kind='daily'):
         return forecasts.get((entity, kind), [])

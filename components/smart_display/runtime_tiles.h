@@ -5212,12 +5212,19 @@ inline void render_clock(Widgets &w,const Tile &t,bool large,int width,int heigh
     date_fits=room>=need;
   }
   int cx=((w.full||!date_fits)?(width-dial)/2:0)+dial/2,cy=height/2,outer=dial/2-1,radius=dial/2-(ui::px(large?4:2));
+  // Numerals replace the four cardinal strokes on a dial with room for them (firmware 0.35.0): the 12 and the 3 stand a
+  // ring's radius apart either way, so a ring shorter than a numeral's box (a 4-inch with four rows) puts them on top
+  // of each other, and the dial keeps its strokes instead.
+  const int numeral_box=lv_font_get_line_height(w.value_font)+4,numeral_ring=outer-11;
+  const bool numerals=large && numeral_ring>=numeral_box+ui::px(2);
   for(int i=0;i<12;++i){
     float a=i*3.14159265f/6;bool cardinal=i%3==0;
-    if(cardinal && large){
-      // Numerals replace the four cardinal strokes; the box is one line high and wide.
-      int box=lv_font_get_line_height(w.value_font)+4,ring=outer-11;
-      part_label(w,i,w.value_font,cx+std::lround(ring*sinf(a))-box/2,cy-std::lround(ring*cosf(a))-box/2,box,LV_TEXT_ALIGN_CENTER,i==0?"12":std::to_string(i));
+    // A part kept from a dial of the other size is the other kind (a numeral is a label, a stroke a line).
+    // Its successor is made below without a colour; the palette pass paints it (cached_active, as the dial does).
+    if(cardinal && w.parts[i] && lv_obj_check_type(w.parts[i],&lv_label_class)!=numerals){lv_obj_delete(w.parts[i]);w.parts[i]=nullptr;w.cached_active=-1;}
+    if(cardinal && numerals){
+      part_label(w,i,w.value_font,cx+std::lround(numeral_ring*sinf(a))-numeral_box/2,cy-std::lround(numeral_ring*cosf(a))-numeral_box/2,
+                 numeral_box,LV_TEXT_ALIGN_CENTER,i==0?"12":std::to_string(i));
       continue;
     }
     int length=cardinal?(ui::px(large?9:5)):(ui::px(large?5:3));
@@ -5596,7 +5603,11 @@ inline int layout_panel(Widgets &w,const Tile &t,bool large,int content_w,int co
   std::string mode=tile_controls::panel_kind(t);
   // A full card that draws its setpoint and mode keys as rows (render_tall) takes the taller card's control sizes.
   const bool taller=t.row_span()>1 && (!w.full || tile_controls::climate_modes_selected(t));
-  PanelMetrics m=w.full?panel_metrics_full(w.base_height>80):panel_metrics(large);
+  // A full-page card fills the glass whatever the grid under it, so its keys follow the room the card has on the glass:
+  // large keys once its content runs 56 mm along its longer side, the way the keys stand in a row. Before (firmware
+  // 0.35.0) the height of one cell decided, so more rows chosen (a 10.1-inch with eight) gave the whole page the small
+  // keys. Every board keeps what it had: the CYD's card (at most 51 mm) the small keys, every other the large.
+  PanelMetrics m=w.full?panel_metrics_full(std::max(content_w,content_h)>=ui::mm(56)):panel_metrics(large);
   if(taller){
     m.key_h=std::max(ui::touch_min(),ui::px(large?48:34));m.key_w=m.key_h;
     m.pill_w=std::min(content_w,ui::control_max_width());m.pill_key=m.key_h;
@@ -6869,10 +6880,17 @@ inline void render_slot(size_t slot) {
     if(setpoint_font && header+gap+lv_font_get_line_height(setpoint_font)<=content_h && text_width(value,setpoint_font)<=number_width && face_covers(setpoint_font,value))face=setpoint_font;
     if(lv_obj_get_style_text_font(w.value,LV_PART_MAIN)!=face){set_font(w.value,face);label(w.value,value);fit_value(w.value,value,value_short,value_tail,value_room);}
     value_height=lv_font_get_line_height(face);lv_obj_set_height(w.value,value_height);
-    // The icon and the name above the number while the three fit the cell. On a cell too short for that (three
-    // rows on a 4.3 inch: 65 px for 99) the number stands big in the middle of the card and the name small in the
-    // top-left corner, and the icon goes: a big value is what this card is for.
-    const bool stacked=header+gap+value_height<=content_h;
+    // The icon and the name above the number while the three fit the cell, the number in the largest watch face that
+    // lets them (firmware 0.35.0): a lower cell keeps its icon with a smaller number before it gives the icon up.
+    // Only a cell too short even for the smaller face (three rows on a 4.3 inch before, 65 px) stands the number
+    // in the middle of the card with the name small in the top-left corner, and the icon goes.
+    bool stacked=header+gap+value_height<=content_h;
+    if(!stacked && watch_font && watch_font!=face && header+gap+lv_font_get_line_height(watch_font)<=content_h &&
+       text_width(value,watch_font)<=number_width && face_covers(watch_font,value)){
+      face=watch_font;set_font(w.value,face);label(w.value,value);fit_value(w.value,value,value_short,value_tail,value_room);
+      value_height=lv_font_get_line_height(face);lv_obj_set_height(w.value,value_height);
+      stacked=true;
+    }
     int group_y=stacked?std::max(0,(content_h-header-gap-value_height)/2):0;
     int value_y=stacked?group_y+header+gap:0;
     set_hidden(w.circle,!stacked);
@@ -6884,10 +6902,21 @@ inline void render_slot(size_t slot) {
       set_font(w.title,w.value_font);
       const int name_h=lv_font_get_line_height(w.value_font);
       lv_obj_set_pos(w.title,0,0);lv_obj_set_size(w.title,text_room,name_h);
-      // The number centred on the card; the digits' own top space (about a fifth of their line) may overlap the
-      // name's line box, never its letters. The line may end in the padding, never past the border.
-      value_y=std::max(name_h-value_height*19/100,(content_h-value_height)/2);
-      value_y=std::min<int>(value_y,content_h+lv_obj_get_style_space_bottom(w.tile,LV_PART_MAIN)-2-value_height);
+      // The number under the name, never in its box (firmware 0.35.0): the largest of the board's faces that fits the
+      // rest of the card, so a lower cell (a 4-inch with four rows, eleven millimetres) gets a smaller number with air
+      // above it instead of the big one pressed against the name. The line may end in the padding, never past the
+      // border. Before, the big face stayed and its top space ran into the name's line.
+      const int below=name_h+ui::px(2),floor_y=content_h+lv_obj_get_style_space_bottom(w.tile,LV_PART_MAIN)-2;
+      const lv_font_t *ladder[]={face,watch_font,w.value_font};
+      const lv_font_t *fitted=w.value_font;
+      for(const lv_font_t *f:ladder){
+        if(!f || (f!=w.value_font && !face_covers(f,value)))continue;
+        if(below+lv_font_get_line_height(f)<=floor_y && text_width(value,f)<=number_width){fitted=f;break;}
+      }
+      if(fitted!=face){face=fitted;set_font(w.value,face);label(w.value,value);}
+      value_height=lv_font_get_line_height(face);lv_obj_set_height(w.value,value_height);
+      value_y=std::max(below,(content_h-value_height)/2);
+      value_y=std::min<int>(value_y,floor_y-value_height);
       fit_value(w.value,value,value_short,value_tail,number_width);
       lv_point_t number;lv_text_get_size(&number,lv_label_get_text(w.value),lv_obj_get_style_text_font(w.value,LV_PART_MAIN),0,0,LV_COORD_MAX,LV_TEXT_FLAG_EXPAND);
       number_width=std::max(1,std::min(number_width,(int)number.x+2));
@@ -7343,11 +7372,10 @@ inline bool check_tile_geometry() {
       // on a short cell may end its line in the padding (never past the border).
       lv_area_t card;lv_obj_get_coords(w.tile,&card);
       const bool big_value=w.index<model.count && model.tiles[w.index].display=="watch";
-      // On a cell too short to stack the icon, the name and a big value (render_slot's watch block), the number stands
-      // big in the middle and its digits' own top space, a fifth of its line, may overlap the name's line box.
-      const int top_space=big_value && lv_obj_has_flag(w.circle,LV_OBJ_FLAG_HIDDEN)?lv_obj_get_height(w.value)*19/100:0;
+      // A big value stands under the name on every cell, a short one too (render_slot's watch block, firmware 0.35.0):
+      // its line no longer reaches into the name's.
       fits=fits && title.x1>=content.x1 && title.x2<=content.x2 &&
-        value.x1>=content.x1 && value.x2<=content.x2 && (title.y2-top_space<value.y1 || title.x2<value.x1) &&
+        value.x1>=content.x1 && value.x2<=content.x2 && (title.y2<value.y1 || title.x2<value.x1) &&
         value.y2<=(big_value?card.y2-1:content.y2);
       if(!lv_obj_has_flag(w.slider,LV_OBJ_FLAG_HIDDEN)){
         lv_obj_get_coords(w.slider,&track);

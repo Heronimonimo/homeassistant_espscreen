@@ -19,7 +19,7 @@ packages:
   # the GSL3680, the same as on the first build.
   hardware: !include ../hardware/guition-jc8012p4a1.yaml
   # The cards of this board's grid, one per cell (tools/generate_cells.py writes them; docs/RESPONSIVE.md).
-  cells: !include ../cells/25.yaml
+  cells: !include ../cells/${GRID_CELLS}.yaml
   look: !include ../looks/standard.yaml
   touch: !include ../features/capacitive-touch.yaml
   backlight: !include ../features/backlight.yaml
@@ -47,11 +47,11 @@ substitutions:
   TOUCH_MIRROR_X: "true"
   # The tile grid: columns and rows of cells. The shared tree places every cell from these
   # (runtime_tiles::place_page), so a board with more room states more columns or rows.
-  # Five by five (firmware 0.18.0): a fifth row fits the glass, and a page need not be full since every grid has eight
-  # pages. Before, 5 x 4, and 4 x 5 standing up. A layout saved on those moves on to five rows by itself: every tile
-  # keeps its page, its row and its column (page_layout.grown in the app).
+  # Five rows by default, with six, seven or eight available when the screen is built (boards.yaml `choices`). Each
+  # extra row fits more tiles on a page; the default keeps the tiles larger and easier to read.
   GRID_COLS: "5"
   GRID_ROWS: "5"
+  GRID_CELLS: "${ (GRID_COLS | int) * (GRID_ROWS | int) }"
   # More tiles and pages than the 64 and eight of a board without PSRAM (firmware 0.34.0+): an ESP32-P4 has the PSRAM and
   # the memory inside the chip for them, and the memory budget (tile_memory.h) says how many a layout really takes.
   SCREEN_MAX_TILES: "256"

@@ -81,7 +81,7 @@ https://github.com/user-attachments/assets/f9f6a933-d388-4c8b-9c9a-011dfa37617b
 One home, five panels. A screen is built for the glass it runs on: it measures its own canvas at boot and gives a page
 the cells that board has, six tiles on the 2.8-inch CYD and twenty-five on the 10.1-inch Guition, while a tile stays about
 the same size in millimetres. The same tiles, the same cards, the same editor; the bigger the glass, the more of your
-home fits on one page.
+home fits on one page. The 10.1-inch Guition holds up to forty on a page: New screen asks for five to eight rows.
 
 <p align="center">
   <img src="docs/images/boards-scale.png" width="98%" alt="The five supported screens side by side on one scale, each showing a page of the same home: the small 2.8-inch CYD, the square 4-inch Guition, the wide 4.3-inch Waveshare, the 7-inch Waveshare and the large 10.1-inch Guition">
@@ -100,6 +100,15 @@ home fits on one page.
   <img src="docs/images/boards-standing.png" width="66%" alt="Two of the same screens built standing up, to scale: the 10.1-inch Guition with the same living room page in five columns of tall cells, and the 7-inch Waveshare by the front door with a clock, the weather, the front door camera, the lock, the porch light, the heating, Sam and the alarm in two columns">
 </p>
 <p align="center"><sub>The same home standing up. Which way a screen hangs is chosen when it is built, and every board that is not square hangs either way, with a grid of its own: the 7-inch Waveshare 2 × 7 instead of 4 × 4, while the 10.1-inch Guition keeps its 5 × 5 in tall cells. Which board is which, and what to look for when you buy one: <a href="#which-screen">Which screen</a>.</sub></p>
+<p align="center">
+  <img src="docs/images/jc8012p4a1-6rows.png" width="49%" alt="The living room on the 10.1-inch Guition with six rows, thirty cells: a clock, the weather for five days with the chance of rain, Sam, the album cover and the front door camera live on two by two tiles, the heating two cells high, graphs for the temperature and the energy, a lamp dimmer, the lock, the ceiling light, the robot, the curtains and two scenes">
+  <img src="docs/images/jc8012p4a1-7rows.png" width="49%" alt="The same living room with seven rows, thirty-five cells: the alarm, the porch light, a second thermostat for the hallway and the coffee machine join the page">
+</p>
+<p align="center">
+  <img src="docs/images/jc8012p4a1-8rows.png" width="49%" alt="The same living room with eight rows, forty cells: a kitchen speaker with its cover and volume, a small live porch camera, the kitchen lights and Alex fill the last row">
+  <img src="docs/images/jc8012p4a1-8rows-dark.png" width="49%" alt="The page with eight rows in Dark mode">
+</p>
+<p align="center"><sub>Six, seven and eight rows on the 10.1-inch Guition, from thirty to forty tiles on a page, and eight rows in Dark mode. Rendered from the firmware's own code. The rows are chosen when the screen is built; one with five gets more by adding <code>GRID_ROWS: "6"</code> (or 7, or 8) to its own YAML and installing it again, and its saved layout moves along by itself. Thanks to <a href="https://github.com/Heronimonimo">Jeroen Peters</a> for <a href="https://github.com/MaxGramser/homeassistant_espscreen/pull/151">the rows</a>.</sub></p>
 
 ## Taller tiles, richer cards
 

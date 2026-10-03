@@ -178,23 +178,29 @@ def uncovered(kinds=None, excluded=None):
 
 
 def boards():
-    """The glass and grids of every board as the editor's preview has them, one per distinct shape and density."""
+    """The glass and grids of every board as the editor's preview has them, one per distinct shape and density, and every
+    row count a board offers when it is built (boards.yaml `choices: GRID_ROWS`, app 0.4.59): New screen lets someone
+    pick it, so its cards must fit as well as the default's. The rows apply lying down (core.shape_of)."""
     shapes = json.loads((ROOT / 'screen_manager/app/boards.json').read_text())
     wanted = [key for key in os.environ.get('LAYOUT_AUDIT_BOARDS', '').split(',') if key]
     seen, found = {}, []
     for key, shape in shapes.items():
         if key.startswith('checkout/') or key.startswith('packages/') or (wanted and key not in wanted):
             continue
+        choices = [int(rows) for rows in (shape.get('catalog', {}).get('choices') or {}).get('GRID_ROWS', [])]
         for side in ('landscape', 'portrait'):
             o = shape['orientations'].get(side)
             if not o:
                 continue
-            shape_key = (o['width'], o['height'], o['columns'], o['rows'], shape['dpi'])
-            if shape_key in seen:
-                continue
-            seen[shape_key] = {'key': f'{key}-{side}', 'width': o['width'], 'height': o['height'], 'columns': o['columns'],
-                               'rows': o['rows'], 'dpi': shape['dpi']}
-            found.append(seen[shape_key])
+            grids = [o['rows']] + ([rows for rows in choices if rows != o['rows']] if o['width'] >= o['height'] else [])
+            for rows in grids:
+                shape_key = (o['width'], o['height'], o['columns'], rows, shape['dpi'])
+                if shape_key in seen:
+                    continue
+                name = f'{key}-{side}' if rows == o['rows'] else f'{key}-{side}-{rows}rows'
+                seen[shape_key] = {'key': name, 'width': o['width'], 'height': o['height'], 'columns': o['columns'],
+                                   'rows': rows, 'dpi': shape['dpi']}
+                found.append(seen[shape_key])
     return found
 
 
@@ -304,15 +310,16 @@ MARGIN = 2  # px a text keeps from its card's edge
 # expressions on "<screen>: <layout>" and on the problem's line, `cause` the code behind it. Each one must still occur
 # on a run over every board, so a fix shows up here as an entry to remove. A firmware change fixes these, not this test.
 KNOWN = [
-    {'layout': r': screen(-dial)? ', 'problem': r"^texts '\d+:\d+' and '[^']+' lie over each other$",
+    {'layout': r': (screen(-dial)? |every cell$)', 'problem': r"^texts '\d+:\d+' and '[^']+' lie over each other$",
      'cause': 'by design: the date stands under the digits\' ink, c.digits, which ends above the time\'s line box '
               '(runtime_tiles.h:4390 place_face_text, firmware 0.3.6); the boxes overlap, the letters do not'},
+    {'layout': r': screen-flip ', 'problem': r"^texts '\d+' and '[^']+' lie over each other$",
+     'cause': 'by design: a flip clock\'s digits stand in their flaps with their line box reaching under the flap, where the '
+              'date stands (runtime_tiles.h render_flip); the digits stay inside the flap (rendered 2026-10-03 at six and '
+              'eight rows on the 10.1-inch)'},
     {'layout': r': screen-nightstand ', 'problem': r"^texts '\d+' and '\d+' lie over each other$",
      'cause': 'by design: standing up, the minutes stand a digit height under the hours (runtime_tiles.h:4700 render_bedside, '
               'l.digit_h), inside the hours\' line box; the digits do not touch'},
-    {'layout': r'^waveshare43-landscape: [a-z_]+-watch ', 'problem': r"^texts '.+' and '.+' lie over each other$",
-     'cause': 'by design: on a cell too short to stack them, a big value\'s top space (19 % of its line) may overlap the name\'s '
-              'line box (runtime_tiles.h:6341, held by the firmware\'s own check at runtime_tiles.h:6797)'},
     {'layout': r': [a-z_]+-watch ', 'problem': "^text '[\U000f0000-\U000fffff]' is cut by its object$",
      'cause': 'the watch face\'s circle is half the board\'s icon disc (runtime_tiles.h:6245) while its glyph keeps '
               'watch_icon_font\'s line (runtime_tiles.h:6275): a line box a pixel or two taller than the circle'},

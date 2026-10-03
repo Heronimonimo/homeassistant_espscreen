@@ -25,7 +25,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -87,7 +87,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -164,7 +164,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -246,7 +246,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 146,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 26,
@@ -318,7 +318,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -410,7 +410,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -502,7 +502,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -582,7 +582,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1",
    "name": "Guition",
@@ -594,7 +601,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -674,7 +681,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1 V2",
    "name": "Guition",
@@ -686,7 +700,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -766,7 +780,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1 V3",
    "name": "Guition",
@@ -778,7 +799,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -870,7 +891,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 133,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -952,7 +973,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -1024,7 +1045,7 @@
   "columns": 3,
   "dimmable": false,
   "dpi": 217,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 34,
    "icon_home": 43,
@@ -1116,7 +1137,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1208,7 +1229,7 @@
   "columns": 4,
   "dimmable": false,
   "dpi": 133,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -1300,7 +1321,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 26,
@@ -1387,7 +1408,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -1449,7 +1470,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -1526,7 +1547,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1608,7 +1629,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 146,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 26,
@@ -1680,7 +1701,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1772,7 +1793,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1864,7 +1885,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -1944,7 +1965,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1",
    "name": "Guition",
@@ -1956,7 +1984,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2036,7 +2064,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1 V2",
    "name": "Guition",
@@ -2048,7 +2083,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2128,7 +2163,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1 V3",
    "name": "Guition",
@@ -2140,7 +2182,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2227,7 +2269,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -2289,7 +2331,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -2366,7 +2408,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -2448,7 +2490,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 146,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 18,
    "icon_home": 26,
@@ -2520,7 +2562,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -2612,7 +2654,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -2704,7 +2746,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -2784,7 +2826,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1",
    "name": "Guition",
@@ -2796,7 +2845,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2876,7 +2925,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1 V2",
    "name": "Guition",
@@ -2888,7 +2944,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2968,7 +3024,14 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   },
    "inch": 10.1,
    "model": "JC8012P4A1 V3",
    "name": "Guition",
@@ -2980,7 +3043,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -3072,7 +3135,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 133,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -3154,7 +3217,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -3226,7 +3289,7 @@
   "columns": 3,
   "dimmable": false,
   "dpi": 217,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 34,
    "icon_home": 43,
@@ -3318,7 +3381,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -3410,7 +3473,7 @@
   "columns": 4,
   "dimmable": false,
   "dpi": 133,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -3502,7 +3565,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 26,
@@ -3594,7 +3657,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 133,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -3676,7 +3739,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -3748,7 +3811,7 @@
   "columns": 3,
   "dimmable": false,
   "dpi": 217,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 34,
    "icon_home": 43,
@@ -3840,7 +3903,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -3932,7 +3995,7 @@
   "columns": 4,
   "dimmable": false,
   "dpi": 133,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -4024,7 +4087,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.34.0",
+  "firmware": "0.35.0",
   "fonts": {
    "headline": 27,
    "icon_home": 26,

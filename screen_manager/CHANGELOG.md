@@ -1,3 +1,30 @@
+## 0.4.59 (firmware 0.35.0)
+
+- **Five to eight rows on the 10.1-inch Guition**, thanks to Jeroen Peters
+  ([@Heronimonimo](https://github.com/Heronimonimo), [#151](https://github.com/MaxGramser/homeassistant_espscreen/pull/151),
+  GitHub #125). New screen asks how many rows a page has when you build any of the three JC8012P4A1 variants: five, as
+  before, or six, seven or eight, for up to forty tiles on a page instead of twenty-five. The tiles get lower with every
+  row, from 23.5 mm high with five rows to 14.0 mm with eight, and every card still fits. A screen you already have
+  keeps its five rows; it gets more by adding `GRID_ROWS: "6"` (or 7, or 8) to its own YAML and installing it again,
+  and its saved layout moves along by itself, every tile on its own page, row and column. Standing up keeps five by five.
+- **A card that fills the page keeps its large keys whatever the grid under it.** Its keys followed the height of one
+  cell, so with eight rows the whole page got the small ones, a slider of 5 mm. They now follow the room the card has
+  on the glass: large keys once it runs 56 mm along its longer side. Every board keeps what it had, with one exception:
+  the Hosyond 4-inch lying down now gets the large keys on a full-page card as well, as it does standing up.
+- **A big value keeps its icon on a low cell.** A tile showing its value big (the watch display) dropped its icon and
+  pushed the number against the name when the cell was too low for icon, name and big number, as on the Waveshare
+  4.3-inch with three rows and the 4-inch Guition with four. It now takes the largest number that fits under the icon
+  and the name; only a cell too low even for the smaller number shows the number alone, below the name, never against it.
+- **A small analog clock keeps its numerals apart.** On a dial too small for the 12, 3, 6 and 9 to stand clear of each
+  other (the 4-inch Guition with four rows) the clock shows strokes instead, as the compact look does.
+- Every screen is offered this firmware, 0.35.0.
+- The layout check that lays out every card on every board now does so for every number of rows a board offers too
+  (the 4-inch Guition's four rows, the 10.1-inch's six to eight).
+- The README and docs/JC8012P4A1.md show a living room with six, seven and eight rows, rendered from the firmware.
+- Tested: the firmware of the 10.1-inch built and rendered on this computer with six, seven and eight rows, a full page
+  of cards each, light and dark, and the cards the layout check names at each; six rows on a real screen by the
+  contributor.
+
 ## 0.4.58 (firmware 0.34.0)
 
 - **More than 100 tiles on a screen that has the memory for them.** A screen now says how many tiles, pages and top bar
