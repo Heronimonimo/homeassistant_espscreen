@@ -1,3 +1,170 @@
+## 0.4.57 (firmware 0.33.0)
+
+- **Support Tessera every month.** The card on the editor's overview now offers a monthly membership first, with a
+  one-time coffee next to it. Tessera stays free; a small monthly contribution pays for the time that goes into new
+  cards and new boards. The README and the add-on's page link the same way.
+
+## 0.4.56 (firmware 0.33.1 for cyd, cyd9342, hosyond40)
+
+- **More room for firmware on a screen with 4 MB of flash** (the CYD, the CYD with an ILI9342 and the Hosyond
+  4-inch). Their firmware had filled its update slot. These boards now have a partition table of their own with
+  update slots of 2,031,616 bytes where ESPHome's own table has 1,835,008, about a tenth more. The room comes from
+  the area for settings, which was 448 KB and almost empty: the settings now have 16 KB in a place that was unused,
+  and they fill about a quarter of it.
+- **A screen you already have moves by itself.** Update the screen as you always do. After the update Tessera sends
+  it the new table and the screen restarts once more. Everything it kept comes along: the touch calibration, the
+  settings of the settings page, which way it hangs. The screen copies all of it to the new place first and compares
+  the copy both ways, and it asks for the table only when the copy is exact and ESPHome has confirmed the new
+  firmware, a minute after the update. That makes this one update a few minutes longer.
+- **An install over USB keeps the settings too.** It writes the new table at once, and the screen fetches its
+  settings from the old place the first time it starts.
+- **A firmware that outgrows the old slot still reaches a screen with the old table.** Tessera then installs a small
+  firmware in between that can take the table, sends the table, and installs the screen's own firmware. The glass is
+  dark for a minute or two while it does. Nothing needs this yet: today's firmware fits both tables.
+- A new diagnostic sensor on these boards, **Screen flash**, says which table a screen has: `wide` when it has the
+  new one.
+- No other board changes: their firmware stays 0.33.0 and they are offered no update.
+- One thing to know: the table itself is written in a fraction of a second, and a screen that loses its power in
+  exactly that moment needs an install over USB afterwards. docs/FLASH_LAYOUT.md has the whole story.
+- Tested: on a CYD (ESP32-2432S028R) on USB. Sixteen starting states, among them today's firmware with ESPHome's
+  table, this firmware in either slot, a setting changed just before the table, random bytes and another firmware's
+  settings in the unused 16 KB, a table that is not ESPHome's, an erased board, installs over USB onto both of the
+  first two, the small firmware in between, and a restart in the first minute after it; 186 checks in all. After
+  each step the flash was read back over USB and every kept value compared with a copy from before (the screen's
+  settings, the radio's calibration and ESP-IDF's own), and a setting was changed and read again after a restart.
+  Twenty-four resets at chosen moments around the write of the table: outside a window of about 40 milliseconds the
+  board came back every time with everything in place; inside it seven of ten did not start, and an install over USB
+  brought each back with its settings. Then the app's own updater against the board with the real ESPHome commands,
+  with a firmware that fits and with one that does not. Then the app itself in a Home Assistant on the bench, from
+  the Update button: ten and a half minutes of which six were the build, and six and a half over the small firmware
+  in between with the screen away for two; Home Assistant's entity registry kept every entity and only gained the
+  new sensor. The three boards and the small firmware build with ESPHome 2026.9.0 and 2026.6.2 (the CYD with an
+  ILI9342 asks for 2026.7), and the firmware built with 2026.6.2 walked the same way on the board. Not tested on a
+  Hosyond or a CYD with an ILI9342 themselves: the same chip and the same table, but no such board on the bench.
+
+## 0.4.55 (firmware 0.33.0)
+
+- **Keys on the screensaver.** Over a cover three round keys stand in the bottom right corner: play or pause at the
+  bottom, volume down over it and volume up at the top. A tap on one of them works for the player on the screen and
+  the screen stays in standby; a tap anywhere else wakes it, as before. A player without a volume in Home Assistant
+  has the play key alone. A long title ends before the keys: it takes its second line and then its dots.
+- **Mute.** Hold volume down for a second and a half and the player is muted; the key shows a muted speaker. The next
+  tap on either volume key takes the mute off, and after that the two are the volume again.
+- **A paused player still shows.** A player that plays goes first, in the order of your list; when none plays, the
+  first paused one shows, with a play key. The player you pause on the screen keeps the screen for two minutes, so
+  its play key stays where your finger is. Ten minutes after a pause the screensaver moves on to the camera or the
+  clock, since a speaker stays paused in Home Assistant for days. A screen on older firmware shows what it showed.
+- **The players are a list you drag.** In a screen's screensaver settings each player has a grip: drag them into
+  their order with the mouse, with a finger on a phone, or with the arrow keys. The steps drag from their grip under
+  a finger the same way.
+- Tested: on a Guition 4848S040 with Home Assistant on the bench, by hand on the glass: volume up and down, pause
+  and play on the same player while another one played, mute after holding volume down and the mute taken off by the
+  next tap, each with the screen staying in standby, and a tap beside the keys woke it. A paused player kept the screen
+  for two minutes and then gave way to the one that played. The real firmware on a computer with a finger made in
+  software did the same on the Guition and the 10.1-inch board, with a long title and a player without a volume. The
+  list of players was dragged in the editor with the mouse, the arrow keys and a finger on a phone-sized window in
+  Chrome, not on a real phone. The CYD, both Guitions and the Waveshare 7 build with ESPHome 2026.9.0 (the CYD image is
+  94.4 % of its slot), and the CYD with 2026.6.2 (96.4 %). The CYD 9342 and the Hosyond 4-inch were not built; the
+  Hosyond was over its flash budget before this release. Not looked at on a 7 or 10-inch glass, and not with a real
+  speaker and television.
+
+## 0.4.54 (firmware 0.32.0)
+
+- **The screensaver takes more than one player.** Under Music playing in a screen's screensaver settings an empty row
+  now stands under the player you chose: pick a second one there, and a third and a fourth if you like. The screen
+  shows the first of them that plays with a cover, in the order of the rows. Made for a speaker that also plays the
+  television's sound: with the speaker first and the television's player second you see the cover while the speaker
+  plays music, and the poster of the series while it plays the television, since it has no cover of its own then. Set
+  a row back to its first line to take that player out. The screens need no update for it.
+- Tested: on a Guition 4848S040 (firmware 0.32.0) with Home Assistant on the bench, two players and a camera: with
+  both playing the screensaver showed the first player's cover, with the first paused the second one's poster, with
+  both paused the camera, and it came back the same way. Added and removed players in the editor by hand. No firmware
+  changed, so nothing was built for a screen.
+
+## 0.4.53 (firmware 0.32.0)
+
+- **The screensaver keeps its cover until the next one is there.** When the music went to the next track, the
+  screensaver closed and opened again, and the glass stood black for as long as the new cover took to load. Now the
+  last cover and its title stay, and the new cover and title take their place together the moment it has loaded. The
+  same goes for a switch between the music and the camera.
+- Tested: on a Guition 4848S040 with Home Assistant on the bench, the screensaver on a playing player: a new track kept
+  the last cover and title until the new cover had loaded (one load per track), two tracks a second apart ended on the
+  second, and a player that stopped handed over to the camera the same way. The CYD, both Guitions and the Waveshare 7
+  build with ESPHome 2026.9.0, the CYD and the Hosyond 4-inch with 2026.6.2; the Hosyond stays over its flash budget as
+  before. Not looked at on long glass (7 and 10-inch), where the cover's colour beside it loads a second time.
+
+## 0.4.52 (firmware 0.31.0)
+
+- **The screensaver's clock is white on black.** It stood in the screen's own colours, a lit white glass in the light
+  look. Now it is black with white digits whatever the look, so a screen in standby gives as little light as it can.
+- **AM or PM on the screensaver's clock** when the screen shows 12 hours, after the time as on the clock card.
+- **The outside temperature under the clock**, small in the middle at the bottom: whole degrees from Home Assistant's
+  own forecast for your home (the one it sets up with Met.no), in the unit Home Assistant is set to (Celsius or
+  Fahrenheit). Under the clock in the editor's screensaver settings you can choose another weather entity, or none.
+  Without a weather entity there is none.
+- Tested: on a Guition 4848S040 with Home Assistant on the bench, set to 12 hours and Fahrenheit: in Auto standby the
+  clock stood white on black with PM after the time and the home forecast's 66° under the date. Sleep from Home
+  Assistant still turns the glass dark without a screensaver. The CYD, both Guitions and the Waveshare 7 build with
+  ESPHome 2026.9.0 (the CYD image is 94.2 % of its slot). The Hosyond 4-inch builds but stays over its flash budget, as
+  it was before this release (99.2 % with ESPHome 2026.6.2). Not looked at on a CYD's glass.
+
+## 0.4.51 (firmware 0.30.0)
+
+- **A map stays on its tile** (discussion #105). A page with only maps on it could lose them: when ESP Screens could
+  not hand over a picture once, the screen never asked again and showed the plain Home or Away tiles until you turned
+  the page. From firmware 0.30.0 the screen asks again, after ten seconds and then a little later each time, and keeps
+  the last map on the card meanwhile.
+- **No empty moment when someone moves.** A map keeps the picture it shows until the next one has loaded, where the
+  card could fall back to the plain tile in between.
+- **The app keeps its address for pictures.** ESP Screens asks Home Assistant every ten minutes where screens reach
+  it. When Home Assistant did not answer that once, pictures went out without a link; now the address from before
+  stands. This part works on every firmware.
+- A map that follows someone no longer fills the screen's picture memory: the pictures from before each move are let
+  go once the new one is on the card.
+- **Screensaver: a long title takes two lines.** A title too long for one line wrapped over the line under it. It now
+  stands on two lines above that line, and one that needs still more ends in dots.
+- Tested: on a Guition 4848S040 with Home Assistant on the bench. With ESP Screens made to answer without a picture,
+  the maps stayed on their tiles, the screen asked again after 10, 20, 40 and 80 seconds, and the new map came by
+  itself once pictures were back, without a page turn; firmware 0.29.0 showed the plain tiles for six minutes until
+  the page was turned. Six moves in a row each loaded in two seconds and left one picture in memory. The screensaver
+  was looked at with a short title, one of two lines and one longer still. The CYD, both Guitions and the Waveshare 7
+  build with ESPHome 2026.9.0 (the CYD image is 94.2 % of its slot), the CYD and the Waveshare 3.5 with 2026.6.2. Not
+  tested on a 10-inch screen or with cameras on the page.
+
+## 0.4.50 (firmware 0.29.1 for waveshare35)
+
+- **Waveshare 3.5 inch: the right colours** (GitHub #127, by @noisemaker00). Every colour showed as its complement,
+  orange as blue and purple as green. The panel is now driven inverted, as it needs, confirmed on a real unit.
+- **Its 8 MB of PSRAM is switched on**, in octal mode at 80MHz, also confirmed on a real unit. Nothing looks different
+  yet: it is the memory that pictures (covers, cameras) need, which this board does not draw so far.
+- Only Waveshare 3.5 inch screens are offered this update. Every other screen stays as it is.
+
+## 0.4.49 (firmware 0.29.0)
+
+- **A screen's first build is quicker.** Every night and with every release, GitHub builds each board ahead and
+  publishes what it compiled. Before a build the app fetches that for your board (about 40 MB) and only compiles what
+  is your own screen's: its name, keys, Wi-Fi and language. A CYD's build went from 93 to 58 seconds on a Mac, and a
+  slower machine such as a Raspberry Pi saves more.
+- Nothing to set and nothing to choose. Without a published cache for your board, without internet or when the
+  download takes longer than five minutes, the app builds exactly as before. The firmware is the same either way.
+- Building in the ESPHome Device Builder works as before, without this speed-up.
+- Nothing changes on the screens.
+
+## 0.4.48 (firmware 0.29.0)
+
+- **A screensaver in standby.** When Auto standby dims a screen, it can show something calm instead of the dimmed
+  tiles: the cover of the music that plays, a camera, or a large clock with the date. Choose a player and a camera in
+  **Settings → Screensaver** and drag the three into the order you want: the screen shows the first one that is there
+  right now, such as the cover while music plays, the camera when it stops and the clock when the camera is away.
+- The cover and the camera fill the whole glass, a little darker so the title or the camera's name reads over it. On a
+  screen much wider or taller than square the cover takes the full height or width, beside its own colour.
+- Nothing on the screensaver can be pressed: a tap wakes the screen, as it always did. It keeps your Standby
+  brightness and, at night, your Night brightness. The CYD and the other screens without memory for pictures show the
+  clock.
+- **The CYD dims evenly** (GitHub #42, #20). Its backlight was full at 100 % and nearly dark at 95 %, with little
+  change below. It now runs at the frequency its backlight follows, so every level from 5 to 100 % steps evenly. The
+  Hosyond 4-inch had the same and gets the same.
+
 ## 0.4.47 (firmware 0.28.0)
 
 - **Swipe up from the bottom edge goes home from anywhere.** Over an open card, a camera, a player's library or the

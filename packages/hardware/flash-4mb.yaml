@@ -1,0 +1,24 @@
+# ESP Screens - the flash of a board with 4 MB, for every such board to include (firmware 0.33.1+ of those boards).
+#
+# Wider update slots than ESPHome's own table for 4 MB gives: 2,031,616 bytes each in place of 1,835,008, with the
+# settings in the 16 KB in front of the first slot that nothing used (components/flash_layout/partitions-4mb-wide.csv).
+# A new screen is flashed with that table. A screen that is out there keeps everything it had: over Wi-Fi it copies its
+# settings to where the wide table looks for them and ESP Screens sends the table after its next update, over USB it
+# fetches them from the old place the first time it starts (components/flash_layout/flash_layout.h,
+# docs/FLASH_LAYOUT.md).
+#
+# What lets the table be replaced over Wi-Fi, `ota: allow_partition_access: true`, stands in the screen's own YAML:
+# there ESPHome's default for it would win over a line here. ESP Screens writes it (core.installation_yaml,
+# Firmware.allow_table_update). And nothing here hooks into `esphome: on_boot:`, which a package would take from the
+# core: the component starts by itself.
+flash_layout:
+
+text_sensor:
+  # What this screen's partition table is, for ESP Screens (core.NAME_SCREEN_FLASH): "wide", ready for the wide one
+  # ("widen", or "widen_next" when it takes one more update first), "old" while it is ESPHome's and not ready, or
+  # "other" for a table that is neither.
+  - platform: template
+    name: "Screen flash"
+    entity_category: diagnostic
+    lambda: 'return {esphome::flash_layout::word()};'
+    update_interval: 60s

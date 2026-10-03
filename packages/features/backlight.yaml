@@ -43,6 +43,8 @@ script:
           // Almost instant brightness-up. ESPHome's default is 1s, and that feels sluggish
           // when you touch the screen and are waiting on light.
           id(set_backlight).execute(screen_settings::current.brightness, 80);
+          // The screensaver goes with the standby, and the touch that woke the screen does nothing else (0.29.0+).
+          runtime_tiles::saver_wake();
       - lvgl.widget.hide: dim_wake_overlay
       - script.execute: close_cards
 

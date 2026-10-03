@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Questa entità è disattivata in Home Assistant, oppure lo schermo si sta riavviando.",
       "lower": "{name}: diminuisci",
-      "higher": "{name}: aumenta"
+      "higher": "{name}: aumenta",
+      "screensaver": {
+        "title": "Salvaschermo",
+        "show": "Mostra in standby",
+        "standby_off": "Attiva Standby automatico per usarlo.",
+        "needs_firmware": "Aggiorna questo schermo al firmware {version} per usare un salvaschermo.",
+        "order": "Lo schermo mostra il primo disponibile. Trascina per cambiare l'ordine.",
+        "no_pictures": "Questo schermo non ha memoria per le immagini, quindi mostra l'orologio.",
+        "tap": "Un tocco riattiva lo schermo. Solo i tasti di un lettore funzionano sul salvaschermo: riproduci o pausa e il volume.",
+        "use": "Usa {name}",
+        "choose_media": "Scegli un lettore",
+        "add_media": "Un altro lettore",
+        "players": "Lettori, il primo in alto",
+        "choose_camera": "Scegli una telecamera",
+        "weather_auto": "Temperatura esterna da Home Assistant",
+        "weather_none": "Nessuna temperatura",
+        "kinds": {
+          "media": "Musica in riproduzione",
+          "camera": "Telecamera",
+          "clock": "Orologio"
+        },
+        "details": {
+          "media": "Mentre suona, con la copertina",
+          "media_unset": "Scegli un lettore per usarlo",
+          "media_more": "Il primo in riproduzione, con la copertina",
+          "camera": "La sua immagine, ogni 15 secondi",
+          "camera_unset": "Scegli una telecamera per usarla",
+          "clock": "L'ora, la data e la temperatura esterna, in bianco su nero"
+        }
+      }
     },
     "update": {
       "starting": "Avvio dell'aggiornamento…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Fatto da una sola persona",
-      "body": "Tessera è gratuito e senza abbonamento. Lo sviluppo nel mio tempo libero. Se i tuoi schermi rendono la tua casa un po' più piacevole, un caffè mi aiuta ad andare avanti.",
-      "buy": "Offri un caffè a Max",
+      "body": "Tessera è gratuito e lo resterà. Lo sviluppo nel mio tempo libero. Se vuoi che continui ad aggiungere nuove schede e nuovi schermi, un piccolo contributo mensile lo rende possibile. Un caffè una tantum è altrettanto gradito.",
+      "monthly": "Sostieni ogni mese",
+      "once": "oppure offrimi un caffè una volta",
       "later": "Forse più tardi",
       "donated": "Ho già donato",
       "thanks": "Grazie! Questo messaggio non tornerà più."

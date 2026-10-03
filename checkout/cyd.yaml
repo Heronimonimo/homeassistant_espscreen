@@ -16,7 +16,7 @@ external_components:
   - source:
       type: local
       path: ../components
-    components: [xpt2046, smart_display]
+    components: [xpt2046, flash_layout, smart_display]
 
 api:
   encryption:
@@ -25,6 +25,7 @@ api:
 ota:
   - platform: esphome
     password: !secret ota_password
+    allow_partition_access: true
 
 wifi:
   ssid: !secret wifi_ssid

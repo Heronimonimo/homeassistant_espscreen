@@ -18,6 +18,7 @@ from urllib.parse import urlsplit
 import camera_feed
 import claude_skill
 import screen_labels
+import screen_saver
 import feedback
 from firmware import Firmware
 import catalogue
@@ -34,7 +35,7 @@ from updates import Updater
 from aiohttp import ClientError, ClientSession, ClientTimeout, WSMsgType, web
 from core import alarm_extras, lock_extras, ALERT_EVENT, board_of, BROADCAST_EVENTS, BROADCAST_SHOW, BUILTIN, CAMERA_DOMAINS, entity_id, SETTINGS_BESIDE_BLOCK, TILE_EVENTS, TILE_RESULT_EVENT, layout_snapshot, match_screen, HEADER_MIN_FIRMWARE, NAME_TILE_SETTINGS, TRANSPORT_MIN_FIRMWARE, alert_action, alert_camera, alert_choice, alert_data, choice_service, ALERT_CHOICE_ACTION, ALERT_CHOICE_MIN_FIRMWARE, parse_firmware, alert_reference, alert_screen_choice, alert_screen_names, alert_service, alert_targets, backgrounds, builtin_name, controls_catalogue, device_prefixes, discover, discover_screens, encode, entity_slug, extras, media_cover, media_extras, forecast_kinds, header_items, inbox_prefix, message_action, min_firmware, name_clash, packets, revision, screen_items, state_message, validate_header, validate_layout, validate_settings
 from core import MAP_TILE_MIN_FIRMWARE, calibrate_entity, can_standby, dimmable, SETTING_ENTITIES, SETTING_RULES, STANDBY_KEYS, setting_action, setting_entities, setting_from_state, state_word
-from core import BOARD_KEYS, is_key, drawn_controls, FAVORITE_KINDS
+from core import BOARD_KEYS, is_key, drawn_controls, FAVORITE_KINDS, SCREENSAVER_MIN_FIRMWARE, short
 from core import (Grid, page_target, PAGE_TILE_REPEAT_MIN_FIRMWARE, ENTITY_REPEAT_MIN_FIRMWARE, ROTATION_MIN_FIRMWARE, SHAPES, firmware_features, grid_of, orientation_at,
                   packed_slots, run_tile_event, screen_firmware, shape_of, turns_of, version_text)
 import header_bar
@@ -821,6 +822,11 @@ class Manager:
         self.feedback = feedback.Feedback(self.path.parent / 'feedback.json')
         # The names the editor shows instead of Home Assistant's (app 0.4.2).
         self.labels = screen_labels.ScreenLabels(self.path.parent / 'screen-labels.json')
+        # What each screen shows in standby instead of its dimmed tiles (app 0.4.48, screen_saver.py), and the last message
+        # each screen holds, by its session: a screen that starts a new session gets it again.
+        self.savers = screen_saver.ScreenSavers(self.path.parent / 'screensavers.json')
+        self.saver_sent = {}
+        self.saver_shown = {}  # the player each screen's screensaver shows, by inbox
         # Settings -> Language & region (app 0.2.90): the language, clock and numbers of every screen.
         self.region = Region(self.path.parent / 'language.json', ha_language=lambda: getattr(self.ha, 'ha_language', None))
         self.ha.language_of = self.region.language
@@ -1216,6 +1222,7 @@ class Manager:
                 await self.ha.remove_state(sensor)
         self.forget_inbox(inbox)
         self.labels.forget(screen.get('device_id'))
+        self.savers.forget(screen.get('device_id'))
         # The registry again at once, so the screen leaves the page now instead of when Home Assistant's own
         # event arrives; the editor opens another screen as soon as it does.
         with contextlib.suppress(ConnectionError, TimeoutError, OSError, ValueError):
@@ -2182,7 +2189,8 @@ class Manager:
                        for layout in self.layouts.values() for tile in layout['tiles'] if tile['entity'].startswith('light.'))
         # The speakers a player's menu lists change with what this app started and the libraries it read.
         media = (tuple(sorted(self.outputs.items())), tuple(sorted(e for e, known in self.accounts.items() if known[1])))
-        key = (id(getattr(self.ha, 'registry', [])), id(self.layouts), groups, media)
+        savers = tuple(sorted(e for choice in self.savers.choices.values() for e in screen_saver.entities(choice, self.ha.states)))
+        key = (id(getattr(self.ha, 'registry', [])), id(self.layouts), groups, media, savers)
         if key != self._watched_key:
             watched = {tile['entity'] for layout in self.layouts.values() for tile in layout['tiles']}
             watched |= {item['entity'] for record in self.store.records().values() if record['format'] == PAGE_FORMAT
@@ -2190,6 +2198,7 @@ class Manager:
             watched |= {item['entity_id'] for item in self.screen_registry()}
             watched |= {eid for layout in self.layouts.values() for tile in layout['tiles'] for eid in self.related_entities(tile)}
             watched |= {eid for device in self.setting_index().values() for eid in device.values()}
+            watched |= set(savers)
             self._watched_key, self._watched = key, watched
         return set(self._watched)
 
@@ -2579,6 +2588,7 @@ class Manager:
                     force = now - self.last.get(inbox, 0) >= (FULL_REPEAT_SECONDS if pings else KEEPALIVE_SECONDS)
                     if await self.sync_one(inbox, self.layouts[inbox], force, screen, dirty):
                         changed = True
+                    await self.sync_saver(inbox, screen)
                     if pings and inbox in self.sent and now - self.pinged.get(inbox, 0) >= KEEPALIVE_SECONDS:
                         await self.ping(inbox, screen)
                 except Exception as error:
@@ -2668,7 +2678,46 @@ class Manager:
         seen = self.alert_cameras.get(entity)
         if seen is not None and time.monotonic() - seen < camera_feed.STILL_SECONDS:
             return True
+        if entity in self.saver_entities(inbox):
+            return True
         return entity in {tile['entity'] for tile in self.layouts.get(inbox, {}).get('tiles', [])}
+
+    def saver_entities(self, inbox):
+        """The player and camera a screen's screensaver follows (app 0.4.48)."""
+        device = (self.screen(inbox) or {}).get('device_id')
+        return screen_saver.entities(self.savers.get(device), self.ha.states) if device else set()
+
+    def saver_message(self, screen):
+        """What this screen's screensaver shows now (screen_saver.message), for a board that draws pictures or not."""
+        choice = self.savers.get(screen.get('device_id')) if screen.get('device_id') else dict(screen_saver.DEFAULT)
+        pictures = bool(camera_feed.box(screen, 'full'))
+        # A screen whose screensaver has keys (firmware 0.33.0+) also shows a player paused a short while ago.
+        sender = self.page_senders.get(screen.get('id'))
+        keys = screen_saver.KEYS_FEATURE in (getattr(sender, 'features', None) or ())
+        # The player it shows keeps the glass for a while after a pause (screen_saver.HELD_SECONDS).
+        return screen_saver.message(choice, self.ha.states, pictures, short, media_extras, self.player_ground, keys,
+                                    held=self.saver_shown.get(screen.get('id'), ''))
+
+    async def sync_saver(self, inbox, screen):
+        """Tell a screen that takes a screensaver (its hello lists it, firmware 0.29.0+) what it shows now, whenever that
+        changes and once in every new session. A small message in the screen's session, as a camera's answer is."""
+        sender = self.page_senders.get(inbox)
+        if not sender or sender.protocol != 2 or screen_saver.FEATURE not in (getattr(sender, 'features', None) or ()):
+            return
+        message = self.saver_message(screen)
+        key = (sender.session, json.dumps(message, sort_keys=True))
+        if self.saver_sent.get(inbox) == key:
+            return
+        try:
+            delivered = await sender.auxiliary(message, session=sender.session, revision=sender.confirmed)
+        except Exception as error:
+            # Tried again on the next pass; the tiles' own delivery is no business of the screensaver.
+            LOG.info('Screensaver for %s not delivered (%s)', screen.get('name', inbox), type(error).__name__)
+            return
+        if delivered:
+            self.saver_sent[inbox] = key
+            self.saver_shown[inbox] = message.get('e', '') if message['k'] == 'media' else ''
+            LOG.info('Screensaver on %s: %s', screen.get('name', inbox), message['k'] or 'dark')
 
     async def camera_message(self, entity, view, screen, still=None, box=None):
         """The screen message for one camera view: a link to its image, or an empty link when there is none. The size
@@ -2698,6 +2747,10 @@ class Manager:
         if 'lib' in request:
             await self.library_art(inbox, screen, request)
             return
+        # The screensaver's picture (app 0.4.48, firmware 0.29.0+): the screen's whole box, darkened, of its own choice.
+        if request.get('saver') in ('media', 'camera'):
+            await self.answer_saver(inbox, screen, request)
+            return
         # The live pictures of a page's camera tiles (app 0.2.91, firmware 0.2.77+): one strip for all of them.
         if 'tiles' in request:
             await self.answer_live(inbox, screen, request)
@@ -2719,6 +2772,29 @@ class Manager:
         message = await self.cover_message(entity, *cover) if cover else await self.camera_message(entity, 'full', screen)
         await self.send_auxiliary(inbox, message, action, request)
         LOG.info('%s %s on %s%s', 'Cover of' if cover else 'Camera', entity, screen['name'], '' if message['u'] else ': no image')
+
+    async def answer_saver(self, inbox, screen, request):
+        """A link to the screensaver's picture (camera_feed.encode_saver) of the player or camera this screen's
+        screensaver follows, at the screen's full box; an empty link while there is none."""
+        kind, entity = request.get('saver'), request.get('entity')
+        if not screen or not screen.get('online') or entity not in self.saver_entities(inbox):
+            return
+        if (kind == 'media') != (entity.split('.')[0] == 'media_player'):
+            return
+        box, action = camera_feed.box(screen, 'full'), self.transport(inbox, screen)
+        if not box or not action:
+            return
+        ground = 0
+        if kind == 'media':
+            colours = self.player_ground(entity, (self.ha.states.get(entity) or {}).get('attributes') or {})
+            if colours and colours != '-':
+                ground = int(colours.split(',')[0], 16)
+        url = ''
+        base = await camera_feed.base_url(self.ha.request)
+        if base and await self.camera.saver(entity, box, kind, ground):
+            url = f'{base}/camera/{self.camera.link(entity, box, saver=(kind, ground))}.bmp'
+        await self.send_auxiliary(inbox, {'v': 1, 'op': 'camera', 't': 'saver', 'e': entity, 'u': url}, action, request)
+        LOG.info('Screensaver picture of %s on %s%s', entity, screen['name'], '' if url else ': none')
 
     async def answer_live(self, inbox, screen, request):
         """The strip for a page's live camera tiles: every tile the screen names must be a camera tile of its layout
@@ -3296,6 +3372,11 @@ def create_app(manager, development=False):
             screen['page_saved_revision'] = record.get('revision') if record else None
             screen['page_applied_revision'] = manager.sent.get(screen['id'], {}).get('saved_revision')
             screen['settings'] = manager.settings_view(screen)
+            # The screensaver (app 0.4.48): the choice, whether this screen's firmware takes one, whether its board
+            # draws pictures (else the clock alone) and whether it goes into standby at all.
+            screen['screensaver'] = {**manager.savers.get(screen.get('device_id')),
+                                     'ready': (manager.firmware_version(screen['id'], screen) or (0, 0, 0)) >= SCREENSAVER_MIN_FIRMWARE,
+                                     'pictures': bool(camera_feed.box(screen, 'full')), 'standby': can_standby(screen)}
             # The delivery and our own word for a screen that reports nothing, in the editor's language (app 0.2.90).
             status = manager.status.get(screen['id'])
             word = PAGE_DELIVERY_WORDS.get(status) if isinstance(status, str) else None
@@ -3497,6 +3578,19 @@ def create_app(manager, development=False):
         label = manager.labels.set(screen['device_id'], data['name'])
         manager.notify()
         return web.json_response({'name': label or screen['name']})
+    async def change_screensaver(request):
+        """The screensaver of one screen (app 0.4.48): the whole choice at once; the screen hears of it on the next pass."""
+        data = await request.json()
+        screen = manager.screen(request.match_info['inbox'])
+        if screen is None or not screen.get('device_id'):
+            raise ValueError(t('addon.errors.not_paired'))
+        try:
+            choice = manager.savers.set(screen['device_id'], data.get('screensaver') if isinstance(data, dict) else None)
+        except ValueError as error:
+            raise ValueError(t('addon.errors.pages.fields')) from error
+        manager.ha.changed.set()
+        manager.notify()
+        return web.json_response({'screensaver': choice})
     async def capabilities(request):
         """What Home Assistant says each entity can do, for the tile settings (app 0.2.67). Unknown is null: the editor
         then offers what it always offered."""
@@ -3968,6 +4062,7 @@ def create_app(manager, development=False):
     app.router.add_delete('/api/screens/{inbox}', remove_screen)
     app.router.add_put('/api/screens/{inbox}/name', rename_screen)
     app.router.add_put('/api/screens/{inbox}/settings', change_settings)
+    app.router.add_put('/api/screens/{inbox}/screensaver', change_screensaver)
     app.router.add_post('/api/screens/{inbox}/feedback', feedback_action)
     app.router.add_static('/assets/', static / 'assets')
     return app

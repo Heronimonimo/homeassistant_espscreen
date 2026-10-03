@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Deze entiteit is uitgeschakeld in Home Assistant, of het scherm herstart.",
       "lower": "{name} verlagen",
-      "higher": "{name} verhogen"
+      "higher": "{name} verhogen",
+      "screensaver": {
+        "title": "Screensaver",
+        "show": "Tonen in stand-by",
+        "standby_off": "Zet Automatisch stand-by aan om hem te gebruiken.",
+        "needs_firmware": "Werk dit scherm bij naar firmware {version} om een screensaver te gebruiken.",
+        "order": "Het scherm toont de eerste die beschikbaar is. Sleep om de volgorde te wijzigen.",
+        "no_pictures": "Dit scherm heeft geen geheugen voor afbeeldingen en toont daarom de klok.",
+        "tap": "Een tik maakt het scherm wakker. Alleen de knoppen van een speler werken op de screensaver: afspelen of pauze en het volume.",
+        "use": "{name} gebruiken",
+        "choose_media": "Kies een speler",
+        "add_media": "Nog een speler",
+        "players": "Spelers, de eerste bovenaan",
+        "choose_camera": "Kies een camera",
+        "weather_auto": "Buitentemperatuur uit Home Assistant",
+        "weather_none": "Geen temperatuur",
+        "kinds": {
+          "media": "Muziek die speelt",
+          "camera": "Camera",
+          "clock": "Klok"
+        },
+        "details": {
+          "media": "Terwijl hij speelt, met de hoes",
+          "media_unset": "Kies een speler om hem te gebruiken",
+          "media_more": "De eerste die speelt, met de hoes",
+          "camera": "Het beeld, elke 15 seconden",
+          "camera_unset": "Kies een camera om hem te gebruiken",
+          "clock": "De tijd, de datum en de buitentemperatuur, wit op zwart"
+        }
+      }
     },
     "update": {
       "starting": "Update starten…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Gemaakt door één persoon",
-      "body": "Tessera is gratis en heeft geen abonnement. Ik bouw het in mijn vrije tijd. Maken je schermen je huis een beetje fijner? Een koffie helpt me om door te gaan.",
-      "buy": "Trakteer Max op koffie",
+      "body": "Tessera is gratis en blijft gratis. Ik bouw het in mijn vrije tijd. Wil je dat ik nieuwe kaarten en schermen blijf toevoegen? Met een kleine maandelijkse bijdrage kan dat. Een eenmalige koffie is net zo welkom.",
+      "monthly": "Steun maandelijks",
+      "once": "of trakteer één keer op koffie",
       "later": "Misschien later",
       "donated": "Ik heb al gedoneerd",
       "thanks": "Dank je wel! Dit komt niet meer terug."

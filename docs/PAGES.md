@@ -1,6 +1,6 @@
 # Pages, top bars and navigation
 
-ESP Screens 0.3.1 stores each page as a complete unit: its tiles, top bar, navigation choice and stable identity. Moving a page keeps links pointing to that page. A page's number is its current position in the editor, not its identity.
+App 0.3.1 stores each page as a complete unit: its tiles, top bar, navigation choice and stable identity. Moving a page keeps links pointing to that page. A page's number is its current position in the editor, not its identity.
 
 ## Editing
 

@@ -115,6 +115,17 @@ template <class Image> struct Store {
   void retire(const std::string &key) {
     if (Entry *e = entry(key)) e->retired = true;
   }
+  // The entry whose copy this is, also one already replaced (a card may still draw it), or nullptr.
+  Entry *holder(const Image *image) {
+    if (!image) return nullptr;
+    for (auto &e : entries) if (e.buffer && &e.image == image) return &e;
+    return nullptr;
+  }
+  // Every picture `gone` names is no longer wanted (a page's strip from before someone on its map moved): each goes
+  // at the next collect once nothing draws it, so a tile whose picture changes often never fills the store.
+  void retire_if(const std::function<bool(const Entry &)> &gone) {
+    for (auto &e : entries) if (e.buffer && !e.retired && gone(e)) e.retired = true;
+  }
   // Nothing kept is right any more (another layout, another look): what no card shows goes now, the rest as soon as
   // its card lets it go.
   void forget(const std::function<bool(const Image *)> &shown) {

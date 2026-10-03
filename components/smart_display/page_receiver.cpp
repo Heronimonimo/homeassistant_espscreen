@@ -306,7 +306,8 @@ std::string receive(const std::string &payload) {
       const std::string view = string(root["t"], 8), entity = string(root["e"], view == "live" ? 400 : 120), url = string(root["u"], 240);
       // "live" (app 0.2.91+): the page's camera tiles as one strip; `e` lists them, "" for one without a picture.
       // "lib" (app 0.4.42+, firmware 0.24.0+): the covers of a page of a player's library, one picture.
-      if (view == "live" ? !valid_entity_list(entity) : !valid_entity(entity) || (view != "full" && view != "alert" && view != "cover" && view != "lib")) return false;
+      // "saver" (app 0.4.48, firmware 0.29.0+): the screensaver's picture of the whole glass, as a full view's.
+      if (view == "live" ? !valid_entity_list(entity) : !valid_entity(entity) || (view != "full" && view != "alert" && view != "cover" && view != "lib" && view != "saver")) return false;
       if (!url.empty() && url.rfind("http://", 0) != 0) return false;
       const uint32_t expected_view = view == "live" ? live_view_id : view == "cover" ? cover_view_id : view == "lib" ? library_art_view_id : camera_view_id;
       if (view != "alert" && (!root["view"].is<unsigned>() || root["view"].as<unsigned>() != expected_view)) {
@@ -338,6 +339,35 @@ std::string receive(const std::string &payload) {
         camera_map_sheet(next);
       }
       camera_answer(view, entity, url);
+      result = model.ready() ? "Synced" : "Loading tiles";
+      return true;
+    }
+    if (op == "saver") {
+      // What the screensaver shows (app 0.4.48, firmware 0.29.0+, screen_saver.py): "media", "camera", "clock" or ""
+      // for none. A player brings its words and the marks of its picture; the picture is asked for as camera "saver".
+      SaverChoice next;
+      next.kind = string(root["k"], 8);
+      if (!next.kind.empty() && next.kind != "media" && next.kind != "camera" && next.kind != "clock") return false;
+      if (next.kind == "media" || next.kind == "camera") {
+        next.entity = string(root["e"], 120);
+        if (!valid_entity(next.entity)) return false;
+        next.name = string(root["n"], 80);
+      }
+      if (next.kind == "media") {
+        auto extra = root["x"];
+        next.title = string(root["t"], 80);
+        next.artist = string(extra["artist"], 80);
+        next.album = string(extra["album"], 80);
+        next.picture = string(extra["pic"], 16);
+        next.ground = string(extra["g"], 13);
+        // The keys (app 0.4.55, firmware 0.33.0+): "playing" or "paused", and Home Assistant's supported_features.
+        next.state = string(root["s"], 8);
+        next.features = root["f"].is<uint32_t>() ? root["f"].as<uint32_t>() : 0;
+        next.muted = root["m"].is<int>() && root["m"].as<int>() == 1;
+      }
+      // The outside temperature under the clock (app 0.4.52, firmware 0.31.0+), ready to draw: "21°".
+      if (next.kind == "clock") next.weather = string(root["w"], 8);
+      saver_receive(next);
       result = model.ready() ? "Synced" : "Loading tiles";
       return true;
     }

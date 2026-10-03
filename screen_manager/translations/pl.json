@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Ta encja jest wyłączona w Home Assistant albo ekran uruchamia się ponownie.",
       "lower": "{name}: zmniejsz",
-      "higher": "{name}: zwiększ"
+      "higher": "{name}: zwiększ",
+      "screensaver": {
+        "title": "Wygaszacz ekranu",
+        "show": "Pokazuj w trybie czuwania",
+        "standby_off": "Włącz Auto czuwanie, aby go używać.",
+        "needs_firmware": "Zaktualizuj ten ekran do firmware {version}, aby używać wygaszacza.",
+        "order": "Ekran pokazuje pierwszy dostępny element. Przeciągnij, aby zmienić kolejność.",
+        "no_pictures": "Ten ekran nie ma pamięci na obrazy, więc pokazuje zegar.",
+        "tap": "Dotknięcie wybudza ekran. Na wygaszaczu działają tylko przyciski odtwarzacza: odtwarzanie lub pauza i głośność.",
+        "use": "Użyj: {name}",
+        "choose_media": "Wybierz odtwarzacz",
+        "add_media": "Kolejny odtwarzacz",
+        "players": "Odtwarzacze, pierwszy na górze",
+        "choose_camera": "Wybierz kamerę",
+        "weather_auto": "Temperatura zewnętrzna z Home Assistant",
+        "weather_none": "Bez temperatury",
+        "kinds": {
+          "media": "Odtwarzana muzyka",
+          "camera": "Kamera",
+          "clock": "Zegar"
+        },
+        "details": {
+          "media": "Podczas odtwarzania, z okładką",
+          "media_unset": "Wybierz odtwarzacz, aby go używać",
+          "media_more": "Pierwszy, który odtwarza, z okładką",
+          "camera": "Jej obraz co 15 sekund",
+          "camera_unset": "Wybierz kamerę, aby jej używać",
+          "clock": "Godzina, data i temperatura na zewnątrz, biało na czarnym"
+        }
+      }
     },
     "update": {
       "starting": "Rozpoczynanie aktualizacji…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Zrobione przez jedną osobę",
-      "body": "Tessera jest darmowa i nie ma subskrypcji. Tworzę ją w wolnym czasie. Jeśli Twoje ekrany sprawiają, że dom jest trochę przyjemniejszy, kawa pomaga mi działać dalej.",
-      "buy": "Postaw Maxowi kawę",
+      "body": "Tessera jest darmowa i taka pozostanie. Tworzę ją w wolnym czasie. Jeśli chcesz, żebym dalej dodawał nowe karty i ekrany, mała comiesięczna wpłata to umożliwia. Jednorazowa kawa jest równie mile widziana.",
+      "monthly": "Wspieraj co miesiąc",
+      "once": "albo postaw mi kawę jednorazowo",
       "later": "Może później",
       "donated": "Już wpłaciłem",
       "thanks": "Dziękuję! Ta wiadomość już nie wróci."

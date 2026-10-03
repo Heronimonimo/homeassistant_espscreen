@@ -30,7 +30,7 @@ import profiles  # noqa: E402
 
 # Top-level blocks that are ESP32 hardware wherever they live (board file or hardware package).
 HARDWARE_BLOCKS = ('esp32', 'psram', 'spi', 'i2c', 'ch422g', 'pca9554', 'tca9554', 'waveshare_io_ch32v003', 'esp_ldo',
-                   'esp32_hosted', 'display', 'esp32_rmt', 'i2s_audio')
+                   'esp32_hosted', 'display', 'esp32_rmt', 'i2s_audio', 'flash_layout')
 # RENDER_PORT_BASE moves every variant's port, so two checkouts can render at the same time without meeting.
 PORT_BASE = int(os.environ.get('RENDER_PORT_BASE', 6481))
 
@@ -602,6 +602,29 @@ MEDIA_PROBE = '''    - action: render_media
                      centre(media_library_key).c_str(), centre(media_knob).c_str(), keys.c_str(), faults.c_str(),
                      media_library::describe().c_str());
 '''
+# Standby as Auto standby starts it, and the touch that ends it (the screensaver, firmware 0.29.0+).
+SAVER_PROBE = '''    - action: render_standby
+      variables:
+        enter: int
+      then:
+        - lambda: |-
+            if (enter) id(dim_display).execute(); else id(wake_display).execute();
+            ESP_LOGI("render", "standby %d", enter);
+    - action: render_saver
+      then:
+        - lambda: |-
+            // The screensaver's keys (firmware 0.33.0+): whether the screen is in standby, the centre of each key in the
+            // order volume up, volume down, play ("-" for one that is not there), and where the title ends.
+            std::string keys;
+            for (auto *key : runtime_tiles::saver_keys) {
+              if (!key) { keys += "-;"; continue; }
+              lv_area_t a; lv_obj_get_coords(key, &a);
+              keys += std::to_string((a.x1 + a.x2) / 2) + "," + std::to_string((a.y1 + a.y2) / 2) + ";";
+            }
+            lv_area_t words{};
+            if (runtime_tiles::saver_first) lv_obj_get_coords(runtime_tiles::saver_first, &words);
+            ESP_LOGI("render", "saver dimmed=%d keys=%s words_right=%d", (int) id(display_dimmed), keys.c_str(), (int) words.x2);
+'''
 # A board with the calibration wizard shows it on the first start; the renders skip it, as a calibrated screen does.
 SKIP_CALIBRATION = '''    - action: render_skip_calibration
       then:
@@ -651,7 +674,7 @@ class Build:
         (mirror_root / 'host-hw.yaml').write_text(host_hw(board.read_text(), chain))
         (mirror_root / 'chain.txt').write_text('\n'.join([str(f) for f in chain.files] + [''] + chain.notes) + '\n')
         chain_text = ''.join((mirror / f).read_text() for f in chain.files)
-        actions = ACTIONS + PROBES + ALARM_PROBE + MEDIA_PROBE + (SKIP_CALIBRATION if 'screen_calibration::' in chain_text else '')
+        actions = ACTIONS + PROBES + ALARM_PROBE + MEDIA_PROBE + SAVER_PROBE + (SKIP_CALIBRATION if 'screen_calibration::' in chain_text else '')
         turned = f'\n  LVGL_ROTATION: "{item.rotation}"' if item.rotation else ''
         rel = f'host/{item.key}'
         return f'''# Host build of {item.key} from {tree} (tools/render/host.py): core and board chain, hardware swapped for SDL.

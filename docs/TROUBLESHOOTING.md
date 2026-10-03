@@ -16,10 +16,13 @@ The user-facing symptoms (the screen's own messages, touch, picture, Home Assist
 | HA doesn't see the board | Manually use the IP from the logs; port 6053 reachable, correct encryption key, no guest network isolation. |
 | Status works but action doesn't | ESPHome integration → **Configure** → **Allow the device to perform Home Assistant actions**; then the real entity ID and a supported action. |
 | Vacuum/climate partly usable | Supported modes/attributes differ per integration; test the same action in Home Assistant first. |
-| Wrong pagination | Tiles keep the cell you gave them in ESP Screens: the board's grid decides how many fit on a page ([RESPONSIVE.md](RESPONSIVE.md)), up to eight pages and 64 tiles, and saving applies it without a reflash. The page buttons hide on a screen with one page, and **Page buttons** off hides them everywhere; then only swiping and Go to page tiles change the page, and the editor warns about a page nothing leads to. |
+| Wrong pagination | Tiles keep the cell you gave them in Tessera: the board's grid decides how many fit on a page ([RESPONSIVE.md](RESPONSIVE.md)), up to eight pages and 64 tiles, and saving applies it without a reflash. The page buttons hide on a screen with one page, and **Page buttons** off hides them everywhere; then only swiping and Go to page tiles change the page, and the editor warns about a page nothing leads to. |
 | Freeze/reset | Keep the USB log, check the reset reason/power, and run the render test. Note the action and time. A screen that restarts on "Loading tiles..." with firmware 0.3.6 needs firmware 0.3.7+ (app 0.3.13+); flash it once over USB if it can't stay up for an update over Wi-Fi. |
 
 ## Advanced: manual USB route
+
+On a CYD or a Hosyond 4-inch, a USB install writes the partition table of firmware 0.33.1 and later, and the screen
+takes its settings along the first time it starts with it: [UPDATING_4MB_SCREENS.md](UPDATING_4MB_SCREENS.md).
 
 The touch measurement over USB with `tools/calibrate.py` ([CALIBRATING.md](CALIBRATING.md)). A CYD normally calibrates on the screen itself: **Calibrate touch** under Settings → This screen.
 

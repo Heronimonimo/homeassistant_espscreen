@@ -1,0 +1,85 @@
+# Every board's compile cache, made the way ESP Screens builds (app 0.4.49, screen_manager/app/build_cache.py): each
+# night and on every release (a push to main that changes the app's version), so a screen's first build in the app
+# compiles little more than its own main.cpp. Each board builds in the app's own ESPHome image with the app's paths
+# (tools/build_cache.py), and the caches replace the assets of the release `build-cache`. A board that fails keeps its
+# previous cache; the app builds without one when none fits.
+name: Build cache
+
+on:
+  schedule:
+    - cron: "30 3 * * *"     # every night, after CI's own firmware builds
+  push:
+    branches: [main]
+    paths: [screen_manager/config.yaml]   # every release bumps the app's version
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-cache
+  cancel-in-progress: true   # the newest main wins
+
+jobs:
+  boards:
+    runs-on: ubuntu-latest
+    outputs:
+      boards: ${{ steps.list.outputs.boards }}
+      image: ${{ steps.list.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, re
+          shapes = json.load(open('screen_manager/app/boards.json'))
+          print('boards=' + json.dumps([key for key, shape in shapes.items() if shape.get('board') == key]))
+          print('image=' + re.search(r'(?m)^FROM (\S+)', open('screen_manager/Dockerfile').read()).group(1))
+          EOF
+
+  cache:
+    needs: boards
+    name: cache (${{ matrix.board }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container: ${{ needs.boards.outputs.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ${{ fromJSON(needs.boards.outputs.boards) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install --no-cache-dir 'aiohttp>=3.12,<4' PyYAML
+      - run: python3 tools/build_cache.py ${{ matrix.board }} out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cache-${{ matrix.board }}
+          path: out/*.tar.gz
+          retention-days: 2
+          compression-level: 0
+
+  publish:
+    needs: cache
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls out/*.tar.gz > /dev/null || { echo "No board built a cache"; exit 1; }
+          gh release view build-cache > /dev/null 2>&1 || gh release create build-cache --prerelease --latest=false \
+            --title "Build cache" \
+            --notes "Compile caches ESP Screens fetches before a screen's first build. Made by the Build cache workflow; not something to install."
+          gh release upload build-cache out/*.tar.gz --clobber
+          # Caches of an ESPHome the app no longer uses go; a board that failed tonight keeps yesterday's.
+          set -- out/*.tar.gz
+          version=$(basename "$1" | sed -E 's/.*-esphome-(.*)\.tar\.gz/\1/')
+          gh release view build-cache --json assets --jq '.assets[].name' | grep -v -- "-esphome-$version.tar.gz$" \
+            | while read -r old; do gh release delete-asset build-cache "$old" --yes; done

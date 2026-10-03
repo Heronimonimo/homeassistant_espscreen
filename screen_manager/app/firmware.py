@@ -13,7 +13,8 @@ import signal
 import time
 import yaml
 import zipfile
-from core import BOARD_KEYS, ORIENTATIONS, REPO, SHAPES, installation_yaml
+import build_cache
+from core import BOARD_KEYS, ORIENTATIONS, REF, REPO, SHAPES, installation_yaml
 from i18n import t
 
 LOG = logging.getLogger('screen_manager')
@@ -97,6 +98,16 @@ class Firmware:
     # flashes on a board. A build writes it next to firmware.bin: under .pioenvs/<node>/ with PlatformIO,
     # under build/ with ESPHome's native ESP-IDF toolchain.
     FACTORY_IMAGES = ('*/.pioenvs/*/firmware.factory.bin', '*/build/firmware.factory.bin')
+    # The image an update over Wi-Fi sends, beside it.
+    OTA_IMAGES = ('*/.pioenvs/*/firmware.ota.bin', '*/build/firmware.ota.bin')
+    # One update slot of ESPHome's own table for 4 MB of flash, in bytes: what a screen that still has that table can
+    # take. A board whose flash takes the wide table (boards.json `wide_slots`, app 0.4.56) builds for slots of
+    # 2,031,616 bytes, and a firmware larger than this goes to a screen with the old table over a bridge
+    # (docs/FLASH_LAYOUT.md).
+    NARROW_SLOT = 0x1C0000
+    # The bridge of a screen: the smallest firmware that takes the wide table (`bridge`), written beside the screen's
+    # own YAML while its flash is widened and removed after. No screen has a dot in its name, so no profile is hidden.
+    BRIDGE_SUFFIX = '.bridge.yaml'
     # The compiler cache's limit (app 0.2.89+); past it ccache drops the oldest entries. Some seventeen full builds of
     # both boards took 0.6 GB on a Mac.
     CCACHE_SIZE = '1G'
@@ -118,7 +129,7 @@ class Firmware:
     def profiles(self):
         if not self.root.exists(): return []
         return [{'file': p.name} for p in sorted(self.root.glob('*.yaml'))
-                if p.name != 'secrets.yaml' and not p.name.endswith(self.OVERRIDE_SUFFIX)
+                if p.name != 'secrets.yaml' and not p.name.endswith((self.OVERRIDE_SUFFIX, self.BRIDGE_SUFFIX))
                 and p.is_file() and not p.is_symlink()]
 
     def profile_names(self):
@@ -150,7 +161,8 @@ class Firmware:
         return sorted(set(glob.glob('/dev/serial/by-id/*') or glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')))
 
     def profile(self, name):
-        if not isinstance(name,str) or not re.fullmatch(r'[a-zA-Z0-9_-]+\.yaml', name):
+        # A screen's own YAML, or the bridge this app wrote beside it (BRIDGE_SUFFIX).
+        if not isinstance(name,str) or not re.fullmatch(r'[a-zA-Z0-9_-]+(\.bridge)?\.yaml', name):
             raise ValueError(t('addon.errors.firmware.choose_profile'))
         p = self.root / name
         if p.is_symlink() or p.resolve().parent != self.root or not p.is_file():
@@ -393,6 +405,134 @@ class Firmware:
         self._names.pop(profile.name, None)
         return True
 
+    def wide_slots(self, name):
+        """Whether this profile's board builds for the wide partition table (boards.json `wide_slots`, app 0.4.56)."""
+        meta = self.profile_names().get(self.profile(name).name) or {}
+        return bool(SHAPES.get(meta.get('package') or '', {}).get('wide_slots'))
+
+    def allow_table_update(self, name):
+        """Let the screen's next build take a partition table over Wi-Fi (app 0.4.56): `allow_partition_access: true` in
+        the `platform: esphome` item of the profile's own `ota:`, as a new screen's YAML has it (core.installation_yaml).
+        Only for a board whose flash takes the wide table, and only there: ESPHome's default for the option would win
+        over the same line in a package.
+
+        A profile that already says something about it, one with more than one such item, and one whose `ota:` this
+        cannot edit safely are left alone; that screen then keeps the table it has. The line is added to the text,
+        never reformatted, and written only when it is the one thing that changed. True when it changed."""
+        profile = self.profile(name)
+        if not self.wide_slots(profile.name):
+            return False
+        raw = profile.read_bytes().decode('utf-8')
+        newline = '\r\n' if '\r\n' in raw else '\n'
+        text = raw.replace('\r\n', '\n')
+        if not text.endswith('\n'):
+            text += '\n'
+        before = yaml.load(text, Loader=LenientLoader)
+        ota = before.get('ota') if isinstance(before, dict) else None
+        ours = [item for item in ota if isinstance(item, dict) and item.get('platform') == 'esphome'] if isinstance(ota, list) else []
+        if len(ours) != 1 or 'allow_partition_access' in ours[0]:
+            return False
+        block = re.search(r'(?m)^ota:[ \t]*(?:#.*)?\n((?:[ \t]+.*\n|[ \t]*\n)*)', text)
+        item = re.search(r'(?m)^([ \t]*)-([ \t]+)platform:[ \t]*["\']?esphome["\']?[ \t]*(?:#.*)?\n', block[1]) if block else None
+        if not item:
+            LOG.warning('%s: its ota block could not be read line by line, so its flash keeps the table it has', profile.name)
+            return False
+        line = f'{item[1]} {item[2]}allow_partition_access: true\n'
+        updated = text[:block.start(1)] + block[1][:item.end()] + line + block[1][item.end():] + text[block.end(1):]
+        after = yaml.load(updated, Loader=LenientLoader)
+        expected = {**before, 'ota': [{**entry, 'allow_partition_access': True} if entry is ours[0] else entry for entry in ota]}
+        if after != expected:
+            LOG.warning('%s: its ota block could not be changed without changing more, so its flash keeps the table it has', profile.name)
+            return False
+        self._atomic_write(profile, updated.replace('\n', newline))
+        self._names.pop(profile.name, None)
+        return True
+
+    def image_size(self, name):
+        """The size in bytes of the image this profile's last build sends over Wi-Fi, or None when there is none."""
+        build = self.data / 'build' / self.profile(name).name.removesuffix('.yaml')
+        found = [path for pattern in self.OTA_IMAGES for path in build.glob(pattern)
+                 if path.is_file() and not path.is_symlink()]
+        return max(found, key=lambda path: path.stat().st_mtime_ns).stat().st_size if found else None
+
+    def ota_port(self, name):
+        """The port a profile's screen takes updates on: its own `ota:` item's, or ESPHome's 3232."""
+        try:
+            data = yaml.load(self.profile(name).read_text(), Loader=LenientLoader)
+        except (OSError, yaml.YAMLError, UnicodeError):
+            return 3232
+        ota = data.get('ota') if isinstance(data, dict) else None
+        for item in ota if isinstance(ota, list) else []:
+            if isinstance(item, dict) and item.get('platform') == 'esphome' and type(item.get('port')) is int:
+                return item['port']
+        return 3232
+
+    def bridge(self, name):
+        """Write the bridge of a profile and return its file name (app 0.4.56).
+
+        A screen with ESPHome's own table for 4 MB of flash cannot take a firmware larger than that table's slot, and
+        firmware from before 0.33.1 cannot take a new table. The bridge is the step between: the smallest firmware that
+        can (packages/bridge.yaml: Wi-Fi, updates, and the code that keeps the settings), small enough for any slot.
+        The updater installs it, sends the wide table, and installs the screen's own firmware over it.
+
+        It is the screen's own name, Wi-Fi and `ota:`, word for word, and nothing else of its YAML. No `api:`, on
+        purpose: Home Assistant removes the entities a device stops offering, so the bridge must not talk to it. The
+        screen is simply away for the minute this takes. A profile that keeps one of those blocks somewhere else (an
+        include) cannot be bridged, and says so."""
+        profile = self.profile(name)
+        if profile.name.endswith(self.BRIDGE_SUFFIX) or not self.wide_slots(profile.name):
+            raise ValueError(t('addon.errors.firmware.choose_profile'))
+        text = profile.read_bytes().decode('utf-8').replace('\r\n', '\n')
+        if not text.endswith('\n'):
+            text += '\n'
+        data = yaml.load(text, Loader=LenientLoader)
+        data = data if isinstance(data, dict) else {}
+        meta = profile_meta(text) or {}
+        ota = data.get('ota')
+        ours = [item for item in ota if isinstance(item, dict) and item.get('platform') == 'esphome'] if isinstance(ota, list) else []
+        blocks = {}
+        for key in ('substitutions', 'ota', 'wifi'):
+            found = re.search(rf'(?m)^{key}:[ \t]*(?:#.*)?\n(?:(?:[ \t]+.*|[ \t]*)\n)*', text)
+            blocks[key] = found[0].rstrip('\n') + '\n' if found else ''
+        if (not meta.get('node') or not isinstance(data.get('wifi'), dict) or len(ours) != 1
+                or ours[0].get('allow_partition_access') is not True or not blocks['ota'] or not blocks['wifi']):
+            raise ValueError(t('addon.errors.firmware.profile_invalid'))
+        content = f'''# ESP Screens - the bridge of {profile.name}: the smallest firmware that takes the wide partition table. The app
+# writes this file while it widens the flash of this screen and removes it again (docs/FLASH_LAYOUT.md).
+{blocks['substitutions']}esphome:
+  name: {json.dumps(meta['node'])}
+  friendly_name: {json.dumps(meta.get('friendly') or meta['node'], ensure_ascii=False)}
+
+packages:
+  bridge:
+    url: {REPO}
+    ref: {REF}
+    files: [packages/bridge.yaml]
+    refresh: 0s
+
+{blocks['ota']}{blocks['wifi']}'''
+        check = yaml.load(content, Loader=LenientLoader)
+        if (not isinstance(check, dict) or set(check) - {'substitutions', 'esphome', 'packages', 'ota', 'wifi'}
+                or check.get('ota') != data['ota'] or check.get('wifi') != data['wifi']
+                or check.get('substitutions') != data.get('substitutions')):
+            raise ValueError(t('addon.errors.firmware.profile_invalid'))
+        path = self.root / (profile.stem + self.BRIDGE_SUFFIX)
+        if path.is_symlink():
+            raise ValueError(t('addon.errors.firmware.override_symlink'))
+        self._atomic_write(path, content)
+        return path.name
+
+    async def drop_bridge(self, name):
+        """Remove a profile's bridge and what it built."""
+        profile = self.profile(name)
+        path = self.root / (profile.stem + self.BRIDGE_SUFFIX)
+        if path.is_file() and not path.is_symlink():
+            path.unlink()
+        build = self.data / 'build' / path.name.removesuffix('.yaml')
+        if build.is_dir() and not build.is_symlink():
+            await asyncio.to_thread(shutil.rmtree, build, True)
+        self._names.pop(path.name, None)
+
     def _override_path(self, name):
         profile = self.profile(name)
         path = self.root / (profile.stem + self.OVERRIDE_SUFFIX)
@@ -611,24 +751,36 @@ class Firmware:
         if self.task and not self.task.done(): raise ValueError(t('addon.errors.firmware.busy'))
         profile = self.profile(data.get('file'))
         action = data.get('action')
-        if action not in ('validate','build','install','download'): raise ValueError(t('addon.errors.firmware.unknown_action'))
+        # 'widen' sends the partition table of the profile's last build (app 0.4.56), nothing else.
+        if action not in ('validate','build','install','download','widen'): raise ValueError(t('addon.errors.firmware.unknown_action'))
+        # What a build writes into the screen's own YAML first. Not for a table, which goes with the build that was
+        # made, and not for a bridge, which this app wrote whole.
+        managed = action not in ('validate', 'widen') and not profile.name.endswith(self.BRIDGE_SUFFIX)
         # Every build speaks the language of Settings -> Language & region, also for a profile made or changed since
         # that language was set (app 0.2.90).
-        if action != 'validate' and callable(self.language):
+        if managed and callable(self.language):
             try:
                 self.set_language(profile.name, self.language())
             except (OSError, ValueError, yaml.YAMLError) as error:
                 LOG.warning('Could not write the language into %s (%s)', profile.name, error)
         # A board without room for the Wi-Fi fallback hotspot builds without it, also a screen made before (app 0.4.5).
         dropped = False
-        if action != 'validate':
+        if managed:
             try:
                 dropped = self.drop_hotspot(profile.name)
             except (OSError, ValueError, yaml.YAMLError) as error:
                 LOG.warning('Could not take the Wi-Fi hotspot out of %s (%s)', profile.name, error)
+            # A board whose flash takes the wide table lets its table be replaced over Wi-Fi, also a screen made before
+            # (app 0.4.56).
+            try:
+                self.allow_table_update(profile.name)
+            except (OSError, ValueError, yaml.YAMLError) as error:
+                LOG.warning('Could not let %s take a partition table over Wi-Fi (%s)', profile.name, error)
         if not shutil.which('esphome'): raise ValueError(t('addon.errors.firmware.no_esphome'))
         target = data.get('target','')
-        if action == 'install':
+        if action == 'widen' and target.startswith('/dev/'):
+            raise ValueError(t('addon.errors.firmware.host'))  # ESPHome sends a table over Wi-Fi only
+        if action in ('install', 'widen'):
             if target.startswith('/dev/'):
                 if target not in self.ports(): raise ValueError(t('addon.errors.firmware.usb_port'))
             elif not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.-]{0,252}',target):
@@ -653,7 +805,8 @@ class Firmware:
         override_file = self.root / (profile.stem + self.OVERRIDE_SUFFIX)
         if override_file.exists() and not override_file.is_symlink():
             collect(yaml.compose(override_file.read_text()))
-        self.images.pop(profile.name, None)  # until this job succeeds, the old image may no longer match the profile
+        if action != 'widen':
+            self.images.pop(profile.name, None)  # until this job succeeds, the old image may no longer match the profile
         self.logs.clear()
         if dropped:
             self.logs.append(f'{profile.name}: the Wi-Fi fallback hotspot and captive portal are left out on this board '
@@ -676,10 +829,12 @@ class Firmware:
 
         As many compilers at once as the machine has cores, as PlatformIO ran them: ESP-IDF's ninja would start two
         more, and each takes a few hundred MB next to Home Assistant on a small Raspberry Pi (ESPHome's own limit, which
-        the official ESPHome app sets too)."""
+        the official ESPHome app sets too). The ccache options let a compile cache GitHub made answer here
+        (build_cache, app 0.4.49)."""
         return {**os.environ, 'ESPHOME_BUILD_PATH': str(self.data / 'build' / profile.stem),
                 'ESPHOME_DATA_DIR': str(self.data / 'esphome'), 'ESPHOME_ESP_IDF_PREFIX': str(self.data / 'idf'),
                 'CCACHE_MAXSIZE': os.environ.get('CCACHE_MAXSIZE', self.CCACHE_SIZE),
+                **{key: os.environ.get(key, value) for key, value in build_cache.CCACHE_ENV.items()},
                 'ESPHOME_DEFAULT_COMPILE_PROCESS_LIMIT': os.environ.get('ESPHOME_DEFAULT_COMPILE_PROCESS_LIMIT',
                                                                         str(os.cpu_count() or 1)),
                 'PLATFORMIO_CORE_DIR': str(self.data / 'platformio'), 'NO_COLOR': '1'}
@@ -693,14 +848,31 @@ class Firmware:
             self.logs.append('Removing PlatformIO from before ESPHome 2026.7: the screens build with ESP-IDF now.')
             await asyncio.to_thread(shutil.rmtree, old, True)
 
+    async def seed_cache(self, profile, env):
+        """The board's compile cache from GitHub before a build (build_cache, app 0.4.49); without one, or past five
+        minutes of downloading, the build runs as it always did."""
+        try:
+            meta = profile_meta(profile.read_text())
+        except (OSError, yaml.YAMLError):
+            return
+        board = (SHAPES.get((meta or {}).get('package')) or {}).get('board')
+        if not board:
+            return
+        folder = Path(env.get('CCACHE_DIR') or Path(env['ESPHOME_ESP_IDF_PREFIX']) / 'ccache')
+        outcome = await build_cache.seed(board, folder, self.logs.append, env)
+        if outcome not in ('off', 'already here'):
+            self.logs.append(f'Prebuilt compile cache: {outcome}')
+            LOG.info('Prebuilt compile cache for %s (%s): %s', profile.name, board, outcome)
+
     async def run(self, profile, action, target):
         env = self.build_env(profile)
         try:
-            if action != 'validate':
+            if action not in ('validate', 'widen'):
                 await self.retire_platformio()
-            stages = ['config'] if action=='validate' else ['compile'] + (['upload'] if action=='install' else [])
+                await self.seed_cache(profile, env)
+            stages = ['config'] if action=='validate' else ['upload'] if action=='widen' else ['compile'] + (['upload'] if action=='install' else [])
             for stage in stages:
-                cmd=['esphome']+(['--quiet'] if stage=='config' else [])+[stage,str(profile)]
+                cmd=['esphome']+(['--quiet'] if stage=='config' else [])+[stage]+(['--partition-table'] if action=='widen' else [])+[str(profile)]
                 if stage=='upload': cmd += ['--device',target]
                 self.job['stage']=stage
                 self.logs.append('ESPHome: '+stage)
@@ -710,7 +882,7 @@ class Firmware:
                         self.logs.append(self.redact(line.decode(errors='replace').rstrip()))
                     code=await self.process.wait()
                 if code: raise RuntimeError('ESPHome '+stage+' failed; see the log.')
-            image = self.factory_image(profile) if action != 'validate' else None
+            image = self.factory_image(profile) if action not in ('validate', 'widen') else None
             if action == 'download' and not image:
                 raise RuntimeError('ESPHome built no factory image (firmware.factory.bin) to download; see the log.')
             self.job['state']='success'; self.logs.append('Succeeded: '+action)

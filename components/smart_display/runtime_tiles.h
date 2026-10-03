@@ -37,6 +37,7 @@
 #include "wifi_status.h"
 #include "picture_store.h"
 #include "media_card.h"
+#include "saver_view.h"
 #include "light_card.h"
 #include "weather_card.h"
 #include "forecast_tile.h"
@@ -154,6 +155,47 @@ inline std::function<esphome::ESPTime()> now_time;
 // The analog clock's second hand runs only then; a standby screen stays on its minute redraws.
 inline std::function<bool()> screen_awake;
 inline bool awake() { return !screen_awake || screen_awake(); }
+// The screensaver (firmware 0.29.0+) shows a cover or a camera in standby: those two load their picture while the screen
+// is not awake, everything else keeps waiting for a touch.
+inline bool saver_pictures = false;
+inline bool pictures_awake() { return awake() || saver_pictures; }
+// What ESP Screen Manager says the screensaver shows (op "saver", screen_saver.py): "media", "camera", "clock" or ""
+// for none, with the player's or camera's name and, for a player, its title, artist and album, its picture's mark and
+// the cover's colour (the picture is made again when either changes). Where the track is, is no part of it.
+struct SaverChoice {
+  std::string kind, entity, name, title, artist, album, picture, ground;
+  std::string weather;  // the clock's outside temperature, ready to draw (firmware 0.31.0+, app 0.4.52)
+  // A player's keys (firmware 0.33.0+, app 0.4.55): whether it plays or is paused, and what Home Assistant says it can do.
+  std::string state;
+  uint32_t features = 0;
+  bool muted = false;
+  bool operator==(const SaverChoice &o) const {
+    return kind == o.kind && entity == o.entity && name == o.name && title == o.title && artist == o.artist &&
+           album == o.album && picture == o.picture && ground == o.ground && weather == o.weather &&
+           state == o.state && features == o.features && muted == o.muted;
+  }
+};
+inline SaverChoice saver_next, saver_now;  // the app's latest word, and what the glass shows
+inline lv_obj_t *saver_root = nullptr;      // the clock
+// The words over the screensaver's picture (firmware 0.32.0+): drawn again with the next track's picture, and
+// `saver_words_due` until it has come.
+inline lv_obj_t *saver_first = nullptr, *saver_second = nullptr;
+inline bool saver_words_due = false;
+// A player's keys over its cover (firmware 0.33.0+): volume up, volume down, play or pause. They take their own tap, so
+// the screen stays in standby; a touch anywhere else wakes it. `saver_flipped`: when the play key last showed the other
+// face ahead of Home Assistant's word.
+inline std::array<lv_obj_t *, 3> saver_keys{};
+inline uint32_t saver_flipped = 0;
+inline void saver_keys_draw();
+// A next track that came while a picture was on its way (firmware 0.32.0+): followed once that load has ended, so the
+// online_image never gets a second link in the middle of a download and the one that lands is the one asked for.
+inline bool saver_follow_due = false;
+inline void saver_follow_pending();
+inline bool saver_camera = false;           // the camera's full view on the glass is the screensaver's (a camera or a cover)
+inline void saver_words();
+inline bool saver_woke = false;  // the last wake took the screensaver away: that touch does nothing else
+inline void saver_tick(uint32_t now);
+inline void saver_forget();
 inline uint32_t now_epoch() { if (!now_time) return 0; auto t = now_time(); return t.is_valid() ? static_cast<uint32_t>(t.timestamp) : 0; }
 inline void tick();
 inline void refresh_tile(size_t index);
@@ -4308,6 +4350,8 @@ inline void event(lv_event_t *event) {
 // touch guard, the busy sheet, the new stand at once) and counts once. A push on the tile's slider or keys, the top bar
 // or the page bar only wakes, as does a flick. Called by both boards' dim_wake_overlay; true when it tapped the tile.
 inline bool wake_tap() {
+  // A touch on the screensaver only wakes: what it lay over was not on the glass to be aimed at (firmware 0.29.0+).
+  if (std::exchange(saver_woke, false)) return false;
   auto &w = widgets[0];
   if (!enabled || !fresh() || !w.tile || !w.full || w.index >= model.count || lv_obj_has_flag(w.tile, LV_OBJ_FLAG_HIDDEN)) return false;
   const auto &t = model.tiles[w.index];
@@ -8416,7 +8460,9 @@ inline void cover_tick(uint32_t now) {
 // each with its own square and settings, and the app takes each tile's own settings by its index.
 // `dark` (firmware 0.20.0+): the look the screen is in. A map is drawn in the screen's own colours, light or dark, so the
 // look is part of what is asked for and of the name a kept picture goes under: turning the look asks for the other map.
-struct LiveWish { std::string entities, tiles, grounds, marks, atlas; int size = 0, atlas_x = 0, atlas_y = 0, atlas_scale = picture_store::SCALE_ONE; uint32_t every = 15000; bool cameras = false, dark = false; };
+// `drawn` (firmware 0.30.0+): a picture on the page that the app draws itself (a map), so there is always one to be had
+// and an answer without a picture is asked for again.
+struct LiveWish { std::string entities, tiles, grounds, marks, atlas; int size = 0, atlas_x = 0, atlas_y = 0, atlas_scale = picture_store::SCALE_ONE; uint32_t every = 15000; bool cameras = false, dark = false, drawn = false; };
 inline LiveWish live_wish;
 inline camera_view::Feed live;  // entity: the list asked for
 inline std::string live_have;   // the list the strip on screen holds, "" for a tile without a picture
@@ -8498,7 +8544,7 @@ inline LiveWish live_wanted() {
     if (t.favorite()) want.marks += t.extra().fav_mark;
     // A map's mark is what makes it another picture (app 0.4.33). It sets no pace: a page of maps and covers loads
     // once and then waits for someone to move.
-    if (t.is_map()) want.marks += t.extra().map_mark;
+    if (t.is_map()) { want.marks += t.extra().map_mark; want.drawn = true; }
     if (!want.size) want.size = lv_obj_get_style_width(w.circle, LV_PART_MAIN);
     // The page's pace is its quickest camera's: a page of 30 s cameras loaded every 15 s before firmware 0.3.7.
     if (t.live()) { want.every = want.cameras ? std::min<uint32_t>(want.every, t.refresh * 1000u) : t.refresh * 1000u; want.cameras = true; }
@@ -8508,10 +8554,19 @@ inline LiveWish live_wanted() {
 }
 // A strip is the same picture as long as the tiles, their colours, their covers' marks and the frames are: a camera's
 // next picture keeps the key and is written over the last one.
-inline std::string live_key(const LiveWish &w) {
+inline std::string live_key_head(const LiveWish &w) { return "live|" + w.entities + "|" + w.tiles + "|" + w.grounds + "|"; }
+inline std::string live_key_tail(const LiveWish &w) {
   char size[12];
   snprintf(size, sizeof(size), "%d", w.size);
-  return "live|" + w.entities + "|" + w.tiles + "|" + w.grounds + "|" + w.marks + "|" + w.atlas + "|" + size + (w.dark ? "|d" : "|l");
+  return "|" + w.atlas + "|" + size + (w.dark ? "|d" : "|l");
+}
+inline std::string live_key(const LiveWish &w) { return live_key_head(w) + w.marks + live_key_tail(w); }
+// Whether a kept strip is this page's with other marks (someone on its map moved, another track plays): the same tiles
+// in the same frames and colours, so a card can keep drawing its square of it (firmware 0.30.0+).
+inline bool live_same_page(const std::string &key, const LiveWish &w) {
+  const std::string head = live_key_head(w), tail = live_key_tail(w);
+  return key.size() >= head.size() + tail.size() && key.compare(0, head.size(), head) == 0 &&
+         key.compare(key.size() - tail.size(), tail.size(), tail) == 0;
 }
 // Whether the n-th item of a comma list is this one.
 inline bool list_has_at(const std::string &list, int n, const std::string &item) {
@@ -8591,6 +8646,13 @@ inline void live_place(Widgets &w, const Tile &t, int size, int x, int y) {
 #if LV_USE_IMAGE
   int square = -1;
   lv_image_dsc_t *src = t.pictured() ? live_ready(w.index, t.entity, size, square) : nullptr;
+  // A map whose next picture is not here keeps the one it shows (firmware 0.30.0+): this page's strip from before
+  // someone moved, until the new one has loaded, and for as long as the app cannot draw one. Before, the card fell
+  // back to the plain tile in between.
+  if (!src && square >= 0 && t.is_map() && w.picture && pictures_kept()) {
+    auto *held = pictures.holder(static_cast<const lv_image_dsc_t *>(lv_image_get_src(w.picture)));
+    if (held && live_same_page(held->key, live_wish) && list_has_at(held->note, square, t.entity)) src = &held->image;
+  }
   if (src) {
     if (!w.picture) {
       w.picture = lv_image_create(w.tile);
@@ -8689,7 +8751,7 @@ inline void live_tick(uint32_t now) {
             !draws(w.picture, &kept->image)) refresh_tile(w.index);
     }
     if (!want.entities.empty() && (!kept || want.cameras)) {
-      live.open(want.entities, !want.cameras, want.every);
+      live.open(want.entities, !want.cameras, want.every, want.drawn);
       if (kept) live.resume(kept->stored_at);
     }
   }
@@ -8716,8 +8778,12 @@ inline void live_loaded(bool cached) {
   ESP_LOGI("camera", "live tiles %s", cached ? "unchanged" : "loaded");
   if (auto *strip = camera_live.source()) {
     picture_memory("after", "strip", strip->header.w * strip->header.h);
-    if (pictures_kept() && strip->data && !pictures.put(live_key(live_wish), *strip, esphome::millis(), live_have))
+    const std::string key = live_key(live_wish);
+    if (pictures_kept() && strip->data && !pictures.put(key, *strip, esphome::millis(), live_have))
       ESP_LOGW("camera", "no room to keep the live tiles");
+    // This page's strips with other marks are done with (firmware 0.30.0+): a map that follows someone made a new
+    // one at every move, and small ones never passed the budget, so they stayed until the store had no place left.
+    if (pictures_kept()) pictures.retire_if([&](const auto &e) { return e.key != key && live_same_page(e.key, live_wish); });
   }
   for (auto &w : widgets)
     if (w.tile && !lv_obj_has_flag(w.tile, LV_OBJ_FLAG_HIDDEN) && w.index < model.count && model.tiles[w.index].pictured()) refresh_tile(w.index);
@@ -8742,9 +8808,17 @@ inline void camera_request(const std::string &entity, int size, uint32_t backgro
   // A map's full view (firmware 0.21.0+) adds its tile's index and the look, which the app draws it in; an older app
   // reads the keys it knows.
   const bool map = size <= 0 && camera_map_index >= 0;
+  // The screensaver's picture (firmware 0.29.0+): the full view's request with what it shows, "camera" or "media".
+  const bool saver = size <= 0 && saver_camera;
   const std::string keys[] = {"inbox", "entity", "size", "bg", "session", "rev", "view", "idx", "dark", "focus"}, values[] = {inbox, entity, size_text, background_text, protocol_key(transfer.lease), layout_rev, std::to_string(size > 0 ? ++cover_view_id : ++camera_view_id), std::to_string(camera_map_index), theme::dark ? "1" : "0", map_focus};
   const int count = map ? 10 : 7;
-  request.data.init(count);
+  request.data.init(count + (saver ? 1 : 0));
+  if (saver) {
+    esphome::api::HomeassistantServiceMap entry;
+    entry.key = esphome::StringRef("saver");
+    entry.value = esphome::StringRef(saver_now.kind);
+    request.data.push_back(entry);
+  }
   for (int i = 0; i < count; ++i) {
     esphome::api::HomeassistantServiceMap entry;
     entry.key = esphome::StringRef(keys[i]);
@@ -8775,6 +8849,8 @@ inline void camera_close() {
   if (!camera_root) return;
   lv_obj_delete(camera_root);
   camera_root = camera_picture = camera_note = camera_back = camera_title = camera_spinner = map_card_obj = nullptr;
+  saver_first = saver_second = nullptr;  // they went with the view
+  saver_keys = {};
   map_focus.clear();
   map_pinned = false;
   map_sheet = MapSheet{};
@@ -8944,7 +9020,7 @@ inline void camera_open(const std::string &entity, const std::string &name, int 
   ESP_LOGI("camera", "open %s", entity.c_str());
   // Asked for now rather than on the next tick (firmware 0.2.73+): the answer is most of the wait.
   const uint32_t now = esphome::millis();
-  if (awake() && fresh() && camera.should_ask(now)) {
+  if (pictures_awake() && fresh() && camera.should_ask(now)) {
     camera.ask(now);
     camera_request(entity);
   }
@@ -8976,7 +9052,8 @@ inline void camera_tick() {
   }
   cover_tick(now);
   live_tick(now);
-  if (!camera_root || !awake()) return;
+  saver_tick(now);
+  if (!camera_root || !pictures_awake()) return;
   if (camera.should_ask(now)) {
     if (!fresh()) return;
     camera.ask(now);
@@ -9021,16 +9098,17 @@ inline void alert_clear() {
 
 inline void camera_answer(const std::string &view, const std::string &entity, const std::string &url) {
   if (!camera_supported()) return;
-  if (view == "full") {
-    if (!camera_root || camera.entity != entity) return;
+  if (view == "full" || view == "saver") {
+    // "saver" (firmware 0.29.0+): the screensaver's picture, into the full view it opened without its keys.
+    if (!camera_root || camera.entity != entity || (view == "saver") != saver_camera) return;
     camera.link(url);
     if (url.empty()) {
-      if (!camera.shown) camera_note_text(tr(txt::camera_no_image));
+      if (!camera.shown && !saver_camera) camera_note_text(tr(txt::camera_no_image));
       return;
     }
     // Loaded now rather than on the next tick (firmware 0.2.73+), as an alert's image is.
     const uint32_t now = esphome::millis();
-    if (awake() && camera.should_load(now)) camera_load(now);
+    if (pictures_awake() && camera.should_load(now)) camera_load(now);
     return;
   }
   if (view == "cover") {  // the media card's album cover (firmware 0.2.64+)
@@ -9152,13 +9230,23 @@ inline void camera_loaded(bool thumb, bool cached) {
   }
   const bool first = camera_picture == nullptr;
   camera_show(camera_root, camera_picture, src, !cached);
-  if (first && camera_picture) {
+  if (first && camera_picture && saver_camera) {
+    // The screensaver's picture is the whole glass; one that came smaller (the size cap, picture_store::MAX_BYTES) is
+    // scaled to it, the same proportions. Its words lie over it.
+    lv_obj_set_size(camera_picture, lv_pct(100), lv_pct(100));
+    lv_image_set_inner_align(camera_picture, LV_IMAGE_ALIGN_COVER);
+    saver_words();
+  } else if (camera_picture && saver_camera && saver_words_due) {
+    // The next track's picture is on the glass: its words come with it (saver_follow).
+    saver_words();
+  } else if (first && camera_picture) {
     camera_note_text("");
-    lv_obj_move_foreground(camera_back);
+    if (camera_back) lv_obj_move_foreground(camera_back);
     lv_obj_move_foreground(camera_title);
     // A map's card (firmware 0.21.0+) may have come before its first picture: it lies over the map as the bar does.
     if (map_card_obj) lv_obj_move_foreground(map_card_obj);
   }
+  saver_follow_pending();
 }
 
 inline void camera_failed(bool thumb) {
@@ -9179,7 +9267,356 @@ inline void camera_failed(bool thumb) {
   }
   if (!camera.loading) return;
   camera.finish(esphome::millis(), false);
-  if (!camera.shown) camera_note_text(tr(txt::camera_no_image));
+  if (!camera.shown && !saver_camera) camera_note_text(tr(txt::camera_no_image));
+  saver_follow_pending();
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// The screensaver (firmware 0.29.0+, app 0.4.48). When Auto standby dims the screen, a screen whose ESP Screen Manager
+// chose a screensaver shows it over the dimmed tiles, at the standby level: the cover of what plays, a camera, or the
+// clock. The app decides which (screen_manager/app/screen_saver.py) and says so in a small message whenever that
+// changes; the screen keeps the last word and shows it the next time it goes into standby. A cover and a camera are the
+// camera's full view without its keys, holding one picture of the whole glass the app made for it (darkened, the cover
+// in its colour on long glass, camera_feed.encode_saver) with a line or two of words over it (saver_view.h); the clock
+// takes the bedside clock's digits. Nothing on it takes a tap: it lies on the top layer without one clickable object,
+// so a finger falls through to dim_wake_overlay and only wakes the screen, the way it always did in standby (and
+// wake_tap leaves the tile it lay over alone).
+inline std::function<void()> saver_changed;  // the profile's apply_screen_settings, which ends in saver_sync
+inline bool saver_lit = false;               // in standby with the backlight on (the standby or night level)
+inline uint32_t saver_ticked = 0;
+// A camera in standby loads at a live tile's default pace rather than the full view's four seconds: a screensaver can
+// stand there all evening, and the Wi-Fi and Home Assistant need not fetch a picture every four seconds for it.
+constexpr uint32_t SAVER_CAMERA_MS = 15000;
+
+inline bool saver_wanted() {
+  const auto &kind = saver_next.kind;
+  return kind == "clock" || ((kind == "media" || kind == "camera") && camera_supported() && valid_entity(saver_next.entity));
+}
+inline lv_obj_t *saver_text(lv_obj_t *parent, const lv_font_t *font, uint32_t color, const media_card::Rect &r, const std::string &text,
+                            lv_text_align_t align = LV_TEXT_ALIGN_CENTER) {
+  auto *label = lv_label_create(parent);
+  lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+  if (font) lv_obj_set_style_text_font(label, font, 0);
+  lv_obj_set_style_text_color(label, theme::rgb(color), 0);
+  lv_obj_set_style_text_align(label, align, 0);
+  lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+  lv_obj_set_pos(label, r.x, r.y);
+  // Its own room and no more (firmware 0.30.0+): what does not fit ends in dots instead of running over the next line.
+  lv_obj_set_size(label, r.w, r.h);
+  lv_label_set_text(label, text.c_str());
+  return label;
+}
+
+// The clock: the time in the bedside clock's digits where they fit, else the largest digit step that does, and the date
+// under it in the card heading's font, white on black whatever the look. In 12 hours AM or PM stands after the time, and
+// the outside temperature the app sends stands small in the middle at the bottom (firmware 0.31.0+).
+inline void saver_clock_draw() {
+  const int width = overlay_card::screen_width(), height = overlay_card::screen_height();
+  const auto now = now_time ? now_time() : esphome::ESPTime{};
+  const std::string time = time_text(now), date = date_text(now), ampm = am_pm(now);
+  const std::string &degrees = saver_next.weather;
+  const bool large = ui::large();
+  const int margin = ui::px(large ? 24 : 10), gap = ui::px(large ? 12 : 6), space = ui::px(large ? 8 : 4);
+  const lv_font_t *date_font = watch_font ? watch_font : detail_font;
+  const lv_font_t *small = control_font ? control_font : detail_font;
+  const int date_h = date_font ? lv_font_get_line_height(date_font) : 24;
+  const int small_h = small ? lv_font_get_line_height(small) : 20;
+  // AM or PM stands after the time in the small font, and the outside temperature keeps a line at the bottom
+  // (firmware 0.31.0+): the digits get the room that is left.
+  const int ampm_w = ampm.empty() || !small ? 0 : text_width(ampm, small);
+  const int room_w = width - 2 * margin - (ampm_w ? space + ampm_w : 0);
+  // The temperature in the date's font: small beside the digits, and as easy to read across a room as the date.
+  const int below = degrees.empty() ? 0 : date_h + gap;
+  const lv_font_t *digits = bedside_digits();
+  if (!digits || text_width(time, digits) > room_w) digits = largest_digits(time.c_str(), room_w, height - 2 * margin - gap - date_h - 2 * below);
+  if (!digits) digits = clock_font;
+  int top = 0, digits_h = 40;
+  if (digits) digit_box(digits, top, digits_h);
+  // Black with white digits in both looks (firmware 0.31.0+): a screensaver gives as little light as it can. Before,
+  // the clock stood on the page's own colour, a lit white glass in the light look.
+  lv_obj_set_style_bg_color(saver_root, theme::color(theme::CAMERA_PAGE), 0);
+  const uint32_t ink = media_ink(), soft = theme::mix(ink, theme::hex(theme::CAMERA_PAGE), 150);
+  const auto l = saver_view::clock(width, height, digits_h, date.empty() ? 0 : date_h, date.empty() ? 0 : gap);
+  const int time_w = digits ? text_width(time, digits) : width;
+  const auto row = saver_view::clock_row(width, time_w, ampm_w, space);
+  saver_text(saver_root, digits, ink, {row.time_x, l.time.y - top, time_w + 2, digits ? (int) lv_font_get_line_height(digits) : digits_h}, time, LV_TEXT_ALIGN_LEFT);
+  if (ampm_w) {
+    // On the digits' baseline, as the clock card's own AM and PM.
+    int small_top = 0, small_digits = small_h;
+    digit_box(small, small_top, small_digits);
+    saver_text(saver_root, small, soft, {row.ampm_x, l.time.y + digits_h - small_digits - small_top, ampm_w + 2, small_h}, ampm, LV_TEXT_ALIGN_LEFT);
+  }
+  if (!date.empty()) saver_text(saver_root, date_font, soft, {margin, l.date.y, width - 2 * margin, date_h}, date);
+  if (!degrees.empty() && date_font) saver_text(saver_root, date_font, soft, saver_view::temperature(width, height, margin, date_h), degrees);
+}
+
+// Where a player's keys stand on this glass (saver_view::keys), the sizes the media card's keys have: the play key when
+// the player can play or pause, the volume keys when it has a volume. A screensaver that is no player has none.
+inline saver_view::Keys saver_key_layout() {
+  const int width = overlay_card::screen_width(), height = overlay_card::screen_height();
+  const bool large = ui::large(), media = saver_now.kind == "media";
+  using namespace tile_controls;
+  media_card::Metrics m;
+  m.large = large;
+  return saver_view::keys(width, height, ui::px(large ? 28 : 12), m.key_h(), m.play_h(), ui::px(large ? 14 : 8),
+                          media && (saver_now.features & (feature::MEDIA_PLAY | feature::MEDIA_PAUSE)),
+                          media && (saver_now.features & (feature::MEDIA_VOLUME_SET | feature::ha::media_player::VOLUME_STEP)));
+}
+// The words over the picture, once it is there: a cover's title with its artist and album, a camera's name alone, in
+// white over the darkened picture or the cover's colour.
+inline void saver_words() {
+  if (!camera_root || !saver_camera) return;
+  const auto &c = saver_now;
+  const int width = overlay_card::screen_width(), height = overlay_card::screen_height();
+  const bool large = ui::large();
+  const int margin = ui::px(large ? 28 : 12), gap = ui::px(large ? 4 : 2);
+  const lv_font_t *first_font = watch_font ? watch_font : detail_font;
+  const lv_font_t *second_font = control_font ? control_font : detail_font;
+  const bool media = c.kind == "media";
+  const std::string first = media && !c.title.empty() ? c.title : c.name;
+  const std::string second = media ? media_card::subtitle(c.artist, c.album) : std::string();
+  const lv_font_t *font = media ? first_font : second_font;
+  const int first_h = font ? lv_font_get_line_height(font) : 24;
+  const int second_h = second.empty() || !second_font ? 0 : lv_font_get_line_height(second_font);
+  const auto shape = media ? saver_view::shape(width, height) : saver_view::Shape::fill;
+  auto w = saver_view::words(shape, width, height, margin, first_h, second_h, gap);
+  // A player's keys stand in the bottom right corner, and the words end before them (firmware 0.33.0+).
+  const auto keys = saver_key_layout();
+  saver_view::before_keys(w, keys, margin);
+  // A long title takes a second line, and the words are laid out again around the taller title (saver_view.h).
+  if (font) {
+    lv_point_t need;
+    lv_text_get_size(&need, first.c_str(), font, 0, 0, w.first.w, LV_TEXT_FLAG_NONE);
+    const int lines = saver_view::title_lines(need.y, first_h);
+    if (lines > 1) {
+      const auto taller = saver_view::words(shape, width, height, margin, lines * first_h, second_h, gap);
+      if (saver_view::fits(shape, taller, width, height)) { w = taller; saver_view::before_keys(w, keys, margin); }
+    }
+  }
+  for (lv_obj_t **words : {&saver_first, &saver_second}) if (*words) { lv_obj_delete(*words); *words = nullptr; }
+  saver_words_due = false;
+  saver_first = saver_text(camera_root, font, media_ink(), w.first, first, LV_TEXT_ALIGN_LEFT);
+  if (second_h) saver_second = saver_text(camera_root, second_font, theme::mix(media_ink(), 0, 200), w.second, second, LV_TEXT_ALIGN_LEFT);
+  saver_keys_draw();
+}
+// The keys: white rounds over the darkened cover, the play key whole and the two volume keys a haze with a white sign,
+// as the media card's keys stand over its cover. Each takes its own tap (the touch guard first, as every key), sends its
+// action for the player on the glass and leaves the screen in standby. The play key turns at once and Home Assistant's
+// word follows (saver_tick puts it back when none came).
+// Volume down held for a second and a half mutes the player, where Home Assistant says it can be muted; the key then shows the
+// muted speaker. The next tap on either volume key takes the mute off and changes nothing else, and after that the two
+// are the volume again.
+constexpr uint32_t SAVER_MUTE_HOLD_MS = 1500;
+inline uint32_t saver_pressed = 0;  // when the finger came down on volume down; 0 once this hold has muted
+inline void saver_faces() {
+  auto face = [](lv_obj_t *key, const char *glyph) {
+    auto *icon = key ? lv_obj_get_child(key, 0) : nullptr;
+    if (!icon) return;
+    lv_label_set_text(icon, glyph);
+    lv_obj_center(icon);
+  };
+  face(saver_keys[1], saver_now.muted ? tile_controls::glyph::MUTED : tile_controls::glyph::MINUS);
+  face(saver_keys[2], saver_now.state == "playing" ? tile_controls::glyph::PAUSE : tile_controls::glyph::PLAY);
+}
+inline void saver_send(const char *service, const char *key = nullptr, const char *value = nullptr) {
+  esphome::api::HomeassistantActionRequest request;
+  request.service = esphome::StringRef(service);
+  request.data.init(key ? 2 : 1);
+  esphome::api::HomeassistantServiceMap target;
+  target.key = esphome::StringRef("entity_id");
+  target.value = esphome::StringRef(saver_now.entity);
+  request.data.push_back(target);
+  if (key) {
+    esphome::api::HomeassistantServiceMap field;
+    field.key = esphome::StringRef(key);
+    field.value = esphome::StringRef(value);
+    request.data.push_back(field);
+  }
+  esphome::api::global_api_server->send_homeassistant_action(request);
+  ESP_LOGI("saver", "key %s%s%s for %s", service, value ? " " : "", value ? value : "", saver_now.entity.c_str());
+}
+inline void saver_mute(bool muted, uint32_t now) {
+  saver_send("media_player.volume_mute", "is_volume_muted", muted ? "true" : "false");
+  saver_now.muted = muted;
+  saver_flipped = now ? now : 1;
+  saver_faces();
+}
+inline void saver_key_event(lv_event_t *e) {
+  const int n = (int) (intptr_t) lv_event_get_user_data(e);
+  const auto code = lv_event_get_code(e);
+  const uint32_t now = esphome::millis();
+  if (!saver_camera || saver_now.kind != "media" || !fresh() || !valid_entity(saver_now.entity)) return;
+  if (code == LV_EVENT_PRESSED) { saver_pressed = now ? now : 1; return; }
+  if (code == LV_EVENT_PRESSING) {
+    if (!saver_pressed || now - saver_pressed < SAVER_MUTE_HOLD_MS || saver_now.muted ||
+        !(saver_now.features & tile_controls::feature::MEDIA_VOLUME_MUTE)) return;
+    saver_pressed = 0;
+    if (allowed(now, 703, "screensaver mute")) saver_mute(true, now);
+    return;
+  }
+  if (n == 2) {
+    if (!allowed(now, 700, "screensaver play")) return;
+    saver_send("media_player.media_play_pause");
+    saver_now.state = saver_now.state == "playing" ? "paused" : "playing";
+    saver_flipped = now ? now : 1;
+    saver_faces();
+    return;
+  }
+  // A volume key, on the release: the hold that muted used this contact up, so it does not also step.
+  if (!screen_input::touch_guard.accept_repeat(now, 701 + n)) return;
+  if (saver_now.muted) { saver_mute(false, now); return; }
+  saver_send(n == 0 ? "media_player.volume_up" : "media_player.volume_down");
+}
+inline void saver_keys_draw() {
+  for (lv_obj_t *&key : saver_keys) if (key) { lv_obj_delete(key); key = nullptr; }
+  if (!camera_root || !saver_camera || saver_now.kind != "media") return;
+  const auto l = saver_key_layout();
+  const uint32_t ink = media_ink();
+  const lv_font_t *small = mini_icon_font ? mini_icon_font : detail_font;
+  auto key = [&](int n, const media_card::Rect &r, const char *glyph, const lv_font_t *font, bool primary) {
+    if (r.w <= 0) return;
+    auto *o = lv_obj_create(camera_root);
+    lv_obj_remove_style_all(o);
+    lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(o, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_ext_click_area(o, ui::px(6));
+    lv_obj_set_pos(o, r.x, r.y);
+    lv_obj_set_size(o, r.w, r.h);
+    lv_obj_set_style_radius(o, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(o, theme::rgb(ink), 0);
+    lv_obj_set_style_bg_opa(o, primary ? LV_OPA_COVER : 56, 0);
+    lv_obj_set_style_bg_color(o, theme::rgb(primary ? theme::mix(ink, 0, 200) : ink), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(o, primary ? LV_OPA_COVER : 110, LV_STATE_PRESSED);
+    auto *icon = lv_label_create(o);
+    lv_obj_remove_flag(icon, LV_OBJ_FLAG_CLICKABLE);
+    if (font) lv_obj_set_style_text_font(icon, font, 0);
+    lv_obj_set_style_text_color(icon, primary ? theme::color(theme::CAMERA_PAGE) : theme::rgb(ink), 0);
+    lv_label_set_text(icon, glyph);
+    lv_obj_center(icon);
+    // The play key takes a short tap, as every play key; a volume key its release, so a slow press still steps, and
+    // volume down also the hold that mutes.
+    lv_obj_add_event_cb(o, saver_key_event, n == 2 ? LV_EVENT_SHORT_CLICKED : LV_EVENT_CLICKED, (void *) (intptr_t) n);
+    if (n == 1) {
+      lv_obj_add_event_cb(o, saver_key_event, LV_EVENT_PRESSED, (void *) (intptr_t) n);
+      lv_obj_add_event_cb(o, saver_key_event, LV_EVENT_PRESSING, (void *) (intptr_t) n);
+    }
+    saver_keys[n] = o;
+  };
+  key(0, l.plus, tile_controls::glyph::PLUS, small, false);
+  key(1, l.minus, saver_now.muted ? tile_controls::glyph::MUTED : tile_controls::glyph::MINUS, small, false);
+  key(2, l.play, saver_now.state == "playing" ? tile_controls::glyph::PAUSE : tile_controls::glyph::PLAY, tile_icon_font(), true);
+}
+
+inline void saver_hide() {
+  saver_follow_due = false;
+  if (saver_root) lv_obj_delete(saver_root);
+  saver_root = nullptr;
+  if (saver_camera) camera_close();
+  saver_camera = false;
+  saver_now = SaverChoice{};
+  saver_pictures = false;
+}
+inline void saver_show() {
+  saver_now = saver_next;
+  saver_pictures = saver_now.kind != "clock";
+  if (saver_pictures) {
+    // The full view, asked for as the screensaver's picture (camera_request adds what it shows), then stripped of its
+    // keys, its name and its spinner, and laid under an alert that may come.
+    saver_camera = true;
+    camera_open(saver_now.entity, saver_now.name, -1, "");
+    if (!camera_root) { saver_camera = false; return; }
+    lv_obj_remove_flag(camera_root, LV_OBJ_FLAG_CLICKABLE);
+    for (lv_obj_t **part : {&camera_back, &camera_title, &camera_spinner}) if (*part) { lv_obj_delete(*part); *part = nullptr; }
+    lv_obj_move_to_index(camera_root, 0);
+    // A camera refreshes at its pace; a cover loads once, and a new track is a new picture (saver_sync).
+    if (saver_now.kind == "media") camera.once = true;
+    else camera.every = SAVER_CAMERA_MS;
+    ESP_LOGI("saver", "%s %s", saver_now.kind.c_str(), saver_now.entity.c_str());
+    return;
+  }
+  saver_root = lv_obj_create(lv_layer_top());
+  lv_obj_remove_style_all(saver_root);
+  lv_obj_remove_flag(saver_root, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_remove_flag(saver_root, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_size(saver_root, lv_pct(100), lv_pct(100));
+  lv_obj_set_style_bg_opa(saver_root, LV_OPA_COVER, 0);
+  lv_obj_move_to_index(saver_root, 0);
+  saver_clock_draw();
+  ESP_LOGI("saver", "clock");
+}
+// Another track, another cover or another picture step while a picture stands (firmware 0.32.0+): the view stays, with
+// the picture and its words, and the next picture loads under it; the words change when it has come. Before, the view
+// closed and opened again, and the glass stood black for as long as the next picture took.
+inline void saver_follow() {
+  const std::string before = camera.entity;
+  // The same picture with other words (the title came before the cover's colour, or the other way round): the words
+  // alone, nothing loads; while that picture is still on its way, they come with it.
+  // The cover's colour only shows beside a cover on long glass (saver_view::shape): on square glass it is no new picture.
+  const bool ground_shows = saver_view::shape(overlay_card::screen_width(), overlay_card::screen_height()) != saver_view::Shape::fill;
+  if (saver_next.kind == saver_now.kind && saver_next.entity == saver_now.entity && saver_next.picture == saver_now.picture &&
+      (saver_next.ground == saver_now.ground || !ground_shows)) {
+    saver_now = saver_next;
+    if (!saver_words_due) saver_words();
+    else saver_keys_draw();
+    return;
+  }
+  if (camera.loading) { saver_follow_due = true; return; }
+  saver_follow_due = false;
+  saver_now = saver_next;
+  saver_keys_draw();  // the keys are the next player's at once; its words wait for its picture
+  camera.open(saver_now.entity);
+  if (saver_now.kind == "media") camera.once = true;
+  else camera.every = SAVER_CAMERA_MS;
+  // The last one's copy goes once its picture has made way for the next (pictures_collect).
+  if (before != saver_now.entity) pictures.retire(camera_key(before));
+  saver_words_due = true;
+  ESP_LOGI("saver", "%s %s, the last picture stays until it comes", saver_now.kind.c_str(), saver_now.entity.c_str());
+}
+inline void saver_follow_pending() {
+  if (!std::exchange(saver_follow_due, false)) return;
+  if (saver_lit && saver_camera && camera_root && camera_picture && !(saver_next == saver_now) &&
+      (saver_next.kind == "media" || saver_next.kind == "camera")) saver_follow();
+}
+// apply_screen_settings, after every change and every minute: `lit` is standby with a backlight that is on.
+inline void saver_sync(bool lit) {
+  saver_lit = lit;
+  const bool shown = saver_root || saver_camera;
+  if (!lit || !saver_wanted()) { if (shown) saver_hide(); return; }
+  // The camera and the cover stand as they are while nothing changed; the clock is drawn again, a minute later.
+  if (shown && saver_next == saver_now && saver_now.kind != "clock") return;
+  if (saver_camera && camera_root && camera_picture && (saver_next.kind == "media" || saver_next.kind == "camera")) { saver_follow(); return; }
+  saver_hide();
+  saver_show();
+}
+// wake_display: the screensaver goes, and the touch that woke the screen does nothing else.
+inline void saver_wake() {
+  saver_lit = false;
+  saver_woke = saver_root || saver_camera;
+  saver_hide();
+}
+// A new layout on its way (cancel_layout_input): every picture goes; saver_tick draws the screensaver again.
+inline void saver_forget() { saver_hide(); }
+// The app's word (page_receiver.cpp). In standby the glass follows at once, through apply_screen_settings.
+inline void saver_receive(const SaverChoice &next) {
+  if (next == saver_next) return;
+  saver_next = next;
+  if (!awake() && saver_changed) saver_changed();
+}
+inline void saver_tick(uint32_t now) {
+  if (now - saver_ticked < 1000) return;
+  saver_ticked = now;
+  // A play key that turned ahead of Home Assistant and heard nothing shows what the app last said again.
+  if (saver_flipped && now - saver_flipped > 5000) {
+    saver_flipped = 0;
+    if (saver_camera && saver_now.entity == saver_next.entity &&
+        (saver_now.state != saver_next.state || saver_now.muted != saver_next.muted)) {
+      saver_now.state = saver_next.state;
+      saver_now.muted = saver_next.muted;
+      saver_faces();
+    }
+  }
+  // Gone under it (a new layout, an alert that closed the camera): drawn again.
+  if (saver_lit && !saver_root && !saver_camera && saver_wanted()) saver_show();
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -9407,6 +9844,7 @@ inline void cancel_layout_input(bool invalidate_widgets) {
   slider_changed = false;
   active_index = -1;
   if (dismiss) dismiss();
+  saver_forget();
   camera_close();
   cover_drop();
   live_release();

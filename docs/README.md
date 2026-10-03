@@ -2,10 +2,13 @@
 
 ## For users
 
-- [EASY_SETUP.md](EASY_SETUP.md): install ESP Screen Manager, add a screen, flash it and give it tiles.
+- [EASY_SETUP.md](EASY_SETUP.md): install Tessera Screen Manager, add a screen, flash it and give it tiles.
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md): what to check when a screen, its touch or its pairing misbehaves.
-- [DOCKER.md](DOCKER.md): ESP Screen Manager on Home Assistant Container, without the App store.
+- [DOCKER.md](DOCKER.md): Tessera Screen Manager on Home Assistant Container, without the App store.
 - [BEDSIDE.md](BEDSIDE.md): the bedside clock, a whole-page clock with keys for the night.
+- [SCREENSAVER.md](SCREENSAVER.md): what a screen shows in standby instead of its dimmed tiles: a cover, a camera or the clock.
+- [UPDATING_4MB_SCREENS.md](UPDATING_4MB_SCREENS.md): the CYD and the Hosyond get more room for firmware, and what to do
+  if you flash them yourself.
 
 ## Per board
 
@@ -34,6 +37,8 @@
 - [SETTINGS.md](SETTINGS.md): the screen settings, and adding one.
 - [PAGES.md](PAGES.md): the page model, tile sizes, navigation, storage and the message rules.
 - [KEPT_PAGES.md](KEPT_PAGES.md): pages kept whole, prepared ahead, and pictures kept until they change.
+- [FLASH_LAYOUT.md](FLASH_LAYOUT.md): the partition table of a board with 4 MB of flash, and how a screen gets it
+  without losing its settings (the technical side of UPDATING_4MB_SCREENS.md).
 - [CAMERA.md](CAMERA.md): camera pictures and album covers, from Home Assistant to the screen.
 - [MAP.md](MAP.md): the map card, drawn by the add-on and sent as a picture.
 - [EMULATOR_ARCHITECTURE.md](EMULATOR_ARCHITECTURE.md): the editor's firmware preview, the firmware built to

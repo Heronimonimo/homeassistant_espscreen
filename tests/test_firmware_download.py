@@ -50,7 +50,8 @@ def fake_cli(folder):
     cli = bin_dir / 'esphome'
     cli.write_text(FAKE_CLI.format(python=sys.executable))
     cli.chmod(0o755)
-    return {'PATH': f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"}
+    # No compile cache from GitHub before these builds (build_cache, app 0.4.49): tests stay off the network.
+    return {'PATH': f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", 'ESP_SCREENS_BUILD_CACHE': 'off'}
 
 
 class DownloadChecks(unittest.TestCase):

@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Ez az entitás ki van kapcsolva a Home Assistantban, vagy a kijelző újraindul.",
       "lower": "{name} csökkentése",
-      "higher": "{name} növelése"
+      "higher": "{name} növelése",
+      "screensaver": {
+        "title": "Képernyővédő",
+        "show": "Megjelenítés készenlétben",
+        "standby_off": "Kapcsold be az Automatikus készenlétet a használatához.",
+        "needs_firmware": "Frissítsd ezt a képernyőt a(z) {version} firmware-re a képernyővédő használatához.",
+        "order": "A képernyő az elsőt mutatja, ami elérhető. Húzd a sorrend módosításához.",
+        "no_pictures": "Ennek a képernyőnek nincs memóriája képekhez, ezért az órát mutatja.",
+        "tap": "Egy érintés felébreszti a képernyőt. A képernyővédőn csak a lejátszó gombjai működnek: lejátszás vagy szünet és a hangerő.",
+        "use": "{name} használata",
+        "choose_media": "Válassz lejátszót",
+        "add_media": "Még egy lejátszó",
+        "players": "Lejátszók, az első legfelül",
+        "choose_camera": "Válassz kamerát",
+        "weather_auto": "Kinti hőmérséklet a Home Assistantból",
+        "weather_none": "Nincs hőmérséklet",
+        "kinds": {
+          "media": "Szóló zene",
+          "camera": "Kamera",
+          "clock": "Óra"
+        },
+        "details": {
+          "media": "Lejátszás közben, a borítójával",
+          "media_unset": "Válassz lejátszót a használatához",
+          "media_more": "Az első, amelyik játszik, a borítóval",
+          "camera": "A képe, 15 másodpercenként",
+          "camera_unset": "Válassz kamerát a használatához",
+          "clock": "Az idő, a dátum és a kinti hőmérséklet, fehéren feketén"
+        }
+      }
     },
     "update": {
       "starting": "Frissítés indítása…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Egyetlen ember készíti",
-      "body": "A Tessera ingyenes, és nincs előfizetés. A szabadidőmben fejlesztem. Ha a kijelzőid egy kicsit kellemesebbé teszik az otthonodat, egy kávé segít, hogy folytassam.",
-      "buy": "Hívd meg Maxet egy kávéra",
+      "body": "A Tessera ingyenes, és az is marad. A szabadidőmben fejlesztem. Ha szeretnéd, hogy továbbra is új kártyákat és kijelzőket adjak hozzá, egy kis havi támogatás ezt lehetővé teszi. Egy egyszeri kávé is ugyanolyan szívesen fogadott.",
+      "monthly": "Havi támogatás",
+      "once": "vagy hívj meg egyszer egy kávéra",
       "later": "Talán később",
       "donated": "Már adományoztam",
       "thanks": "Köszönöm! Ez az üzenet többé nem jelenik meg."

@@ -51,7 +51,7 @@ from its size. Its cards ask for no pictures while it runs (`warming`).
 - **The first layout since the start** is prepared on screen: "Preparing pages 3/8" over everything, with a
   line of fun about what the next page holds (`screen.preparing` in the translations; every line only looks, none
   sounds like the screen does something to a device). One page per step of an LVGL timer, 70 to 250 ms each on an S3.
-  After the last one the screen stays up to 3 s (`SETTLE_MAX_MS`) while the data ESP Screens sends after a layout (a
+  After the last one the screen stays up to 3 s (`SETTLE_MAX_MS`) while the data Tessera sends after a layout (a
   graph's history, a player's details) lands on the cards it belongs to.
 - **A later layout** (a save in the editor) is prepared in the background, one page every 300 ms while nobody touches
   the screen (`PREPARE_QUIET_MS`).

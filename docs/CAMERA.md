@@ -44,7 +44,7 @@ App 0.2.77 with firmware 0.2.64 uses the same road for a media player's picture.
 (a tap on a media player's tile, or a media tile of size *Full page*) shows the album cover of
 what plays, with the title, the artist and the album, a progress bar and the keys under it.
 
-- The screen asks ESP Screen Manager for the cover with the size it draws it at and the colour
+- The screen asks Tessera Screen Manager for the cover with the size it draws it at and the colour
   behind it (the event `esphome.screen_camera` with `size` and `bg`). The app fetches the
   picture through Home Assistant's own proxy for the player (`/api/media_player_proxy/...`), cuts
   it square, sizes it, rounds the corners over that colour and serves it on port 8098 as a BMP,
@@ -76,7 +76,7 @@ camera's view in the icon's place of a single, double-width or full-page tile: t
 cut square with the tile's rounded corners, delivered as described below.
 
 - **One download per page.** Firmware before 0.3.7 asks for a strip (newer firmware asks for frames, see
-  [A camera that fills its tile](#a-camera-that-fills-its-tile)). The screen asks ESP Screen Manager for all the live tiles of the page at
+  [A camera that fills its tile](#a-camera-that-fills-its-tile)). The screen asks Tessera Screen Manager for all the live tiles of the page at
   once (the event `esphome.screen_camera` with `tiles`, the entities in slot order, `size`, the side of
   the icon's circle, and `bg`, the colour of each tile behind the corners). The app answers with one
   BMP: a strip of squares, top to bottom in that order, and every tile draws its own square out of it
@@ -169,7 +169,7 @@ motion integration keeps of its last event.
 
 The screen never talks to Home Assistant about images, and it never holds a Home Assistant token.
 
-1. The screen asks ESP Screen Manager for a camera (the event `esphome.screen_camera`), or the app
+1. The screen asks Tessera Screen Manager for a camera (the event `esphome.screen_camera`), or the app
    sends the picture of an alert by itself.
 2. The app fetches the snapshot from Home Assistant with its own access (the same pictures the
    Home Assistant frontend shows), and makes it exactly as large as the screen draws it: full screen

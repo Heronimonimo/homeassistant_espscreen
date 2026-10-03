@@ -124,6 +124,16 @@ def main():
             if match and re.search(r'^  - platform: homeassistant$', match[0], re.M):
                 fail(f'{path.relative_to(ROOT)}: a {section} subscribes to Home Assistant; runtime tiles bring their own values')
 
+    # The screen starts in the core's `esphome: on_boot:`. ESPHome does not join a package's on_boot to it: the last one
+    # merged takes its place whole, and the screen then starts without its fonts, its settings and its tiles while
+    # the build and the API look fine. Code a board or a feature runs at the start is a hook substitution of the core's
+    # lambda (BOOT_TOUCH), or a component with a setup of its own (components/flash_layout).
+    for path in sorted((ROOT / 'packages').rglob('*.yaml')):
+        block = re.search(r'^esphome:\n(.*?)(?=^[a-zA-Z_]+:|\Z)', without_comments(path.read_text()), re.M | re.S)
+        if path != profiles.CORE and block and re.search(r'^  on_boot:', block[1], re.M):
+            fail(f'{path.relative_to(ROOT)} has an esphome: on_boot: of its own, which would replace the core\'s: '
+                 f'use a hook substitution of the core\'s lambda, or a component')
+
     # Every name a screen's files read is defined somewhere in its chain.
     for board, path in boards.items():
         entry = profiles.PROFILES[list(boards).index(board)]

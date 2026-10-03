@@ -98,7 +98,7 @@ REF = 'main'
 # The shared firmware of this app release: packages/core.yaml's SCREEN_FIRMWARE_VERSION, what every board builds
 # unless its own board file went ahead with a fix for that board alone (firmware_target, docs/BOARD_RELEASES.md). The
 # middle number is the core: the feature gates below name a shared X.Y.0, so a feature always ships with a new core.
-FIRMWARE_VERSION = '0.28.0'
+FIRMWARE_VERSION = '0.33.0'
 # The Auto standby switch a screen offers Home Assistant automations.
 AUTO_STANDBY_MIN_FIRMWARE = '0.2.41'
 # The settings page the screen opens itself, and the screen.settings tile that opens it.
@@ -437,8 +437,13 @@ NAME_SCREEN_BOARD = ('Screen board',)
 # What a screen can do with its backlight (firmware 0.2.99, app 0.2.120): "dimmable", "standby", both, or "none".
 # Firmware from before it says nothing, and then the board's own row in boards.json decides (dimmable/can_standby below).
 NAME_SCREEN_FEATURES = ('Screen features',)
+# What a screen with 4 MB of flash says about its partition table (firmware 0.33.1 of those boards, app 0.4.56;
+# components/flash_layout, docs/FLASH_LAYOUT.md): "wide", ready for the wide one ("widen", or "widen_next" when it
+# takes one more update first), or "old" and "other" when it keeps what it has. No other board has the sensor.
+NAME_SCREEN_FLASH = ('Screen flash',)
 SCREEN_ENTITY_NAMES = frozenset(NAME_TILE_SETTINGS + NAME_SCREEN_FIRMWARE + NAME_GUITION_TYPE + NAME_DEVICE_NAME + NAME_IP_ADDRESS
-                                + NAME_SCREEN_LANGUAGE + NAME_SCREEN_LAYOUT + NAME_SCREEN_BOARD + NAME_SCREEN_FEATURES)
+                                + NAME_SCREEN_LANGUAGE + NAME_SCREEN_LAYOUT + NAME_SCREEN_BOARD + NAME_SCREEN_FEATURES
+                                + NAME_SCREEN_FLASH)
 
 # What a board looks like: the glass it draws on and the cells of one page, for each way the board can hang. These
 # come straight from the board files (tools/generate_board_shapes.py writes boards.json from PANEL_W, GRID_COLS and
@@ -808,6 +813,8 @@ OWNED_SETTINGS_MARKERS = frozenset(('Night mode', 'Night starts', 'Night ends', 
 ROTATION_OPTIONS = ('0°', '90°', '180°', '270°')
 # Every board turns since this firmware; the Guition turned since 0.2.9.
 ROTATION_MIN_FIRMWARE = (0, 2, 80)
+# The screensaver (screen_saver.py): what the screen shows in standby instead of its dimmed tiles; its hello lists it.
+SCREENSAVER_MIN_FIRMWARE = (0, 29, 0)
 # The button that starts a screen's calibration wizard again (app 0.2.117). Only a board whose glass is one you
 # calibrate builds it, so the button being on the device is what says this screen can be calibrated at all: no
 # board list here, and a board added later needs nothing of this app. A resistive panel reads a voltage off the
@@ -2481,6 +2488,8 @@ def discover_screens(registry, states, devices, areas):
     # What the screen says its backlight can do (firmware 0.2.99): nothing here for older firmware, and nothing
     # while it is offline either, which is when the board's row in boards.json decides (features_of).
     features = diagnostic(NAME_SCREEN_FEATURES, FEATURES_TEXT)
+    # What a screen with 4 MB of flash says about its partition table (app 0.4.56); nothing for every other screen.
+    flash = diagnostic(NAME_SCREEN_FLASH, r'[a-z][a-z_]{0,15}')
     addresses = diagnostic(NAME_IP_ADDRESS, r'\d{1,3}(\.\d{1,3}){3}')
     languages = diagnostic(NAME_SCREEN_LANGUAGE, r'[a-z]{2,3}(-[A-Za-z0-9]{2,8})?')
     # Firmware from before the languages (0.2.75 and older) has no such sensor: it speaks English, with fewer letters.
@@ -2508,6 +2517,7 @@ def discover_screens(registry, states, devices, areas):
                         'shape': parse_shape(shapes.get(item.get('device_id'))),
                         # What this screen can do with its backlight, in its own words (firmware 0.2.99).
                         'features': features.get(item.get('device_id')),
+                        'flash': flash.get(item.get('device_id')),
                         'node': nodes.get(item.get('device_id')), 'ip': addresses.get(item.get('device_id')),
                         'language': languages.get(item.get('device_id')),
                         'language_sensor': item.get('device_id') in speaks,
@@ -2589,6 +2599,11 @@ def installation_yaml(data):
     password: {quote(secrets.token_urlsafe(12))}
 captive_portal:
 ''' if SHAPES[board].get('hotspot', True) else '')
+    # What lets ESP Screens replace the partition table over Wi-Fi (boards.json `wide_slots`, app 0.4.56): a board with
+    # 4 MB of flash builds for wider update slots than ESPHome's own table has, and a screen that still has that table
+    # gets the wide one after an update (docs/FLASH_LAYOUT.md). It has to stand here, in the screen's own YAML: ESPHome's
+    # default for it would win over a line in a package.
+    table_access = '    allow_partition_access: true\n' if SHAPES[board].get('wide_slots') else ''
     return f'''# Keep this file safe: it contains the unique keys for this screen.
 # Wi-Fi comes from the secrets.yaml of ESPHome Device Builder.
 substitutions:
@@ -2614,7 +2629,7 @@ api:
 ota:
   - platform: esphome
     password: {quote(ota)}
-wifi:
+{table_access}wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   power_save_mode: none

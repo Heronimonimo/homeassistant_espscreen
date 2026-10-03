@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Esta entidad está desactivada en Home Assistant o la pantalla se está reiniciando.",
       "lower": "{name}: menos",
-      "higher": "{name}: más"
+      "higher": "{name}: más",
+      "screensaver": {
+        "title": "Salvapantallas",
+        "show": "Mostrar en reposo",
+        "standby_off": "Activa Reposo automático para usarlo.",
+        "needs_firmware": "Actualiza esta pantalla al firmware {version} para usar un salvapantallas.",
+        "order": "La pantalla muestra el primero que esté disponible. Arrastra para cambiar el orden.",
+        "no_pictures": "Esta pantalla no tiene memoria para imágenes, así que muestra el reloj.",
+        "tap": "Un toque activa la pantalla. Solo los botones de un reproductor funcionan en el salvapantallas: reproducir o pausar y el volumen.",
+        "use": "Usar {name}",
+        "choose_media": "Elige un reproductor",
+        "add_media": "Otro reproductor",
+        "players": "Reproductores, el primero arriba",
+        "choose_camera": "Elige una cámara",
+        "weather_auto": "Temperatura exterior de Home Assistant",
+        "weather_none": "Sin temperatura",
+        "kinds": {
+          "media": "Música sonando",
+          "camera": "Cámara",
+          "clock": "Reloj"
+        },
+        "details": {
+          "media": "Mientras suena, con su portada",
+          "media_unset": "Elige un reproductor para usarlo",
+          "media_more": "El primero que reproduce, con su carátula",
+          "camera": "Su imagen, cada 15 segundos",
+          "camera_unset": "Elige una cámara para usarla",
+          "clock": "La hora, la fecha y la temperatura exterior, en blanco sobre negro"
+        }
+      }
     },
     "update": {
       "starting": "Iniciando la actualización…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Hecho por una sola persona",
-      "body": "Tessera es gratis y no tiene suscripción. Lo desarrollo en mi tiempo libre. Si tus pantallas hacen tu casa un poco más agradable, un café me ayuda a seguir.",
-      "buy": "Invita a Max a un café",
+      "body": "Tessera es gratis y seguirá siéndolo. Lo desarrollo en mi tiempo libre. Si quieres que siga añadiendo tarjetas y pantallas nuevas, una pequeña aportación mensual lo hace posible. Un café puntual es igual de bienvenido.",
+      "monthly": "Apoyar cada mes",
+      "once": "o invítame a un café una vez",
       "later": "Quizás más tarde",
       "donated": "Ya he donado",
       "thanks": "¡Gracias! Este mensaje no volverá a aparecer."

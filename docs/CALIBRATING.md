@@ -11,13 +11,13 @@ panel, a loose connection, unstable power, or random outliers.
 
 ## Preparing
 
-1. Use the screen's own ESPHome YAML, the one ESP Screens wrote when it was
+1. Use the screen's own ESPHome YAML, the one Tessera wrote when it was
    installed, and add your own `calibration.yaml` to its `packages:` (it starts as
    identity). Don't carry over another panel's correction.
 
 ```yaml
 packages:
-  display: ...                                   # what ESP Screens put there
+  display: ...                                   # what Tessera put there
   local_overrides: !include kitchen.local.yaml   # idem
   calibration: !include calibration.yaml
 ```
@@ -124,7 +124,7 @@ Then check the real thing: the tiles, the navigation and a few taps in the corne
 
 Most screens never need this. A CYD shows its calibration on the screen itself when
 it first starts, and there are three ways back to it: **Settings -> This screen -> Calibrate touch**
-on the screen itself, **Screen settings -> This screen -> Calibrate touch** in ESP Screens, and the
+on the screen itself, **Screen settings -> This screen -> Calibrate touch** in Tessera, and the
 **Calibrate touch** button in Home Assistant (on the screen's ESPHome device). All three start the same
 wizard. This USB route is for a panel that stays off after that, or for a measurement report.
 

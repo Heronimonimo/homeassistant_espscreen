@@ -24,6 +24,8 @@ packages:
   hardware: !include ../hardware/cyd-2432s028.yaml
   # How every board's firmware is built (ESP-IDF, as ESPHome recommends it).
   build: !include ../hardware/esp-idf.yaml
+  # Wide update slots for 4 MB of flash, and the way a screen that is out there gets them.
+  flash: !include ../hardware/flash-4mb.yaml
   # The cards of this board's grid, one per cell (tools/generate_cells.py writes them; docs/RESPONSIVE.md).
   cells: !include ../cells/6.yaml
   # Every size of the compact look, scaled to DISPLAY_DPI below. This glass is where that look was drawn.
@@ -37,6 +39,9 @@ packages:
 substitutions:
   # The key of this board file; the firmware reports it so ESP Screens knows what board a screen is.
   BOARD_ID: "cyd9342"
+  # This board's own firmware revision (docs/BOARD_RELEASES.md): the wide partition table of a board with 4 MB of flash
+  # (docs/FLASH_LAYOUT.md). The next shared release takes this line out again.
+  SCREEN_FIRMWARE_VERSION: "0.33.1"
   DEVICE_NAME: "cyd9342-new"
   DEVICE_FRIENDLY_NAME: "My CYD"
 
@@ -66,7 +71,7 @@ substitutions:
   DISPLAY_MODEL: "ILI9342"                      # ESPHome's mipi_spi model of the display controller
   DISPLAY_DATA_RATE: "40MHz"                    # the display's SPI clock; 40MHz matches ESPHome's board preset
   DISPLAY_INVERT_COLORS: "false"
-  BACKLIGHT_FREQUENCY: "20000Hz"                # the backlight's PWM (see the output block)
+  BACKLIGHT_FREQUENCY: "1000Hz"                 # the backlight's PWM; see the output block (GitHub #42)
 
   # The ILI9341 CYD's touch range (packages/boards/cyd-2432s028.yaml): the same XPT2046 on the same glass. The
   # calibration on the first start measures this board's own.

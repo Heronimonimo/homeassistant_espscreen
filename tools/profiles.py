@@ -92,9 +92,18 @@ def flash_mb(board):
 
 def hotspot(board):
     """Whether a screen of this board gets the Wi-Fi fallback hotspot and its captive portal (app 0.4.5+). On 4 MB of
-    flash both update slots are 1.75 MB, and the hotspot takes some 90 KB of one; a screen whose Wi-Fi changed is
+    flash both update slots are 1.94 MB (1.75 MB before the wide table), and the hotspot takes some 90 KB of one; a
+    screen whose Wi-Fi changed is
     installed again over USB instead (docs/EASY_SETUP.md). Every board with more flash keeps it."""
     return flash_mb(board) > 4
+
+
+def wide_slots(board):
+    """Whether a board's flash takes the wide table (firmware 0.33.1+ of those boards): its files include packages/hardware/flash-4mb.yaml,
+    as every board with 4 MB of flash does. Its update slots are then 2,031,616 bytes in place of ESPHome's 1,835,008,
+    and a screen's own YAML lets ESP Screens replace the table of one that is out there over Wi-Fi
+    (`ota: allow_partition_access`, docs/FLASH_LAYOUT.md)."""
+    return any(path.name == 'flash-4mb.yaml' for path in chain(BOARDS[board]))
 
 
 def cells_of(board_file):

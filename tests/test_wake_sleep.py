@@ -143,9 +143,12 @@ class Profiles(unittest.TestCase):
         for name, text in self.profiles.items():
             # dim_display decides nothing itself: the interval asks for Auto standby, the Sleep button sets the flag.
             dim = script(text, 'dim_display')
-            self.assertRegex(dim, r"then:\s+- lambda: \|-\s+id\(display_dimmed\) = true;\s+id\(apply_screen_settings\)\.execute\(\);\s+- if:", name)
+            self.assertRegex(dim, r"then:\s+- lambda: 'id\(display_dimmed\) = true;'\s+- if:", name)
+            # The cards close first and the level comes after (firmware 0.29.0+): the screensaver opens the camera's full
+            # view itself in apply_screen_settings, and close_cards would close it again.
             self.assertRegex(dim, r"return screen_settings::current\.home_on_standby;'\s+then:\s+- script\.execute: go_home\s+else:\s+"
-                                  r"- lambda: 'settings_screen::close\(\);'\s+- script\.execute: close_cards", name)
+                                  r"- lambda: 'settings_screen::close\(\);'\s+- script\.execute: close_cards\s+(#[^\n]*\s+)?"
+                                  r"- lambda: 'id\(apply_screen_settings\)\.execute\(\);'", name)
             self.assertNotIn('lvgl.widget.hide', dim, f'{name}: cards close through close_cards')
             callers = re.findall(r'script\.execute: dim_display', text)
             self.assertEqual(len(callers), 2, f'{name}: the standby interval and the Sleep button')

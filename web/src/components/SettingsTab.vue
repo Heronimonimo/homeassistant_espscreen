@@ -5,6 +5,7 @@ import { computed } from "vue";
 import { t } from "../i18n";
 import { glyph } from "../model/topbar";
 import FeedbackPanel from "./FeedbackPanel.vue";
+import ScreensaverCard from "./ScreensaverCard.vue";
 import {
   calibrateTouch, choiceText, currentScreen, pageReachWarning, SETTING_GROUPS, setSetting, settingLabel, settingText, settingValues, settingsView, state, steppedSetting,
   type SettingRow,
@@ -78,7 +79,8 @@ const startCalibration = () => currentScreen.value && calibrateTouch(currentScre
   <div class="settings" id="general-settings" :class="{ offline }">
     <span class="status" id="settings-status" role="status">{{ status }}</span>
     <div v-if="view" class="set-grid" id="settings-groups">
-      <section v-for="group in groups" :key="group.group" class="set-card">
+      <template v-for="group in groups" :key="group.group">
+      <section class="set-card">
         <h4><span class="mdi">{{ glyph(group.icon) }}</span>{{ t(`editor.screen_settings.groups.${group.group}`) }}</h4>
         <div v-for="row in group.rows" :key="row.key" class="srow" :class="[`setting-${isSwitch(row) ? 'toggle' : row.kind}`, { inactive: !needs(row) || unavailable(row) }]" :data-setting="row.key"
           :title="unavailable(row) && !offline ? t('editor.screen_settings.unavailable') : ''"
@@ -100,6 +102,9 @@ const startCalibration = () => currentScreen.value && calibrateTouch(currentScre
         </div>
         <p v-if="reachWarning && group.rows.some((row) => row.key === 'page_buttons')" class="hint warn" id="settings-page-reach">{{ reachWarning }}</p>
       </section>
+      <!-- The screensaver (app 0.4.48) goes with standby, so it stands right after the group that turns standby on. -->
+      <ScreensaverCard v-if="group.group === 'brightness'" />
+      </template>
       <!-- This screen: the group the screen's own page keeps its actions in. Only what this screen can do shows up,
            so a capacitive panel has no card here at all. -->
       <section v-if="view.calibrate" class="set-card" id="settings-this-screen">

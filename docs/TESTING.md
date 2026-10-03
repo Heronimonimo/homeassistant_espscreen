@@ -112,12 +112,12 @@ load. A count read over the API is not such a result; an eye on the glass is.
 
 The release a user gets, from end to end, on a screen of its own (not one a household depends on):
 
-1. Update ESP Screen Manager in Home Assistant to the release.
+1. Update Tessera Screen Manager in Home Assistant to the release.
 2. Add the screen with **New screen**. With the board on the Home Assistant machine, flash it there; otherwise choose
    **Download** and flash the file from your own computer.
 3. Pair it: Home Assistant finds the screen, and with ESPHome Device Builder installed it takes the key from the
    screen's YAML by itself.
-4. Give it tiles in ESP Screens, with real entities, and look at the glass.
+4. Give it tiles in Tessera, with real entities, and look at the glass.
 5. Send an alert the way an automation does, `esp_screens_show_alert` with a `camera`: every screen gets the picture at
    the size of its own frame, and older firmware its old frame. It goes to every screen, so choose a moment for it.
 6. Swipe, tap the alert's button, open a camera. Leave tiles that switch real things alone unless that is the test.

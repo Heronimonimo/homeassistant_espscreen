@@ -1,12 +1,12 @@
 # Waveshare ESP32-S3-Touch-LCD-7, experimental
 
-Added in ESP Screen Manager 0.2.110, firmware 0.2.94, for [issue #22](https://github.com/MaxGramser/homeassistant_espscreen/issues/22).
+Added in app 0.2.110, firmware 0.2.94, for [issue #22](https://github.com/MaxGramser/homeassistant_espscreen/issues/22).
 This is the **800 x 480 ESP32-S3-Touch-LCD-7**, with GT911 capacitive touch, 8 MB octal PSRAM and 8 or 16 MB flash.
 It is not the 7B ([its own page](WAVESHARE7B.md)), the 7C or the version without touch. Physical acceptance has not been performed.
 
 ## Install
 
-Update ESP Screen Manager and choose **Waveshare · 7 inch** (ESP32-S3-Touch-LCD-7, marked Experimental) in **New screen**.
+Update Tessera Screen Manager and choose **Waveshare · 7 inch** (ESP32-S3-Touch-LCD-7, marked Experimental) in **New screen**.
 Follow [Easy setup](EASY_SETUP.md) to create a profile with its own name, Wi-Fi references and unique API/OTA keys.
 Choose the correct USB port, or download the firmware to flash with ESPHome Web from your own computer.
 Keep an existing working profile if the board is already installed. Pair it through the ESPHome integration before adding tiles.
@@ -36,7 +36,7 @@ which can then drive the backlight with PWM. Both pins in use are reachable with
 GPIO6 on the sensor connector, or GPIO16 on the RS485 connector.
 See the [community thread](https://community.home-assistant.io/t/esp32-s3-7inch-capacitive-touch-display-adjust-brightness/771030/10) for the pad and the wiring.
 
-The firmware needs no new release for this. Every screen installed by ESP Screens keeps a small YAML file of its own that is
+The firmware needs no new release for this. Every screen installed by Tessera keeps a small YAML file of its own that is
 loaded after the shared package and survives app updates. Open the screen, press `···`, choose **Override YAML** (advanced)
 and enter this, with `GPIO16` replaced by the pin the wire is soldered to:
 
@@ -69,7 +69,7 @@ Then press **Save & check**, which validates the complete profile, and **Update 
 - `min_power` maps the whole brightness setting onto the duty range the LED driver actually lights at. One board went dark
   below roughly 40 %; raise or lower the figure until the lowest setting is as dim as the board can go.
   `zero_means_zero` keeps a level of zero completely dark.
-- From firmware 0.2.99 a screen reports what it can do (the **Screen features** sensor), so ESP Screens shows the
+- From firmware 0.2.99 a screen reports what it can do (the **Screen features** sensor), so Tessera shows the
   brightness row for a modified board instead of reading it from its own table per board.
 - Standby and night mode stay switched off on this board (`CAN_STANDBY`). With the mod the boost converter behind the LEDs
   stays powered and only the duty falls to zero, so the 4.3-inch brownout cannot occur in the same way, but that has not
@@ -89,7 +89,7 @@ Reported working on a board revision 1.1 with 8 MB flash by [@Cjdavidson](https:
 
 ## What to report while testing
 
-1. Board revision and flash size, successful boot, pairing and appearance in ESP Screens.
+1. Board revision and flash size, successful boot, pairing and appearance in Tessera.
 2. Correct colours and a stable picture across several page changes and cold starts.
 3. Physical taps near each corner, slider drags and edge swipes, in the selected orientation.
 4. A full page of tiles, opening and closing the settings and detail cards, and the half-turn setting.

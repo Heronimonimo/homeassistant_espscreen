@@ -1,6 +1,8 @@
 # Installation and everyday use
 
-Tessera is the new name for ESP Screens; the app and your screens are the same. The [quick start](https://tessera-maxgramser.on-forge.com/docs/quick-start) and [the full installation guide](https://tessera-maxgramser.on-forge.com/docs/getting-started) are on the Tessera website, with [the screens that work](https://tessera-maxgramser.on-forge.com/screens).
+Tessera is the new name for ESP Screens; the app and your screens are the same. The [quick start](https://tessera-maxgramser.on-forge.com/docs/quick-start) and [the manual](https://tessera-maxgramser.on-forge.com/docs/) are on the Tessera website, with [the screens that work](https://tessera-maxgramser.on-forge.com/screens).
+
+Looking for e-ink? Tessera is for colour LCD touch screens. [Tesserae (tesserae.ink)](https://tesserae.ink) is a separate open-source project with a similar name, for calm dashboards on e-ink panels.
 
 Open **New screen** in the sidebar to install a screen: connect it via USB to the
 Home Assistant machine, choose the board, name and USB port, then click **Install**.

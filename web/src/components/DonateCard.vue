@@ -1,14 +1,15 @@
 <script setup lang="ts">
-// A quiet ask for a coffee on the home overview, never while a screen is being edited. It waits two days after the
-// first visit, comes back a week after "Maybe later", a month after the coffee link, and never after "I already
-// donated". Kept in this browser only: nothing goes into the screens' data or leaves the house.
+// A quiet ask for support on the home overview, never while a screen is being edited: a monthly membership first, a
+// one-time coffee next to it. It waits two days after the first visit, comes back a week after "Maybe later", a month
+// after either link, and never after "I already donated". Kept in this browser only: nothing goes into the screens' data or leaves the house.
 import { ref } from "vue";
 import { t } from "../i18n";
 import { toast } from "../store";
 
 const KEY = "esp-screens.donate";
 const DAY = 86_400_000;
-const LINK = "https://buymeacoffee.com/f5j9jnkmhpv";
+const MONTHLY = "https://buymeacoffee.com/f5j9jnkmhpv/membership";
+const ONCE = "https://buymeacoffee.com/f5j9jnkmhpv";
 
 function due() {
   try {
@@ -44,7 +45,10 @@ function donated() {
     </div>
     <p>{{ t("editor.donate.body") }}</p>
     <div class="donate-actions">
-      <a class="donate-buy" :href="LINK" target="_blank" rel="noopener" @click="hide(30)">{{ t("editor.donate.buy") }}</a>
+      <a class="donate-buy" :href="MONTHLY" target="_blank" rel="noopener" @click="hide(30)">{{ t("editor.donate.monthly") }}</a>
+      <a class="donate-link" :href="ONCE" target="_blank" rel="noopener" @click="hide(30)">{{ t("editor.donate.once") }}</a>
+    </div>
+    <div class="donate-actions donate-quiet">
       <button type="button" class="donate-link" @click="hide(7)">{{ t("editor.donate.later") }}</button>
       <button type="button" class="donate-link" @click="donated">{{ t("editor.donate.donated") }}</button>
     </div>
@@ -65,6 +69,8 @@ function donated() {
 .donate-buy:hover { opacity: 0.9; }
 .donate-link { color: var(--accent); font-size: 13px; padding: 0; }
 .donate-link:hover { text-decoration: underline; }
+.donate-quiet { margin-top: 12px; }
+.donate-quiet .donate-link { color: var(--muted); }
 @media (max-width: 640px) {
   .donate { left: 12px; right: 12px; bottom: 12px; width: auto; }
 }

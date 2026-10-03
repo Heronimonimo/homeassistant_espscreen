@@ -6,7 +6,7 @@ bedroom temperature and the front door lock. It needs app 0.4.12 and firmware 0.
 
 ## Using it
 
-1. In ESP Screens, open the screen and add **Bedside clock** from the library. It always fills its page.
+1. In Tessera, open the screen and add **Bedside clock** from the library. It always fills its page.
 2. Drag an entity onto one of the round places under the time, or tap a place and pick an entity in the library.
    A tile that is already on the screen can be dragged onto a place too, and a key can be dragged back onto an empty
    cell.

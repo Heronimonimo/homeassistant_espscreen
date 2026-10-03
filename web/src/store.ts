@@ -10,7 +10,7 @@ import { pillMetrics, uiScale } from "./model/ui-scale";
 import { createLayout, dimensions, type Size, versionAtLeast } from "./model/layout";
 import { validPreviewShape, type PreviewProfile } from "./model/preview";
 import renderer from "./wasm/renderer.json";
-import type { Capability, ChildTile, FeedbackView, ChangelogSection, EntityAction, HeaderItem, Inventory, Layout, Screen, Tile, PageLayout, PageTile, PageDocument, PageGrid, PageWorkspace } from "./types";
+import type { Capability, ChildTile, FeedbackView, ChangelogSection, EntityAction, HeaderItem, Inventory, Layout, Screen, ScreensaverChoice, Tile, PageLayout, PageTile, PageDocument, PageGrid, PageWorkspace } from "./types";
 
 import * as pages from "./model/pages";
 import { DraftHistory, type HistoryScope } from './model/draft-history';
@@ -1243,6 +1243,26 @@ export async function feedbackAction(screen: Screen, body: Record<string, unknow
 // Home Assistant, the ESPHome profile and everything kept here, in one request. The sidebar says what goes
 // before it asks; here only what came back is shown.
 // A screen's own name in this app (app 0.4.2): only the editor shows it, so it needs no flash. Empty gives Home Assistant's back.
+// The screensaver of a screen (app 0.4.48): the change shows at once and the whole choice goes to the add-on, which tells
+// the screen on its next pass.
+let saverEdits = 0;
+export async function setScreensaver(screen: Screen, patch: Partial<ScreensaverChoice>) {
+  const before = screen.screensaver;
+  if (!before) return;
+  const next = { ...before, ...patch };
+  screen.screensaver = next;
+  if (screen.virtual) return;
+  const edit = ++saverEdits;
+  try {
+    const { show, media, camera, order, off, weather = "auto", more = [] } = next;
+    const result = await send<{ screensaver: ScreensaverChoice }>(`screens/${encodeURIComponent(screen.id)}/screensaver`, "PUT", { screensaver: { show, media, camera, order, off, weather, more } });
+    if (result?.screensaver && edit === saverEdits) screen.screensaver = { ...next, ...result.screensaver };
+  } catch (e: any) {
+    if (edit === saverEdits) screen.screensaver = { ...before };
+    toast(e.message);
+  }
+}
+
 export async function renameScreen(screen: Screen, name: string) {
   try {
     if (screen.virtual) {
