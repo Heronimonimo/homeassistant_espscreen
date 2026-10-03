@@ -17,8 +17,12 @@ The Tab5 is listed as a new board after successful hardware testing. In **New sc
 **Tab5 ST7121**. Other Tab5 display and touch variants are not covered by this hardware confirmation.
 
 The display uses the explicit ST7121 model. ESPHome's available touch platform is named `st7123`; it is configured
-here for the ST7121 controller using the community reference. The display and touch behavior on this board still needs
-to be checked on glass.
+here for the ST7121 controller using the community reference. This profile has been tested with the ST7121 variant;
+other Tab5 display and touch variants still need to be checked on glass.
+
+In Tessera, the screen's board label comes from its **Screen board** diagnostic and should identify the Tab5 (`tab5`).
+If it identifies another board, such as the CYD, reinstall the screen using the **Tab5 ST7121** profile so its firmware
+reports the correct board.
 
 The landscape grid defaults to three rows of tiles. In **New screen**, choose four rows to fit more, smaller tiles on a
 page. The portrait grid remains one column by five rows.
