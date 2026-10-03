@@ -1,7 +1,7 @@
 # A map card
 
-ESP Screens can show a map of where people are: the streets around them, your zones, and a marker for everyone on the
-card. ESP Screens draws the whole card in the screen's own colours and sends the screen a picture, the way a live camera
+Tessera can show a map of where people are: the streets around them, your zones, and a marker for everyone on the
+card. Tessera draws the whole card in the screen's own colours and sends the screen a picture, the way a live camera
 arrives. The screen never gets a location.
 
 There are two kinds of map:
@@ -66,16 +66,16 @@ frontend), so a household looks the same on a screen as in Home Assistant:
 ## Where the streets come from
 
 Home Assistant Core has a `map_tiles` integration, which its own map card uses. It fetches OpenStreetMap's vector tiles
-with Home Assistant's own identification, as the OpenStreetMap tile policy asks, and keeps them for a week. ESP Screens
+with Home Assistant's own identification, as the OpenStreetMap tile policy asks, and keeps them for a week. Tessera
 asks Home Assistant for those tiles and never contacts a tile server itself. A request names a zoom and two whole numbers:
 no entity, no name.
 
-A vector tile says what is there (a street of some kind, water, a park) and nothing about how it looks, so ESP Screens
+A vector tile says what is there (a street of some kind, water, a park) and nothing about how it looks, so Tessera
 draws it in the screen's colours: a quiet ground of greys with white streets, water and green in soft tints, in light and
 dark. The only strong colours on the card are the people and their zones. The card carries "© OpenStreetMap".
 
 When Home Assistant has no tiles to give (an older Home Assistant, or no internet), the card is drawn from the zones and
-the people alone, and ESP Screens asks again after ten minutes. A person's picture comes through Home Assistant too, or
+the people alone, and Tessera asks again after ten minutes. A person's picture comes through Home Assistant too, or
 from a public address on the internet; never from another address in the house.
 
 ## When it is drawn again
@@ -84,17 +84,22 @@ Never on a clock. With the layout, each map tile gets a short movement mark: a h
 about 25 meters, so a phone's drift is no change), their states, names, pictures and colours, the zones, and the tile's
 own choices and name. The screen asks for a new picture when the mark changes. A household that stays put costs nothing.
 
+When a picture does not come (firmware 0.30.0): a card keeps the map it shows until the next one has loaded, so
+someone moving never empties it. If Tessera cannot draw one at that moment, the screen asks again after ten seconds
+and then a little later each time, up to five minutes, and keeps the last map meanwhile. Older firmware asked once: a
+page with only maps then showed its plain tiles until the page was turned.
+
 ## Light and dark
 
 The screen says which look it is in when it asks for its pictures, and gets the map drawn for that look, unless the tile
 keeps a look of its own. A screen in dark mode and one in light mode showing the same card each get their own picture.
-ESP Screens keeps the last maps it drew by their mark, their size and their look, so a page that loads again for a camera
+Tessera keeps the last maps it drew by their mark, their size and their look, so a page that loads again for a camera
 next to it does not draw its map again. The screen keeps its pictures under a name that includes the look as well, so
 switching the look asks for the other map.
 
 ## Privacy
 
-- **No location reaches a screen.** Who is on a card and how it frames them stay in ESP Screens; the screen gets the
+- **No location reaches a screen.** Who is on a card and how it frames them stay in Tessera; the screen gets the
   movement mark and pixels.
 - **The picture travels unencrypted over your network**, on port 8098, like every other picture. A map shows roughly
   where someone is to anyone who can read that traffic. Keep that in mind for a screen on a guest network.

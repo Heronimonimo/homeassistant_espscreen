@@ -20,7 +20,7 @@ numbers.
 | `packages/hardware/` | Hardware that several boards share: `esp-idf.yaml` (how every firmware is built), `esp32s3-rgb.yaml` (an ESP32-S3 with octal PSRAM driving an RGB panel), `waveshare-ch422g.yaml` (the Waveshare boards whose panel, touch and backlight hang on a CH422G expander), `guition-esp32p4.yaml` (the Guition ESP32-P4 boards with an ESP32-C6 for Wi-Fi) and the Guition boards on it, `guition-jc1060p470.yaml` and `guition-jc8012p4a1.yaml`, `m5stack-tab5.yaml` (the Tab5's different ESP32-C6 pins and I/O expander), and `cyd-2432s028.yaml` (the CYD apart from its display controller). | Board files, and each other |
 | `packages/boards/` | One board: its word (`BOARD_ID`), its glass (`PANEL_W`, `PANEL_H`, `DISPLAY_DPI`, `ROTATION_LANDSCAPE`), its grid, its draw buffer, the packages it includes, and its own hardware sections. `TOUCH_CONTROLLER` may name the physical chip when the ESPHome platform uses another chip's protocol driver. | The entry files |
 | `packages/cells/` | The cards of a grid, one per cell, written by `tools/generate_cells.py`. | Board files |
-| `packages/<board>.yaml` | The entry a screen installed from ESP Screens builds from over GitHub. ESP Screen Manager writes every screen's YAML with `files: [packages/<board>.yaml]`, so these names never change. | A screen's own YAML |
+| `packages/<board>.yaml` | The entry a screen installed from Tessera builds from over GitHub. Tessera Screen Manager writes every screen's YAML with `files: [packages/<board>.yaml]`, so these names never change. | A screen's own YAML |
 | `checkout/<board>.yaml` | The same entry for a build from a clone of this repository (checkout/README.md), with the secrets from `checkout/secrets.yaml` and the components of the checkout. | You |
 
 Both entries of every board are written from `boards.yaml` by `tools/generate_entries.py` (`--check` in tools/check.sh
@@ -107,7 +107,7 @@ to it: a few boards keep a value that was set by hand before this layout existed
 What depends on the canvas is not in the look at all: the firmware measures it at boot on the glass LVGL hands it,
 lying down or standing up. The tile area and its cells, the page bar, the strip that opens the settings, and the alert
 card (screen_alert::layout, firmware 0.2.103+: the look's card fitted to the glass, its title one line of its font, a
-camera picture in the camera's own proportions above the words or on their left, docs/CAMERA.md). ESP Screens sizes
+camera picture in the camera's own proportions above the words or on their left, docs/CAMERA.md). Tessera sizes
 the alert's picture with the same rule (screen_manager/app/alert_layout.py, kept equal to the firmware's by
 tests/test_alert_layout.py).
 

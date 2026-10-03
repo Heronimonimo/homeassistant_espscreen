@@ -22,6 +22,7 @@ Assistant entity belongs in a board file. docs/README.md lists every doc and say
 | change sizes, fonts or the grid | docs/RESPONSIVE.md | `ui_scale.h`, `packages/looks/`, `packages/cells/` |
 | change a colour | docs/THEME.md | `components/smart_display/theme.h` |
 | change how pages are kept or prepared | docs/KEPT_PAGES.md, docs/PAGES.md | `kept_pages.h`, `page_protocol.h` |
+| touch the flash of a board with 4 MB | docs/FLASH_LAYOUT.md | `components/flash_layout/`, `packages/hardware/flash-4mb.yaml` |
 | add or change a text | docs/TRANSLATING.md | `screen_manager/translations/en.json` |
 | touch the YAML package layers | docs/PROFILES.md | `packages/`, `checkout/` |
 | know which test proves what | docs/TESTING.md | `tools/check.sh` |
@@ -157,7 +158,7 @@ with the same signature: a blank line, a `---` rule, and two italic lines, each 
 
 _Got a screen running? Tell others which board you have and what works on the [Tessera website](https://tessera-maxgramser.on-forge.com/community/share?type=installation). It helps everyone pick a screen that works._
 
-_Like my work? Consider [buying me a coffee](https://buymeacoffee.com/f5j9jnkmhpv), much appreciated!_
+_Want me to keep building? Consider [supporting monthly](https://buymeacoffee.com/f5j9jnkmhpv/membership) or [buying me a coffee](https://buymeacoffee.com/f5j9jnkmhpv), much appreciated!_
 ```
 
 When the thread is about one board, append `&board=<key>` to that link, with the board's key from boards.yaml (`cyd`,

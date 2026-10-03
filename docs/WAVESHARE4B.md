@@ -1,6 +1,6 @@
 # Waveshare ESP32-S3-Touch-LCD-4B, experimental
 
-Added in ESP Screen Manager 0.2.126, firmware 0.2.102.
+Added in app 0.2.126, firmware 0.2.102.
 This is the **ESP32-S3-Touch-LCD-4B**: a 4-inch 480 x 480 IPS panel with an ST7701S driver over RGB, GT911 capacitive
 touch, 8 MB octal PSRAM and 16 MB flash. It is not the older ESP32-S3-Touch-LCD-4 without the "B", which has other pins.
 Physical acceptance has not been performed.
@@ -16,7 +16,7 @@ a screen to 0.6.1 or later.
 
 ## Install
 
-Update ESP Screen Manager and choose **Waveshare · 4 inch** (ESP32-S3-Touch-LCD-4B, marked Experimental) in **New screen**.
+Update Tessera Screen Manager and choose **Waveshare · 4 inch** (ESP32-S3-Touch-LCD-4B, marked Experimental) in **New screen**.
 Follow [Easy setup](EASY_SETUP.md) to create a profile with its own name, Wi-Fi references and unique API/OTA keys.
 Choose the correct USB port, or download the firmware to flash with ESPHome Web from your own computer.
 Keep an existing working profile if the board is already installed. Pair it through the ESPHome integration before adding tiles.
@@ -53,7 +53,7 @@ The board has two USB-C ports. Logs go out over the one with the USB-to-UART chi
 
 ## What to report while testing
 
-1. Board revision, successful boot, pairing and appearance in ESP Screens.
+1. Board revision, successful boot, pairing and appearance in Tessera.
 2. Correct colours and a stable picture across several page changes and cold starts. Shifted, mirrored or inverted
    colours point at the display block.
 3. Physical taps near each corner, slider drags and edge swipes, and the quarter-turn setting. Touch that lands mirrored

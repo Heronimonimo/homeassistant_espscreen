@@ -14,6 +14,9 @@ namespace camera_view {
 constexpr uint32_t REFRESH_MS = 4000;      // from the start of one load to the start of the next: a steady rhythm
 constexpr uint32_t GAP_MS = 800;           // at least this long between the end of one load and the next
 constexpr uint32_t ASK_AGAIN_MS = 10000;   // a link that does not come (or an app without an image) is asked for again
+// A picture the app draws itself (a map) is always there to be had, so an answer without one is a failure on the way
+// (firmware 0.30.0+): asked for again after ASK_AGAIN_MS, then twice as long each time, up to this.
+constexpr uint32_t ASK_AGAIN_MAX_MS = 300000;
 constexpr uint8_t MAX_FAILURES = 3;        // a link that fails this often in a row is old: ask for a new one
 constexpr uint32_t PENDING_MS = 20000;     // an alert's camera announced this long before the alert still belongs to it
 // A page on its way past (firmware 0.3.2+): no picture starts loading until the pages have stood still this long, so a
@@ -36,8 +39,14 @@ struct Feed {
   // A picture kept from before (picture_store.h) that is still good until this moment (firmware 0.3.2+): the feed asks
   // for its link as usual but loads nothing sooner. 0: no picture kept.
   uint32_t kept_until = 0;
+  // again (firmware 0.30.0+): a feed that loads once and still asks again after an answer without a picture, because
+  // the app draws what it shows (a page with a map). empties: such answers in a row, which set the wait.
+  bool again = false;
+  uint8_t empties = 0;
 
-  void open(const std::string &camera, bool one_load = false, uint32_t every_ms = REFRESH_MS) { *this = Feed{}; entity = camera; once = one_load; every = every_ms; }
+  void open(const std::string &camera, bool one_load = false, uint32_t every_ms = REFRESH_MS, bool ask_again = false) {
+    *this = Feed{}; entity = camera; once = one_load; every = every_ms; again = ask_again;
+  }
   bool open() const { return !entity.empty(); }
   // Decorative motion waits for the initial image attempt. A failed or missing
   // image must not hold readable fallback text still forever. Retries pause it
@@ -45,17 +54,25 @@ struct Feed {
   bool animation_ready() const { return !loading && (loaded || empty || finished_at != 0); }
 
   // A cover the app has none of (or an app that knows no covers) is asked for once: the card keeps its placeholder.
-  // A feed whose app has no picture asks again at its own pace, never sooner than ASK_AGAIN_MS.
+  // A feed whose app has no picture asks again at its own pace, never sooner than ASK_AGAIN_MS. A map's page asks
+  // again too, a little later each time (retry_after): before firmware 0.30.0 one answer without a picture left its
+  // cards without their map until the page was turned.
+  uint32_t retry_after() const {
+    uint32_t wait = ASK_AGAIN_MS;
+    for (uint8_t n = 1; n < empties && wait < ASK_AGAIN_MAX_MS; ++n) wait *= 2;
+    return wait < ASK_AGAIN_MAX_MS ? wait : ASK_AGAIN_MAX_MS;
+  }
   bool should_ask(uint32_t now) const {
-    if (once && empty) return false;
-    const uint32_t again = empty && every > ASK_AGAIN_MS ? every : ASK_AGAIN_MS;
-    return open() && !loading && url.empty() && (!asked || now - asked_at >= again);
+    if (once && empty && !again) return false;
+    const uint32_t wait = !empty ? ASK_AGAIN_MS : once ? retry_after() : every > ASK_AGAIN_MS ? every : ASK_AGAIN_MS;
+    return open() && !loading && url.empty() && (!asked || now - asked_at >= wait);
   }
   void ask(uint32_t now) { asked = true; asked_at = now; }
   // The app's answer: a link, or none (no image from Home Assistant, or a camera this screen may not show).
   void link(const std::string &address) {
     url = address;
     empty = address.empty();
+    empties = empty ? (empties < 255 ? empties + 1 : empties) : 0;
     failures = 0;
     started_at = finished_at = 0;
     loaded = false;

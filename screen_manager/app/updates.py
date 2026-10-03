@@ -13,6 +13,11 @@ from i18n import Text, english, screen_t, shown, t
 
 LOG = logging.getLogger('screen_manager')
 NIGHT_HOURS = range(3, 6)
+# What a screen with 4 MB of flash says about its partition table in its "Screen flash" sensor (components/flash_layout)
+# that this app acts on: it has the wide one, it is ready to take it, or it is ready after one more update (it runs
+# from its second slot, and ESPHome replaces the table of a screen in its first). Any other word, and no word at all,
+# is a screen that keeps the table it has. docs/FLASH_LAYOUT.md.
+SLOT_WORDS = ('wide', 'widen', 'widen_next')
 
 # Strict X.Y.Z, the one rule the feature gates follow too: an update goes by what the screen's sensor reports now.
 parse_version = parse_firmware
@@ -35,11 +40,24 @@ class Updater:
     settle_seconds = 60
     pause_seconds = 120
     poll_seconds = 5
+    # The partition table of a board with 4 MB of flash (app 0.4.56). How long a screen gets to say its word after a
+    # restart: its features sensor speaks every minute. And for a screen on its bridge, which Home Assistant cannot
+    # see: how often the steps are tried, how long a restart gets, and how long until a round that did not finish is
+    # tried again. A firmware is on trial for a minute after an update (ESPHome's rollback): the screen says "widen"
+    # only once it is confirmed, and the bridge gets that minute too (bridge_trial).
+    word_timeout = 240
+    bridge_attempts = 6
+    bridge_pause = 20
+    bridge_trial = 75
+    bridge_retry = 300
 
     def __init__(self, manager, path):
         self.manager, self.path = manager, Path(path)
         self.auto, self.hosts, self.results, self.last_round = False, {}, {}, None
         self.task, self.current, self.queue, self.phase = None, None, [], None
+        # Screens this app left on their bridge (app 0.4.56): {inbox: {'profile', 'host', 'since'}}, finished by the
+        # next round however it ended, also after a restart of the app.
+        self.bridging, self.bridge_tried = {}, 0.0
         # What's new since a screen's firmware, for the Update badge (app 0.2.73).
         self.changelog = changelog.load()
         if self.path.exists():
@@ -50,14 +68,18 @@ class Updater:
             self.hosts = {k: v for k, v in raw.get('hosts', {}).items() if isinstance(v, str)}
             self.results = {k: v for k, v in raw.get('results', {}).items() if isinstance(v, dict)}
             self.last_round = raw.get('last_round') if isinstance(raw.get('last_round'), str) else None
+            self.bridging = {k: v for k, v in raw.get('bridging', {}).items()
+                             if isinstance(v, dict) and isinstance(v.get('profile'), str) and isinstance(v.get('host'), str)}
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_suffix('.tmp')
         with open(temp, 'w', encoding='utf8') as handle:
             os.chmod(temp, 0o600)
+            # 'bridging' only while a screen is on its bridge, so the file reads as before for an older app.
             json.dump({'version': 1, 'auto': self.auto, 'hosts': self.hosts, 'results': self.results,
-                       'last_round': self.last_round}, handle, ensure_ascii=False)
+                       'last_round': self.last_round, **({'bridging': self.bridging} if self.bridging else {})},
+                      handle, ensure_ascii=False)
             handle.flush()
             os.fsync(handle.fileno())
         temp.replace(self.path)
@@ -75,7 +97,7 @@ class Updater:
     def renamed(self, old, new):
         """A screen's inbox entity got a new id: its address, last result and place in a running round follow."""
         changed = False
-        for store in (self.hosts, self.results):
+        for store in (self.hosts, self.results, self.bridging):
             if old in store:
                 if new not in store:
                     store[new] = store[old]
@@ -91,7 +113,7 @@ class Updater:
     def forget(self, inbox):
         """A screen that was removed on purpose (app 0.2.112): its address and its last result go with it."""
         changed = False
-        for store in (self.hosts, self.results):
+        for store in (self.hosts, self.results, self.bridging):
             if store.pop(inbox, None) is not None:
                 changed = True
         if changed:
@@ -256,41 +278,185 @@ class Updater:
 
     async def update_one(self, inbox):
         screen = self.screen(inbox)
-        if not screen or not screen['online']:
+        # A screen this app left on its bridge is away for Home Assistant, and still this app's to finish.
+        note = self.bridging.get(self.current_id(inbox))
+        if note and screen and screen['online'] and parse_version(screen.get('firmware')):
+            # It runs a screen's firmware again (installed by hand, or the last step did land): nothing to finish.
+            await self.close_bridge(inbox, note['profile'])
+            note = None
+        if not note and (not screen or not screen['online']):
             self.record(inbox, 'skipped', english('addon.updates.offline'))
             return 'skipped'
-        profile, host = self.resolve(screen)
+        profile, host = (note['profile'], note['host']) if note else self.resolve(screen)
         if not profile or not host:
             self.record(inbox, 'skipped', english('addon.updates.unknown_target'))
             return 'skipped'
         # Worked out before the build: the screen goes offline while it flashes, and this is what the build makes.
-        target = self.target_for(screen)
+        target = self.target_for(screen) if screen else FIRMWARE_VERSION
+        firmware = self.manager.firmware
+        wide = self.takes_wide_table(profile)
         self.phase = 'install'
         try:
             # Recheck when a queued/nightly screen reaches the front of the
             # queue; its saved configuration can change while another builds.
             self.manager.preflight_update(inbox)
-            self.manager.firmware.start({'file': profile, 'action': 'install', 'target': host})
-            await self.manager.firmware.task
+            if wide:
+                installed = await self.install_wide(inbox, profile, host)
+            else:
+                installed = await self.job(profile, 'install', host)
         except ValueError as error:
             # The sentence firmware.start refused with, kept with its key.
             self.record(inbox, 'failed', error.args[0] if len(error.args) == 1 else str(error))
             return 'failed'
-        if self.manager.firmware.job.get('state') != 'success':
+        if not installed:
             self.record(inbox, 'failed', english('addon.updates.build_failed'))
             return 'failed'
         self.phase = 'verify'
         if not await self.wait_for_target(inbox, target):
             self.record(inbox, 'failed', english('addon.updates.no_report', version=target), target)
             return 'failed'
+        if wide:
+            try:
+                back = await self.widen(inbox, profile, host)
+            except ValueError as error:
+                LOG.warning('%s keeps the partition table it has (%s)', profile, error)
+                back = True
+            if not back:
+                self.record(inbox, 'failed', english('addon.updates.dropped_off'), target)
+                return 'failed'
         self.phase = 'settle'
         await asyncio.sleep(self.settle_seconds)
         current = self.screen(inbox)
         if not current or not current['online']:
             self.record(inbox, 'failed', english('addon.updates.dropped_off'), target)
             return 'failed'
+        if self.current_id(inbox) in self.bridging:
+            await self.close_bridge(inbox, profile)
         self.record(inbox, 'success', english('addon.updates.updated', version=target), target)
         return 'success'
+
+    # ---- the partition table of a board with 4 MB of flash (app 0.4.56, docs/FLASH_LAYOUT.md)
+    async def job(self, profile, action, host=''):
+        """One ESPHome job for a profile, waited for. True when it succeeded; a refusal (ValueError) is the caller's."""
+        firmware = self.manager.firmware
+        firmware.start({'file': profile, 'action': action, **({'target': host} if host else {})})
+        await firmware.task
+        return firmware.job.get('state') == 'success'
+
+    def takes_wide_table(self, profile):
+        """Whether this profile's board builds for the wide partition table (boards.json `wide_slots`)."""
+        check = getattr(self.manager.firmware, 'wide_slots', None)
+        return bool(check and check(profile))
+
+    def slot_word(self, inbox):
+        """What the screen says about its partition table now, when it is one of SLOT_WORDS, else None: firmware from
+        before the sensor, a table of its owner's own, a firmware ESPHome has not confirmed yet, or a screen that is
+        restarting."""
+        word = (self.screen(inbox) or {}).get('flash')
+        return word if word in SLOT_WORDS else None
+
+    async def wait_for_word(self, inbox, wanted=SLOT_WORDS):
+        """The screen's word about its table once it is one of `wanted`, or None when word_timeout passes without."""
+        wanted = (wanted,) if isinstance(wanted, str) else wanted
+        deadline = time.monotonic() + self.word_timeout
+        while True:
+            screen = self.screen(inbox)
+            word = self.slot_word(inbox) if screen and screen['online'] else None
+            if word in wanted:
+                return word
+            if time.monotonic() >= deadline:
+                return None
+            await asyncio.sleep(self.poll_seconds)
+
+    async def send_table(self, inbox, profile, host):
+        """The wide table to a screen that says "widen", from the build just made. True when the screen is back and
+        says "wide"."""
+        LOG.info('%s: sending the wide partition table', profile)
+        if not await self.job(profile, 'widen', host):
+            return False
+        return await self.wait_for_word(inbox, 'wide') == 'wide'
+
+    async def install_wide(self, inbox, profile, host):
+        """Build and install the firmware of a board whose flash takes the wide table. True when it is on the screen.
+
+        A screen that already says "widen" gets the table first, from the firmware it runs. A screen that still has
+        ESPHome's table and no way to change it (firmware from before the component) cannot take a firmware larger than that
+        table's slot: it goes over its bridge. Anything else installs as every screen does."""
+        firmware = self.manager.firmware
+        if not await self.job(profile, 'build'):
+            return False
+        note = self.bridging.get(self.current_id(inbox))
+        if note:
+            return await self.over_bridge(inbox, profile, host, started=True)
+        word = self.slot_word(inbox)
+        if word == 'widen':
+            if not await self.send_table(inbox, profile, host):
+                return False
+        elif word != 'wide' and (firmware.image_size(profile) or 0) > firmware.NARROW_SLOT:
+            return await self.over_bridge(inbox, profile, host)
+        return await self.job(profile, 'install', host)
+
+    async def widen(self, inbox, profile, host):
+        """After an update: the wide table for a screen that still has ESPHome's and says it is ready. False only when
+        the screen was sent the table and did not come back; a screen that says nothing keeps what it has."""
+        word = await self.wait_for_word(inbox)
+        if word == 'widen_next':
+            # It runs from its second slot: the same firmware once more puts it in its first.
+            if not await self.job(profile, 'install', host):
+                LOG.warning('%s: the second install before the partition table failed; it keeps its table for now', profile)
+                return True
+            word = await self.wait_for_word(inbox, 'widen')
+        if word == 'widen':
+            return await self.send_table(inbox, profile, host)
+        return True
+
+    async def over_bridge(self, inbox, profile, host, started=False):
+        """The firmware of `profile`, already built and too large for the slot the screen has, by way of its bridge:
+        the bridge, the wide table, the firmware. True when the firmware is on the screen.
+
+        Home Assistant cannot see a screen on its bridge, so each step goes by what ESPHome's upload answers, and the
+        screen itself refuses what it cannot take without writing anything: a firmware too large for its slot, a table
+        before the bridge runs. On a slow flash chip it may also refuse the table while the bridge runs from its
+        second slot; installing the bridge once more moves it to the first. After an install the bridge gets the
+        minute ESPHome takes to confirm a new firmware, because a restart before that goes back to the one before.
+        The note in `bridging` stays until update_one has seen the screen back in Home Assistant with its firmware
+        and through its settle time: a restart in a new firmware's first minute puts the firmware from before back
+        (ESPHome's rollback), and from before is the bridge here. So a round that stops anywhere is picked up again
+        (`started`), from whatever step the screen is at."""
+        firmware = self.manager.firmware
+        inbox = self.current_id(inbox)
+        bridge = firmware.bridge(profile)
+        if not await self.job(bridge, 'build'):
+            return False
+        if not started:
+            LOG.info('%s: its firmware no longer fits the partition table it has; going over its bridge', profile)
+            self.bridging[inbox] = {'profile': profile, 'host': host, 'since': time.time()}
+            self.save()
+            if not await self.job(bridge, 'install', host):
+                # Nothing on the screen changed: it still runs what it ran.
+                await self.close_bridge(inbox, profile)
+                return False
+            await asyncio.sleep(self.bridge_trial)
+        for attempt in range(self.bridge_attempts):
+            # A round picked up again does not know how far the last one came: the firmware fits once the table is wide.
+            if (started or attempt) and await self.job(profile, 'install', host):
+                return True
+            if await self.job(bridge, 'widen', host):
+                await asyncio.sleep(self.bridge_pause)
+                if await self.job(profile, 'install', host):
+                    return True
+            if await self.job(bridge, 'install', host):
+                await asyncio.sleep(self.bridge_trial)
+        return False
+
+    async def close_bridge(self, inbox, profile):
+        """The screen runs its own firmware again: its note and its bridge go."""
+        if self.bridging.pop(self.current_id(inbox), None) is not None:
+            self.save()
+        try:
+            await self.manager.firmware.drop_bridge(profile)
+        except (OSError, ValueError) as error:
+            LOG.warning('Could not remove the bridge of %s (%s)', profile, error)
 
     async def wait_for_target(self, inbox, target=None):
         """Whether the screen reports the firmware the round flashed (`target`, its own by default) and the region's
@@ -322,6 +488,13 @@ class Updater:
                 if self.busy() or not self.manager.ha.online:
                     continue
                 now = datetime.now(getattr(self.manager.ha, 'time_zone', None) or timezone.utc)
+                # A screen left on its bridge is finished first, whatever the hour and with or without the nightly round.
+                waiting = [inbox for inbox in self.bridging if self.screen(inbox)]
+                if waiting and time.monotonic() - self.bridge_tried >= self.bridge_retry:
+                    self.bridge_tried = time.monotonic()
+                    LOG.info('Finishing the update of %d screen(s) on their bridge', len(waiting))
+                    self.launch(waiting, automatic=True)
+                    continue
                 if not self.due(now):
                     continue
                 self.last_round = now.date().isoformat()

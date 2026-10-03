@@ -40,12 +40,10 @@ output:
   - platform: ledc
     pin: GPIO21
     id: gpio_backlight_pwm
-    # ESPHome's ledc default is 1kHz. You don't see that while still (well
-    # above what the eye perceives as flicker), but moving the screen reveals
-    # motion blur turning the on/off pulses into streaks (the same effect as
-    # a PWM LED that "judders" when you move it). 20kHz sits well above the
-    # speed at which motion still makes that visible, and still leaves ample
-    # duty-cycle resolution left over for smooth dimming.
+    # 1 kHz, ESPHome's ledc default (GitHub #42, #20): at 20 kHz the transistor that switches the backlight could
+    # not follow the pulses, so 100 % was full and 95 % already almost dark, with little change below. At 1 kHz
+    # every level from 5 to 100 % steps evenly and nothing flickers, also when you move your head (checked on the
+    # bench CYD). The 4-inch Guition went the same way for the same reason (GitHub #5, 150 Hz).
     frequency: ${BACKLIGHT_FREQUENCY}
 
   - platform: ledc

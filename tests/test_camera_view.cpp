@@ -107,6 +107,31 @@ int main() {
   bare.ask(0);
   bare.link("");
   assert(bare.empty && !bare.should_ask(ASK_AGAIN_MS) && !bare.should_ask(100 * ASK_AGAIN_MS) && !bare.should_load(ASK_AGAIN_MS));
+  // A page of maps alone (firmware 0.30.0+) loads once too, but the app draws a map itself, so an answer without a
+  // picture is a failure on the way: asked for again after ASK_AGAIN_MS, then twice as long each time up to
+  // ASK_AGAIN_MAX_MS. Before, one such answer left the cards without their map until the page turned (discussion 105).
+  Feed maps;
+  maps.open("person.one,screen.map", true, 15000, true);
+  assert(maps.once && maps.again && maps.should_ask(0));
+  maps.ask(0);
+  maps.link("");
+  assert(maps.empty && maps.empties == 1 && !maps.should_load(ASK_AGAIN_MS) && maps.animation_ready());
+  assert(!maps.should_ask(ASK_AGAIN_MS - 1) && maps.should_ask(ASK_AGAIN_MS));
+  uint32_t at = ASK_AGAIN_MS;
+  for (uint32_t wait : {2 * ASK_AGAIN_MS, 4 * ASK_AGAIN_MS, 8 * ASK_AGAIN_MS, 16 * ASK_AGAIN_MS, ASK_AGAIN_MAX_MS, ASK_AGAIN_MAX_MS}) {
+    maps.ask(at);
+    maps.link("");
+    assert(!maps.should_ask(at + wait - 1) && maps.should_ask(at + wait));
+    at += wait;
+  }
+  // The picture that comes then loads once and stays, and the count starts again.
+  maps.ask(at);
+  maps.link("http://h/camera/maps.bmp");
+  assert(maps.empties == 0 && maps.should_load(at));
+  maps.start(at); maps.finish(at + 300, true);
+  assert(maps.loaded && !maps.should_load(at + 100 * REFRESH_MS) && !maps.should_ask(at + 100 * ASK_AGAIN_MS));
+  // A page of covers alone keeps its rule: asked once, then left alone.
+  assert(!bare.again && !cover.again);
   // Background media titles wait for the first image, and pause on refresh or
   // retry. Missing images and failed downloads still permit fallback motion.
   Feed background;

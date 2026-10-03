@@ -55,7 +55,10 @@
    build under `.esphome/check`, apart from the profiles of real screens). Check that no secrets are in Git.
 
    **Flash budget of the CYD and every 4 MB board** (app 0.2.78). The CYD has 4 MB of flash and two update slots of
-   1,835,008 bytes; the Guition's 16 MB leave it far from any limit. The same budget holds for every board with 4 MB
+   2,031,616 bytes since it builds with the wide partition table (app 0.4.56, docs/FLASH_LAYOUT.md); with ESPHome's
+   own table they were 1,835,008 bytes. A screen that still has that table gets the wide one after an update, and a
+   firmware that no longer fits its old slot reaches it over a bridge, so the budget goes by the wide slot. The
+   Guition's 16 MB leave it far from any limit. The same budget holds for every board with 4 MB
    of flash (`flash_mb` in tools/profiles.py: the CYD, its ILI9342 variant `cyd9342` and the Hosyond 4.0-inch
    `hosyond40`), and `tools/check.sh --firmware` applies it to each one it builds. A change that reaches every board
    builds the sample, which has the CYD only: the other two share its chip, code and look and sit within a few KB of
@@ -73,12 +76,12 @@
    and, when the ESPHome Device Builder ships a newer ESPHome, with that one too (`ESPHOME=<its esphome command>`),
    because users build their updates there.
 
-   | Image of a 4 MB board, share of its 1,835,008-byte slot | Rule |
+   | Image of a 4 MB board, share of its 2,031,616-byte slot | Rule |
    |---|---|
    | up to 90 % | normal |
    | 90-93 % | tight: every release states its flash delta; a delta over 8 KB needs a matching saving or the maintainer's explicit OK |
    | 93-97 % | only fixes ship |
-   | over 97 % | never: that keeps about 55 KB for ESPHome upgrades and users' own overrides |
+   | over 97 % | never: that keeps about 60 KB for ESPHome upgrades and users' own overrides |
 
    **The Xtensa literal range** (app 0.3.8). On the ESP32 and the ESP32-S3 an `l32r` instruction loads a constant
    from at most 256 KB back, and ESP-IDF puts a function's literals in front of the code that follows them. Every
@@ -103,8 +106,8 @@
    `screens-vX.Y.Z` from the same commit, and a GitHub release on that tag with the release notes in English
    (`gh release create screens-vX.Y.Z --notes-file ...`). Test the remote YAML in an empty folder:
    all components/fonts must be fetchable via GitHub.
-6. The user checks the App store for updates and updates ESP Screen Manager.
-   For new screen features: **Update** on the screen in ESP Screens (or the nightly round); ESPHome Device
+6. The user checks the App store for updates and updates Tessera Screen Manager.
+   For new screen features: **Update** on the screen in Tessera (or the nightly round); ESPHome Device
    Builder's Install → Wirelessly on the existing device works too.
    The existing YAML stays in place; `refresh: 0s` fetches current code on every build.
 
@@ -120,6 +123,33 @@ Two moves wait for that release: the camera images' `image: - platform: online_i
 top-level `online_image:`, `packages/features/camera.yaml`), and `ota:` with `encryption:` and the api key in
 `core.installation_yaml()` in place of the OTA password. A board that needs a newer ESPHome states its own
 `min_version` in its board file; `tools/check.sh` then skips it on an older ESPHome instead of failing.
+
+## Compile caches made ahead
+
+A build in the app compiles some 1,500 files for a board, and all but a few are the same for every screen of that
+board: `main.cpp` holds the screen's own name, keys, Wi-Fi and language. `.github/workflows/build-cache.yml` builds
+every board each night and on every push that changes `screen_manager/config.yaml` (every release), in the app's own
+image (the `FROM` of `screen_manager/Dockerfile`) with the app's own paths, through the app's own `Firmware` class
+(`tools/build_cache.py`). Each board's ccache becomes `ccache-<board>-esphome-<version>.tar.gz` on the pre-release
+`build-cache`; a board that fails keeps its previous one.
+
+Before a build the app (`screen_manager/app/build_cache.py`) fetches its board's cache when the release has a newer
+one than it unpacked last, unpacks it into `/data/idf/ccache` and builds as before. Two ccache options in
+`Firmware.build_env` let that cache answer here: `-fmacro-prefix-map`, `-fdebug-prefix-map` and `-DLV_CONF_PATH` stay
+out of the hash (they carry the screen's build folder and only map paths), and the compiler is known by its
+`--version` instead of its file date. Without them a cache made elsewhere answers none of the compiles.
+
+- It only ever adds speed. No cache for the board or this ESPHome, no network, a download past five minutes
+  (`build_cache.TIME_LIMIT`) or a broken file: the build runs as before. ccache answers a compile only for its exact
+  inputs, so a stale cache costs time and never changes the firmware.
+- `ESP_SCREENS_BUILD_CACHE` points the app at another release list (a local test) or turns the fetch off (`off`,
+  which the tests and `tools/build_cache.py` set).
+- The ESPHome Device Builder builds in its own container with its own cache, so its builds don't get this.
+- To test locally with Docker: `docker build -t esp-screens:test screen_manager`, then
+  `docker run --rm -v "$PWD":/repo:ro -v /tmp/out:/out esp-screens:test python3 /repo/tools/build_cache.py cyd /out`
+  makes the cache GitHub would. Serve it next to a JSON file shaped like GitHub's release (`assets` with `name`,
+  `updated_at`, `size` and `browser_download_url`) and build in a second container with an empty `/data` and
+  `ESP_SCREENS_BUILD_CACHE` set to that file's URL.
 
 ## Small rules
 

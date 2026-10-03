@@ -1,6 +1,6 @@
-# Translating ESP Screens
+# Translating Tessera
 
-ESP Screens speaks every language it has a file for: the screens, the editor in Home Assistant and the messages of the
+Tessera speaks every language it has a file for: the screens, the editor in Home Assistant and the messages of the
 app. Each language is one JSON file in [`screen_manager/translations/`](../screen_manager/translations/). English
 (`en.json`) is the source. Every other file has the same keys, and a text a language doesn't have yet shows in English,
 so a language can grow bit by bit.
@@ -16,7 +16,7 @@ You can help in two ways, and neither needs you to write code:
 | --- | --- | --- |
 | `screen` | On the screens themselves | Screens are small, especially the CYD. Keep it as short as the English. A screen gets new texts with its next firmware update. |
 | `addon` | Messages of the app, and texts it sends to the screens (tile names, the top bar) | Error messages are whole sentences. |
-| `editor` | The ESP Screens editor in Home Assistant | Shows up as soon as the app is updated. |
+| `editor` | The Tessera editor in Home Assistant | Shows up as soon as the app is updated. |
 | `_meta` | The language itself | See [The `_meta` block](#the-_meta-block). |
 
 Three parts fill themselves. Don't change them by hand:
@@ -50,7 +50,7 @@ there is a `sv.json`, but already the Swedish 24-hour clock and `1 234,5`.
      screens' own font (a `{time}` in it as a 12-hour clock, the widest a screen writes) and says when it doesn't fit;
      for the rest, compare with the English. `screen.script.yesterday_time_short` is that line's short wording, which
      a tile falls back to when `yesterday_time` doesn't fit there: keep both the same where your word is short enough.
-3. Look at it for real, if you can. In ESP Screens open **Settings → Language & region** and choose your language. The
+3. Look at it for real, if you can. In Tessera open **Settings → Language & region** and choose your language. The
    editor itself follows the language of your Home Assistant profile. The screens show the new texts after their
    firmware update.
 4. Change what needs changing. To find a word you saw, search for it in the file: the key it sits under says where it
@@ -64,7 +64,7 @@ A partial check helps too. Say which sections you went through, and leave `check
 
 ## Add a language
 
-1. Pick the code Home Assistant uses for your language (`sv`, `da`, `cs`, `pt-BR`); ESP Screens follows Home Assistant's
+1. Pick the code Home Assistant uses for your language (`sv`, `da`, `cs`, `pt-BR`); Tessera follows Home Assistant's
    language setting by that code. A variant such as `pt-BR` may be a small file with only the texts that differ from
    `pt`. That is how `en-GB` works: it holds the 24-hour clock and British spelling, and the rest falls back to `en`.
 2. Create the file. If you have Node.js and Python:
@@ -103,7 +103,7 @@ The editor and the app's messages work in any language, whatever the screens can
   them: `"Last {time}"` can become `"Zuletzt {time}"` or `"{time} geleden"`.
 - **Plurals** are the forms of one sentence, separated by ` | `, in the order of your language's rule:
   `"1 hour ago | {n} hours ago"`.
-- **Brand names stay:** ESP Screens, Home Assistant, ESPHome, Claude, Guition, CYD.
+- **Brand names stay:** Tessera, Home Assistant, ESPHome, Claude, Guition, CYD.
 - **Keep the characters `{ } | @` out of ordinary text:** the editor reads them as instructions.
 - **Match the tone:** short and plain, like the English. The screens and the editor talk to people at home, not to
   engineers.
@@ -136,7 +136,7 @@ The editor and the app's messages work in any language, whatever the screens can
 - **With Git:** fork the repository, change the file, run `python3 tools/i18n.py check`, open a pull request.
 - **No GitHub account?** Open an issue or mail the file. We'll take it from there.
 
-Translations ship with the next release of ESP Screens: the editor and messages right away, the screens with their next
+Translations ship with the next release of Tessera: the editor and messages right away, the screens with their next
 firmware update.
 
 ## For maintainers

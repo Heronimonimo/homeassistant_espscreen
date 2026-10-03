@@ -1906,7 +1906,36 @@
       },
       "unavailable": "This entity is off in Home Assistant, or the screen is restarting.",
       "lower": "{name} lower",
-      "higher": "{name} higher"
+      "higher": "{name} higher",
+      "screensaver": {
+        "title": "Screensaver",
+        "show": "Show in standby",
+        "standby_off": "Turn on Auto standby to use it.",
+        "needs_firmware": "Update this screen to firmware {version} to use a screensaver.",
+        "order": "The screen shows the first one that is available. Drag to change the order.",
+        "no_pictures": "This screen has no memory for pictures, so it shows the clock.",
+        "tap": "A tap wakes the screen. Only a player's keys work on the screensaver: play or pause and the volume.",
+        "use": "Use {name}",
+        "choose_media": "Choose a player",
+        "add_media": "Another player",
+        "players": "Players, the first at the top",
+        "choose_camera": "Choose a camera",
+        "weather_auto": "Outside temperature from Home Assistant",
+        "weather_none": "No temperature",
+        "kinds": {
+          "media": "Music playing",
+          "camera": "Camera",
+          "clock": "Clock"
+        },
+        "details": {
+          "media": "While it plays, with its cover",
+          "media_unset": "Choose a player to use it",
+          "media_more": "The first one that plays, with its cover",
+          "camera": "Its picture, every 15 seconds",
+          "camera_unset": "Choose a camera to use it",
+          "clock": "The time, the date and the outside temperature, white on black"
+        }
+      }
     },
     "update": {
       "starting": "Starting update…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Made by one person",
-      "body": "Tessera is free and has no subscription. I build it in my spare time. If your screens make your home a little nicer, a coffee helps me keep going.",
-      "buy": "Buy Max a coffee",
+      "body": "Tessera is free and stays free. I build it in my spare time. If you'd like me to keep adding new cards and boards, a small monthly contribution makes that possible. A one-time coffee is just as welcome.",
+      "monthly": "Support monthly",
+      "once": "or buy me a coffee once",
       "later": "Maybe later",
       "donated": "I already donated",
       "thanks": "Thank you! This won't ask again."

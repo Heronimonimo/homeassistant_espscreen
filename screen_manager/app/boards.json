@@ -25,7 +25,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -60,6 +60,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 320
  },
  "checkout/cyd9342.yaml": {
@@ -83,7 +84,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -118,6 +119,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 320
  },
  "checkout/guition.yaml": {
@@ -156,7 +158,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -211,6 +213,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "checkout/hosyond40.yaml": {
@@ -234,7 +237,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 146,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 26,
@@ -269,6 +272,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 480
  },
  "checkout/jc1060p470.yaml": {
@@ -302,7 +306,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -357,6 +361,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "checkout/jc1060p470v2.yaml": {
@@ -390,7 +395,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -445,6 +450,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "checkout/jc3248w535.yaml": {
@@ -478,7 +484,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -533,6 +539,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "checkout/jc8012p4a1.yaml": {
@@ -566,7 +573,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -621,6 +628,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "checkout/jc8012p4a1v2.yaml": {
@@ -654,7 +662,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -709,6 +717,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "checkout/jc8012p4a1v3.yaml": {
@@ -742,7 +751,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -797,6 +806,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "checkout/sunton8048s070.yaml": {
@@ -830,7 +840,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 133,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -885,6 +895,7 @@
    "margin": 13,
    "tile_pad": 9
   },
+  "wide_slots": false,
   "width": 800
  },
  "checkout/tab5.yaml": {
@@ -1001,7 +1012,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -1036,6 +1047,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "checkout/waveshare43.yaml": {
@@ -1069,7 +1081,7 @@
   "columns": 3,
   "dimmable": false,
   "dpi": 217,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 34,
    "icon_home": 43,
@@ -1124,6 +1136,7 @@
    "margin": 16,
    "tile_pad": 15
   },
+  "wide_slots": false,
   "width": 800
  },
  "checkout/waveshare4b.yaml": {
@@ -1157,7 +1170,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1212,6 +1225,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "checkout/waveshare7.yaml": {
@@ -1245,7 +1259,7 @@
   "columns": 4,
   "dimmable": false,
   "dpi": 133,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -1300,6 +1314,7 @@
    "margin": 13,
    "tile_pad": 9
   },
+  "wide_slots": false,
   "width": 800
  },
  "checkout/waveshare7b.yaml": {
@@ -1333,7 +1348,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 26,
@@ -1388,6 +1403,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "cyd": {
@@ -1416,7 +1432,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -1451,6 +1467,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 320
  },
  "cyd9342": {
@@ -1474,7 +1491,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -1509,6 +1526,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 320
  },
  "guition": {
@@ -1547,7 +1565,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1602,6 +1620,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "hosyond40": {
@@ -1625,7 +1644,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 146,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 26,
@@ -1660,6 +1679,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 480
  },
  "jc1060p470": {
@@ -1693,7 +1713,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1748,6 +1768,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "jc1060p470v2": {
@@ -1781,7 +1802,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -1836,6 +1857,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "jc3248w535": {
@@ -1869,7 +1891,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -1924,6 +1946,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "jc8012p4a1": {
@@ -1957,7 +1980,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2012,6 +2035,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "jc8012p4a1v2": {
@@ -2045,7 +2069,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2100,6 +2124,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "jc8012p4a1v3": {
@@ -2133,7 +2158,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2188,6 +2213,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "packages/cyd.yaml": {
@@ -2216,7 +2242,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -2251,6 +2277,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 320
  },
  "packages/cyd9342.yaml": {
@@ -2274,7 +2301,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 143,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 25,
@@ -2309,6 +2336,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 320
  },
  "packages/guition.yaml": {
@@ -2347,7 +2375,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -2402,6 +2430,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "packages/hosyond40.yaml": {
@@ -2425,7 +2454,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 146,
-  "firmware": "0.28.0",
+  "firmware": "0.33.1",
   "fonts": {
    "headline": 18,
    "icon_home": 26,
@@ -2460,6 +2489,7 @@
    "margin": 9,
    "tile_pad": 8
   },
+  "wide_slots": true,
   "width": 480
  },
  "packages/jc1060p470.yaml": {
@@ -2493,7 +2523,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -2548,6 +2578,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "packages/jc1060p470v2.yaml": {
@@ -2581,7 +2612,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -2636,6 +2667,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "packages/jc3248w535.yaml": {
@@ -2669,7 +2701,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -2724,6 +2756,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "packages/jc8012p4a1.yaml": {
@@ -2757,7 +2790,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2812,6 +2845,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "packages/jc8012p4a1v2.yaml": {
@@ -2845,7 +2879,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2900,6 +2934,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "packages/jc8012p4a1v3.yaml": {
@@ -2933,7 +2968,7 @@
   "columns": 5,
   "dimmable": true,
   "dpi": 149,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 24,
    "icon_home": 30,
@@ -2988,6 +3023,7 @@
    "margin": 14,
    "tile_pad": 11
   },
+  "wide_slots": false,
   "width": 1280
  },
  "packages/sunton8048s070.yaml": {
@@ -3021,7 +3057,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 133,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -3076,6 +3112,7 @@
    "margin": 13,
    "tile_pad": 9
   },
+  "wide_slots": false,
   "width": 800
  },
  "packages/tab5.yaml": {
@@ -3192,7 +3229,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -3227,6 +3264,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "packages/waveshare43.yaml": {
@@ -3260,7 +3298,7 @@
   "columns": 3,
   "dimmable": false,
   "dpi": 217,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 34,
    "icon_home": 43,
@@ -3315,6 +3353,7 @@
    "margin": 16,
    "tile_pad": 15
   },
+  "wide_slots": false,
   "width": 800
  },
  "packages/waveshare4b.yaml": {
@@ -3348,7 +3387,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -3403,6 +3442,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "packages/waveshare7.yaml": {
@@ -3436,7 +3476,7 @@
   "columns": 4,
   "dimmable": false,
   "dpi": 133,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -3491,6 +3531,7 @@
    "margin": 13,
    "tile_pad": 9
   },
+  "wide_slots": false,
   "width": 800
  },
  "packages/waveshare7b.yaml": {
@@ -3524,7 +3565,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 26,
@@ -3579,6 +3620,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  },
  "sunton8048s070": {
@@ -3612,7 +3654,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 133,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -3667,6 +3709,7 @@
    "margin": 13,
    "tile_pad": 9
   },
+  "wide_slots": false,
   "width": 800
  },
  "tab5": {
@@ -3783,7 +3826,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 165,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 26,
    "icon_home": 33,
@@ -3818,6 +3861,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "waveshare43": {
@@ -3851,7 +3895,7 @@
   "columns": 3,
   "dimmable": false,
   "dpi": 217,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 34,
    "icon_home": 43,
@@ -3906,6 +3950,7 @@
    "margin": 16,
    "tile_pad": 15
   },
+  "wide_slots": false,
   "width": 800
  },
  "waveshare4b": {
@@ -3939,7 +3984,7 @@
   "columns": 2,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 34,
@@ -3994,6 +4039,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 480
  },
  "waveshare7": {
@@ -4027,7 +4073,7 @@
   "columns": 4,
   "dimmable": false,
   "dpi": 133,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 21,
    "icon_home": 26,
@@ -4082,6 +4128,7 @@
    "margin": 13,
    "tile_pad": 9
   },
+  "wide_slots": false,
   "width": 800
  },
  "waveshare7b": {
@@ -4115,7 +4162,7 @@
   "columns": 4,
   "dimmable": true,
   "dpi": 170,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 27,
    "icon_home": 26,
@@ -4170,6 +4217,7 @@
    "margin": 16,
    "tile_pad": 12
   },
+  "wide_slots": false,
   "width": 1024
  }
 }

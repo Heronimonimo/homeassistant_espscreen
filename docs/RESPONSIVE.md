@@ -21,7 +21,7 @@ In its board file under `packages/boards/`, next to its hardware:
 |---|---|
 | `PANEL_W`, `PANEL_H` | the panel's own pixels; the display block always drives it at this size |
 | `ROTATION_LANDSCAPE` | the LVGL angle that lays that panel out lying down (a CYD 90, a Waveshare 0) |
-| `LVGL_ROTATION` | which way this screen hangs; ESP Screens writes it when the screen is built |
+| `LVGL_ROTATION` | which way this screen hangs; Tessera writes it when the screen is built |
 | `DISPLAY_DPI` | diagonal pixels / diagonal inches (the CYD 2.8″: 143, the Guition 4.0″: 170) |
 | the look (`packages/looks/`) | `standard` (the Guition's sizes) or `compact` (the CYD's, for glass too small for the standard); the board file includes one |
 | `GRID_COLS`, `GRID_ROWS` | the cells of a page lying down; the shared tree places every cell from these |
@@ -292,7 +292,7 @@ event and the layout sensor count rows, columns and pages the same way.
   a pixel from the board file.
 - A card with two groups (the colour card: brightness and colour; climate: setpoint, modes, fan) could stand in
   two columns on wide glass instead of one capped column. Same components, another flex flow.
-- Which way a screen hangs is chosen when it is built (firmware 0.2.92+). ESP Screens writes one substitution
+- Which way a screen hangs is chosen when it is built (firmware 0.2.92+). Tessera writes one substitution
   into the profile, `LVGL_ROTATION`, the way it writes the language: `ROTATION_LANDSCAPE` for a screen lying
   down and a quarter further for one standing up. Nothing else in the build differs, and the two grids the
   board states are both compiled in, so the screen picks one at boot from its canvas (`runtime_tiles::grid_select`).

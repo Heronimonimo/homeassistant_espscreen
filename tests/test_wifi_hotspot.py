@@ -1,5 +1,5 @@
 """The Wi-Fi fallback hotspot and captive portal per board (app 0.4.5): a board with 4 MB of flash has no room for them
-in its 1.75 MB update slot, so a new screen of it is written without them and an older screen's YAML loses them before
+in its update slot, so a new screen of it is written without them and an older screen's YAML loses them before
 its next build. Every other board keeps them."""
 import asyncio
 import sys

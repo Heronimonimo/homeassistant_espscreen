@@ -79,7 +79,7 @@ and what depends on the canvas the firmware works out on the glass (see below).
 The grid is the one real choice: the proposal keeps a tile at about 33 × 16 mm and never smaller than 30 × 12 mm,
 but a board of the same size can be read as "more tiles" or "bigger tiles". Render both and look. It is two
 choices on glass that is not square, because a card keeps its size in millimetres: a screen that holds three
-columns lying down may hold one standing up, and ESP Screens offers the owner both when the screen is built.
+columns lying down may hold one standing up, and Tessera offers the owner both when the screen is built.
 
 Two things to weigh for the standing grid. `tools/generate_cells.py` gives a board the cards of whichever of its
 two grids is larger, so a standing grid with more cells than the lying one costs every screen of that board those

@@ -18,7 +18,7 @@ or periodic recovery script is needed. The GT911 uses unmirrored coordinates.
   interface itself is `packages/core.yaml`, shared with the CYD (docs/PROFILES.md).
 - `packages/guition.yaml`: what a screen builds from over GitHub; `checkout/guition.yaml` is the same
   for a build from a clone of this repository (checkout/README.md).
-- `<your-screen>.yaml`: the screen's own profile, written by ESP Screens, outside Git.
+- `<your-screen>.yaml`: the screen's own profile, written by Tessera, outside Git.
 - `secrets.yaml`: local Wi-Fi/API/OTA settings, outside Git.
 - `tools/verify_gt911.py`: physical pixel check; no resistive ADC calibration.
 
@@ -46,7 +46,7 @@ four corners and navigation; a render test doesn't test touches.
 The CYD stays on its existing orientation with its own calibration.
 
 Six tiles of **218 × 108 pixels** per page, 12px spacing, and the page buttons
-below them. In ESP Screen Manager, up to 48 tiles fit across up to
+below them. In Tessera Screen Manager, up to 48 tiles fit across up to
 eight pages (firmware 0.2.62+; twenty over four pages before); the page buttons disappear
 at six or fewer, or with **Page buttons** off, and the tiles then grow to 218 × 122
 (firmware 0.2.69+).
@@ -74,7 +74,7 @@ Every card type works in all 48 positions.
 
 ## New installation
 
-Install the screen from ESP Screens ([EASY_SETUP.md](EASY_SETUP.md)): it writes the
+Install the screen from Tessera ([EASY_SETUP.md](EASY_SETUP.md)): it writes the
 screen's own profile with its name, Wi-Fi reference and unique keys, and flashes it
 over USB. Choose the tiles afterwards in the app, not in the YAML.
 
@@ -134,7 +134,7 @@ the GT911 `TOUCH_SWAP_XY` / `TOUCH_MIRROR_X` / `TOUCH_MIRROR_Y` if the physical 
 ## HA and acceptance
 
 Add the new device via the ESPHome integration (name/IP, port 6053, the
-API key from the screen's profile, which the New screen window also shows), then choose its tiles in ESP Screens.
+API key from the screen's profile, which the New screen window also shows), then choose its tiles in Tessera.
 
 ```sh
 python diagnostics/run_ui_test.py --host wallbox-kitchen.local --name wallbox-kitchen

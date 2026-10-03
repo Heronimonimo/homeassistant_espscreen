@@ -1,6 +1,6 @@
-# ESP Screens with Home Assistant Container (Docker)
+# Tessera with Home Assistant Container (Docker)
 
-Home Assistant Container has no App store, so ESP Screen Manager can't be installed as an
+Home Assistant Container has no App store, so Tessera Screen Manager can't be installed as an
 app there. This guide runs the same app as its own container next to Home Assistant, with
 the ESPHome CLI included. On Home Assistant OS, follow the
 [normal installation](../README.md#installing-from-home-assistant) instead.
@@ -41,7 +41,9 @@ This route is new. If something doesn't work on your setup, please
    The first start downloads the image, which is based on the official ESPHome image. `docker compose logs -f` shows
    `Home Assistant connected` once the token works.
 
-## Open ESP Screens
+<a id="open-esp-screens"></a>
+
+## Open Tessera
 
 The page has no login of its own, so it only listens on `127.0.0.1:8099` of the Docker
 host. Don't make port 8099 reachable from your network without a login in front of it.
@@ -53,7 +55,7 @@ host. Don't make port 8099 reachable from your network without a login in front 
 ```yaml
 ingress:
   esp_screens:
-    title: ESP Screens
+    title: Tessera
     icon: mdi:monitor-dashboard
     require_admin: true
     url: http://127.0.0.1:8099
@@ -77,7 +79,7 @@ published under `ports:`. This is common with Docker Desktop on Windows and macO
 "host" is Docker's own Linux VM and not your computer. Inside the Home Assistant container,
 `127.0.0.1` is then Home Assistant itself, so the sidebar panel shows **502: Bad Gateway**.
 
-Let ESP Screens share the network of the Home Assistant container instead. `127.0.0.1` then
+Let Tessera share the network of the Home Assistant container instead. `127.0.0.1` then
 means the same in both, and the hass_ingress configuration above stays as it is. Put both in
 the same `compose.yaml` and change it like this, with the service name of Home Assistant after
 `service:`:
@@ -117,7 +119,7 @@ docker exec homeassistant curl -s -o /dev/null -w "%{http_code}\n" http://127.0.
   proxy in front of it. On Docker Desktop, `host.docker.internal` is the address of your
   computer, so `http://host.docker.internal:<port>/api` reaches a port it publishes.
 - **Recreating Home Assistant** (an update, for example) takes the shared network away:
-  run `docker compose up -d` again so ESP Screens is recreated too.
+  run `docker compose up -d` again so Tessera is recreated too.
 - **Camera images:** the firewall of the Docker host has to let the screens in on port 8098.
 - **USB:** Docker Desktop passes no USB ports to containers. Use **Download · flash from your
   own computer** in **New screen** (see below).
@@ -158,7 +160,7 @@ docker compose up -d
 
 This pulls the latest version from `main`, the same one the App store offers. To stay on
 one version, replace `latest` in the `image:` line of `compose.yaml` with a version number, such as `0.3.22`.
-After an update, ESP Screens shows per screen whether newer firmware is available, as usual.
+After an update, Tessera shows per screen whether newer firmware is available, as usual.
 
 ## Settings in compose.yaml
 

@@ -308,6 +308,52 @@ def encode(raw, box, exact=False):
     return out.getvalue()
 
 
+# The screensaver (firmware 0.29.0+, screen_saver.py): one picture of exactly the screen's full box, the whole of it a
+# little darker so the few words the screen writes over it always read, with no gradient (a 16-bit panel shows one as
+# bands, GitHub #135). A camera fills the glass, cut to it the way a photo fills a frame. A cover fills it too while the
+# glass is about square (SAVER_SQUARE: neither side a quarter longer than the other, saver_view.h has the same rule); on
+# longer glass the cover takes the full height at the left (lying) or the full width at the top (standing), and the
+# rest is the cover's own colour, where the screen writes the title.
+SAVER_DIM = 0.3
+SAVER_SQUARE = (5, 4)
+
+
+def saver_shape(box):
+    """'fill', 'side' (the cover at the left) or 'top' (the cover at the top) for a cover on glass of `box`."""
+    width, height = box
+    if width * SAVER_SQUARE[1] <= height * SAVER_SQUARE[0] and height * SAVER_SQUARE[1] <= width * SAVER_SQUARE[0]:
+        return 'fill'
+    return 'side' if width > height else 'top'
+
+
+def encode_saver(raw, box, kind, ground=0):
+    """The screensaver's picture of `kind` ('camera' or 'media') as a BMP of exactly `box`, darkened by SAVER_DIM;
+    `ground` (0xRRGGBB) is the colour beside a cover on long glass. 8-bit on the picture's own palette, dithered, as live
+    pictures go (tile_art.bmp): a third of the bytes of a full-screen picture."""
+    from PIL import Image, ImageOps
+    import tile_art
+    width, height = box
+    with Image.open(io.BytesIO(raw)) as source:
+        source.draft('RGB', box)
+        image = ImageOps.exif_transpose(source)
+        if image.mode in ('RGBA', 'LA', 'P', 'PA'):
+            image = image.convert('RGBA')
+            flat = Image.new('RGB', image.size)
+            flat.paste(image, mask=image.getchannel('A'))
+            image = flat
+        elif image.mode != 'RGB':
+            image = image.convert('RGB')
+        shape = 'fill' if kind == 'camera' else saver_shape(box)
+        if shape == 'fill':
+            picture = ImageOps.fit(image, box, Image.Resampling.LANCZOS)
+        else:
+            side = min(width, height)
+            picture = Image.new('RGB', box, tuple((ground >> shift) & 0xFF for shift in (16, 8, 0)))
+            picture.paste(ImageOps.fit(image, (side, side), Image.Resampling.LANCZOS), (0, 0))
+        picture = Image.blend(picture, Image.new('RGB', box), SAVER_DIM)
+    return tile_art.bmp(picture, compact=True)
+
+
 def encode_cover(raw, size, background):
     """A media player's picture as a square 24-bit BMP of `size` pixels with rounded corners, the corners filled with
     `background` (0xRRGGBB): what the screen draws on its card without any work of its own. A picture that is not
@@ -405,13 +451,14 @@ class Watch:
 
 
 class Link:
-    __slots__ = ('entity', 'box', 'still', 'etag', 'used', 'lifetime', 'cover', 'live')
+    __slots__ = ('entity', 'box', 'still', 'etag', 'used', 'lifetime', 'cover', 'live', 'saver')
 
-    def __init__(self, entity, box, now, still=None, cover=None, live=None):
+    def __init__(self, entity, box, now, still=None, cover=None, live=None, saver=None):
         self.entity, self.box, self.used = entity, box, now
         self.still = still
         self.cover = cover  # (size, background) of a media player's cover, else None
         self.live = live    # (entities, size, grounds, paces[, {atlas, modes, compact}]) of a page's live tiles, else None
+        self.saver = saver  # (kind, ground) of a screensaver's picture, else None
         self.etag = f'"{hashlib.sha1(still).hexdigest()[:16]}"' if still else ''
         self.lifetime = STILL_SECONDS if still else LINK_SECONDS
 
@@ -658,6 +705,29 @@ class CameraFeed:
             cached = watch.frames[key] = (watch.digest, image)
         return f'"{watch.digest[:16]}-c{size}-{background:06X}"', cached[1]
 
+    async def saver(self, entity, box, kind, ground=0, wait=FIRST_FRAME_SECONDS):
+        """(etag, BMP) of the screensaver's picture (encode_saver) of a camera's last snapshot, which starts fetching the
+        next as a full view does, or of a player's cover; None while there is none."""
+        if kind == 'media':
+            if await self.cover_raw(entity, wait) is None:
+                return None
+            watch = self.watch(entity)
+        else:
+            if await self.frame(entity, None, wait=wait) is None:
+                return None
+            watch = self.watch(entity)
+        raw, digest = watch.raw, watch.digest
+        key = ('saver', box, kind, ground)
+        cached = watch.frames.get(key)
+        if cached is None or cached[0] != digest:
+            try:
+                image = await asyncio.get_running_loop().run_in_executor(None, encode_saver, raw, box, kind, ground)
+            except Exception as error:
+                LOG.info('The picture of %s cannot be read (%s)', entity, type(error).__name__)
+                return None
+            cached = watch.frames[key] = (digest, image)
+        return f'"{digest[:16]}-s{box[0]}x{box[1]}"', cached[1]
+
     # ----- links -----
     def prune(self):
         now = self.clock()
@@ -666,12 +736,12 @@ class CameraFeed:
         while len(self.links) >= MAX_LINKS:
             del self.links[min(self.links, key=lambda token: self.links[token].used)]
 
-    def link(self, entity, box, still=None, cover=None, live=None):
+    def link(self, entity, box, still=None, cover=None, live=None, saver=None):
         """A new random token for one camera at one size; `still` makes it one fixed image (an alert's), `cover`
         (size, background) a media player's cover, `live` (entities, size, grounds, paces) a page's live tiles."""
         self.prune()
         token = secrets.token_urlsafe(18)
-        self.links[token] = Link(entity, box, self.clock(), still, cover, live)
+        self.links[token] = Link(entity, box, self.clock(), still, cover, live, saver)
         return token
 
     async def serve(self, token, etag=None):
@@ -691,7 +761,10 @@ class CameraFeed:
             # online_image warns at every load about a missing one.
             found = await self.live(*link.live[:4], **(link.live[4] if len(link.live) > 4 else {}))
             return (503, None, '') if found is None else (200, found[1], found[0])
-        found = await self.cover(link.entity, *link.cover) if link.cover else await self.frame(link.entity, link.box)
+        if link.saver:
+            found = await self.saver(link.entity, link.box, *link.saver)
+        else:
+            found = await self.cover(link.entity, *link.cover) if link.cover else await self.frame(link.entity, link.box)
         if found is None:
             return 503, None, ''
         tag, image = found
@@ -773,6 +846,8 @@ async def base_url(request, cache={}):
         except Exception as error:
             LOG.info('Reading the internal URL failed (%s)', type(error).__name__)
     if not host:
-        return None
+        # Home Assistant did not say this time (busy, restarting): the address it gave before still stands (app 0.4.51).
+        # Without it a page's pictures got an answer without a link, and a page of maps then stayed without its maps.
+        return cache.get('url')
     cache.update(url=f'http://{host}:{await published_port()}', at=now)
     return cache['url']

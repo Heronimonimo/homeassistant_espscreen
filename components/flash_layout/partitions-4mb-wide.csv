@@ -1,0 +1,17 @@
+# ESP Screens - the flash of a board with 4 MB (firmware 0.33.1+ of those boards), written into a build by the component
+# (components/smart_display/__init__.py, `smart_display: flash_layout: wide`). docs/FLASH_LAYOUT.md has the whole story.
+#
+# ESPHome's own table for 4 MB keeps 448 KB at the end for settings (nvs) and leaves two update slots of 1,835,008
+# bytes. These boards keep a few hundred bytes of settings, so the settings move to the 16 KB that were never used
+# between phy_init and the first slot, and each slot grows to 2,031,616 bytes. The 64 KB left at the end is a second
+# settings area nothing uses yet: a later firmware can open it without moving anything again.
+#
+# components/smart_display/flash_layout.h knows these numbers too (it moves a screen from the old table to this one),
+# and tests/test_flash_layout.py compares the two.
+# Name,   Type, SubType, Offset,   Size
+otadata,  data, ota,     0x9000,   0x2000,
+phy_init, data, phy,     0xB000,   0x1000,
+nvs,      data, nvs,     0xC000,   0x4000,
+app0,     app,  ota_0,   0x10000,  0x1F0000,
+app1,     app,  ota_1,   0x200000, 0x1F0000,
+nvs_more, data, nvs,     0x3F0000, 0x10000,

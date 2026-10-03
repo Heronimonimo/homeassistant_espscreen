@@ -75,6 +75,7 @@ ALERT = re.compile(r'alert on=(\d) ' + ' '.join(f'{part}=(-?\\d+),(-?\\d+),(-?\\
 # A page's own title (app 0.2.123): a long one among them, the kind that stood in dots after a page change (GitHub #27).
 PAGE_TITLES = ['Demo cards', 'Living room downstairs', 'Kitchen']
 MEDIA = re.compile(r'media open=(\d) back=(\S*) pill=(\S*) libkey=(\S*) knob=(\S*) keys=(\S*) faults=(.*?) \| (.*)$')
+SAVER = re.compile(r'saver dimmed=(\d) keys=(\S*) words_right=(-?\d+)$')
 ALARM = re.compile(r'alarm open=(\d) pad=(\d) back=(\S*) title=\[(.*?)\] status=\[(.*?)\] line=\[(.*?)\] modes=(\S*) keys=(\S*) faults=(.*?) locked=(\d+)$')
 
 
@@ -1193,6 +1194,124 @@ class Run:
                 raise RuntimeError(f'media: {what}: {card}')
             await asyncio.sleep(0.15)
 
+    async def saver_panel(self):
+        """The screensaver (firmware 0.29.0+) over the demo layout in standby: a cover that plays, a camera and the clock,
+        each as ESP Screens says it (screen_saver.py) and with its picture as ESP Screens makes it (camera_feed)."""
+        import camera_feed
+        import media_art
+        import media_library
+        calls = []
+        self.client.subscribe_service_calls(calls.append)
+        pictured = 'camera' in json.loads((REPO / 'screen_manager/app/boards.json').read_text())[self.item.board]
+        served = [0]
+        async def answer(since, timeout=8):
+            end = time.monotonic() + timeout
+            while time.monotonic() < end:
+                for call in calls[since:]:
+                    data = dict(call.data)
+                    if call.service != 'esphome.screen_camera' or data.get('_answered'):
+                        continue
+                    # The screensaver's picture as ESP Screens makes it: the screen's full box, within the picture cap.
+                    kind, box = data.get('saver'), camera_feed.capped(self.canvas)
+                    raw = media_art.png(0, 640) if kind == 'media' else porch(*self.camera)
+                    body = camera_feed.encode_saver(raw, box, kind, int(ground.split(',')[0], 16) if ground else 0)
+                    url = self.pictures.url(f'{self.item.key}-saver-{served[0]}.bmp', body)
+                    served[0] += 1
+                    await self.send({'v': 1, 'op': 'camera', 't': 'saver', 'e': data['entity'], 'u': url, 'view': int(data['view'])})
+                    call.data['_answered'] = '1'
+                    return
+                await asyncio.sleep(0.05)
+        ground = media_library.ground_colours(media_art.png(0)) or ''
+        steps = [('clock', {'k': 'clock'})]
+        if pictured:
+            steps = [('media', {'k': 'media', 'e': 'media_player.living_room', 'n': 'Living room', 't': 'Evening Drive',
+                                'x': {'artist': 'Nova Coast', 'album': 'Low Sun', 'pic': 'c0ffee1234', 'g': ground}}),
+                     ('camera', {'k': 'camera', 'e': 'camera.front_door', 'n': 'Front door'}), *steps]
+        async def probe():
+            start = len(self.lines)
+            await self.call('render_saver')
+            m = SAVER.search(await self.until(lambda l: SAVER.search(l), 10, 'render_saver', start))
+            return m[1] == '1', [tuple(int(n) for n in p.split(',')) if p != '-' else None for p in m[2].split(';') if p], int(m[3])
+        async def sent(since, service, entity, timeout=4):
+            end = time.monotonic() + timeout
+            while time.monotonic() < end:
+                if any(c.service == service and dict(c.data).get('entity_id') == entity for c in calls[since:]):
+                    return
+                await asyncio.sleep(0.05)
+            raise RuntimeError(f'saver: no {service} for {entity}: {[c.service for c in calls[since:]]}')
+        await self.call('render_standby', enter=1)
+        for name, message in steps:
+            start = len(calls)
+            await self.send({'v': 1, 'op': 'saver', **message})
+            if name != 'clock':
+                await answer(start)
+            await asyncio.sleep(1.5)
+            await self.render(f'saver-{name}')
+            if name != 'media':
+                continue
+            # The player's keys (firmware 0.33.0+): each sends its action for the player on the glass and the screen
+            # stays in standby; the play key turns at once; a long title ends before the keys; a tap beside them wakes.
+            entity = message['e']
+            keyed = {**message, 's': 'playing', 'f': 1 | 4 | 8 | 1024 | 16384}
+            await self.send({'v': 1, 'op': 'saver', **keyed})
+            await asyncio.sleep(0.8)
+            dimmed, keys, _ = await probe()
+            if not dimmed or len(keys) != 3 or None in keys:
+                raise RuntimeError(f'saver: the keys of a player that plays: dimmed={dimmed} keys={keys}')
+            await self.render('saver-media-keys')
+            for key, service in zip(keys, ('media_player.volume_up', 'media_player.volume_down', 'media_player.media_play_pause')):
+                since = len(calls)
+                await self.tap(*key)
+                await sent(since, service, entity)
+                if not (await probe())[0]:
+                    raise RuntimeError(f'saver: the tap on the {service} key woke the screen')
+            await self.render('saver-media-paused')
+            # Volume down held for a second and a half mutes, once, and the screen stays in standby; the next tap on a volume
+            # key only takes the mute off.
+            async def field(since, value, timeout=4):
+                end = time.monotonic() + timeout
+                while time.monotonic() < end:
+                    found = [dict(c.data).get('is_volume_muted') for c in calls[since:] if c.service == 'media_player.volume_mute']
+                    if found:
+                        return found
+                    await asyncio.sleep(0.05)
+                raise RuntimeError(f'saver: no volume_mute {value}: {[c.service for c in calls[since:]]}')
+            since = len(calls)
+            await self.call('render_finger', x=keys[1][0], y=keys[1][1], down=True)
+            await asyncio.sleep(2.0)
+            await self.call('render_finger', x=keys[1][0], y=keys[1][1], down=False)
+            await asyncio.sleep(0.4)
+            after = [(c.service, dict(c.data).get('is_volume_muted')) for c in calls[since:] if c.service.startswith('media_player.')]
+            if await field(since, 'true') != ['true'] or after != [('media_player.volume_mute', 'true')] or not (await probe())[0]:
+                raise RuntimeError(f'saver: holding volume down mutes once and nothing else: {after}')
+            await self.send({'v': 1, 'op': 'saver', **keyed, 's': 'paused', 'm': 1})
+            await asyncio.sleep(0.8)
+            await self.render('saver-media-muted')
+            since = len(calls)
+            await self.tap(*keys[0])
+            after = [(c.service, dict(c.data).get('is_volume_muted')) for c in calls[since:] if c.service.startswith('media_player.')]
+            if await field(since, 'false') != ['false'] or after != [('media_player.volume_mute', 'false')] or not (await probe())[0]:
+                raise RuntimeError(f'saver: a tap on a volume key of a muted player takes the mute off: {after}')
+            # Home Assistant's word after the pause, a player without a volume, and a long title.
+            await self.send({'v': 1, 'op': 'saver', **keyed, 's': 'paused', 'f': 1 | 16384})
+            await asyncio.sleep(0.8)
+            dimmed, alone, _ = await probe()
+            if not dimmed or alone[:2] != [None, None] or alone[2] != keys[2]:
+                raise RuntimeError(f'saver: a player without a volume keeps the play key alone: {alone}')
+            await self.send({'v': 1, 'op': 'saver', **keyed, 't': 'Symphony No. 9 in D minor, Op. 125 "Choral": IV. Presto, Allegro assai',
+                             'x': {**message['x'], 'artist': 'Berliner Philharmoniker and the Rundfunkchor Berlin, Herbert von Karajan'}})
+            await asyncio.sleep(0.8)
+            dimmed, keys, right = await probe()
+            if not dimmed or right >= min(k[0] for k in keys) - 20:
+                raise RuntimeError(f'saver: a long title runs under the keys: it ends at {right}, keys {keys}')
+            await self.render('saver-media-long')
+            await self.tap(max(4, right // 2), 12)
+            if (await probe())[0]:
+                raise RuntimeError('saver: a tap beside the keys did not wake the screen')
+            await self.call('render_standby', enter=1)
+        await self.call('render_standby', enter=0)
+        return 0
+
     async def media_panel(self, grid):
         """A player the way Spotify is used (firmware 0.24.0, app 0.4.42): its card on its cover's ground with the speaker
         in the top bar, the speaker menu, shuffle and repeat, the library from its folders to a page of covers, a tap
@@ -1844,6 +1963,8 @@ class Run:
             return 1, await self.bedside_clock(grid)
         if self.only == 'media':
             return 1, await self.media_panel(grid)
+        if self.only == 'saver':
+            return 1, await self.saver_panel()
         checks = await self.self_test()
         await self.moments(pages)
         for page in range(pages):
@@ -1931,7 +2052,7 @@ def main():
     parser.add_argument('--out', type=Path, default=REPO / '.esphome' / 'render' / 'out')
     parser.add_argument('--work', type=Path, help='where the host builds go (default: .esphome/render/build)')
     parser.add_argument('--camera', default='960x540', help='the camera picture of the camera alert, WxH')
-    parser.add_argument('--only', choices=['alarm', 'lock', 'automation', 'remote', 'bedside', 'media'], help='after the demo layout arrives, run only this stage')
+    parser.add_argument('--only', choices=['alarm', 'lock', 'automation', 'remote', 'bedside', 'media', 'saver'], help='after the demo layout arrives, run only this stage')
     parser.add_argument('--port-base', type=int, help='the first API port (default host.PORT_BASE); another worktree may use it')
     args = parser.parse_args()
     # The programs write their pictures from their own folder, so every path they get is absolute.

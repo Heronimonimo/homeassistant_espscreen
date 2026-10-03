@@ -1,8 +1,10 @@
 # Tessera: the full reference
 
-<sub>Tessera is the new name for ESP Screens. Since app 0.3.18 Home Assistant shows the app as Tessera Screen Manager and its panel as Tessera; where this page says ESP Screens, read Tessera. More on the [Tessera website](https://tessera-maxgramser.on-forge.com).</sub>
+<sub>Tessera is the new name for ESP Screens. Since app 0.3.18 Home Assistant shows the app as Tessera Screen Manager and its panel as Tessera. More on the [Tessera website](https://tessera-maxgramser.on-forge.com).</sub>
 
-The [README](README.md) shows what ESP Screens is and how to install it. This page has the rest:
+<sub>Looking for e-ink? [Tesserae (tesserae.ink)](https://tesserae.ink) is a separate open-source project with a similar name, for calm dashboards on e-ink panels. Tessera is for colour LCD touch screens.</sub>
+
+The [README](README.md) shows what Tessera is and how to install it. This page has the rest:
 every card and setting, what an automation can do with a screen, the top bar, the settings page
 on the screen itself, and how updates work.
 
@@ -55,6 +57,9 @@ on the screen itself, and how updates work.
   allows, with up to three round keys under it, such as a bedside lamp, the front door and the alarm. A key is a tile
   in its round form: it switches, opens its card and follows its state like its tile would. It starts without a card,
   so with Dark mode the digits stand on a black page. [Bedside clock](docs/BEDSIDE.md) has the details.
+- **Screensaver** (app 0.4.48, firmware 0.29.0): in standby a screen can show the cover of what plays, a camera or a
+  large clock instead of the dimmed tiles, the first of the three that is there right now, in the order you choose
+  under Settings. A tap wakes the screen, and a cover has keys for play or pause and the volume (firmware 0.33.0). [Screensaver](docs/SCREENSAVER.md) has the details.
 - **Light control:** brightness, rainbow color, and white temperature according to
   the light's capabilities. Open the detailed control with a long touch.
 - **Effects (firmware 0.2.70+):** a light that offers effects (a WLED, a Hue with
@@ -219,7 +224,7 @@ on the screen itself, and how updates work.
 - **Media card** like a phone's "now playing" (app 0.2.77 / firmware 0.2.64): the album cover, the
   title, artist and album, a progress bar with the elapsed and total time, previous, play or pause
   and next, and a volume row with mute. Keys the player doesn't offer are faded, and a player that is
-  off shows a power key. A Guition fetches the cover through ESP Screens, like a camera picture
+  off shows a power key. A Guition fetches the cover through Tessera, like a camera picture
   ([docs/CAMERA.md](docs/CAMERA.md)); the CYD shows the player's icon in its place. A media tile of
   size **Full page** is the same card on the page, with the keys and the volume working on the tile.
 - **Music from the library** (app 0.4.42 / firmware 0.24.0): the media card sits on a dark ground in the colour of
@@ -245,7 +250,7 @@ on the screen itself, and how updates work.
 - **A map** on a person tile (app 0.4.33 / firmware 0.20.0): the streets around the people on the card, your
   zones, and a marker with the initials of each person or tracker (a phone, a car, a tag) on it, framed around
   everyone, around home or around that person.
-  ESP Screens draws it in the screen's own colours, light or dark, from Home Assistant's own map tiles, and the
+  Tessera draws it in the screen's own colours, light or dark, from Home Assistant's own map tiles, and the
   screen gets a picture, never a location. It is drawn again when someone moves, and a tap opens it over the whole
   screen. The map tile (app 0.4.36 / firmware 0.21.0) is the same map without a person of its own, following everyone
   Home Assistant knows the place of or only whom you choose, with photos in the markers. [docs/MAP.md](docs/MAP.md).
@@ -263,7 +268,7 @@ on the screen itself, and how updates work.
   night hours, **Dark mode** (firmware 0.2.54+), 24- or 12-hour clock, back to page 1 by itself
   and on standby, optional swiping between pages, **Page buttons** (firmware 0.2.69+): switched
   off, the bar under the tiles goes and the tiles take its room, and **Show home button**
-  (firmware 0.2.100+): the Tessera logo at the far left of the top bar (a house before firmware 0.10.0) that takes the screen back to page 1. Change them in ESP Screens, where
+  (firmware 0.2.100+): the Tessera logo at the far left of the top bar (a house before firmware 0.10.0) that takes the screen back to page 1. Change them in Tessera, where
   they apply at once, or on the screen itself. With firmware 0.2.49+ the screen keeps them, and every one of them is also an
   entity in Home Assistant, so an automation can switch **Night mode** or **Auto standby**
   (firmware 0.2.41+), for example to keep a screen on while someone is home, turn **Dark mode**
@@ -273,7 +278,7 @@ on the screen itself, and how updates work.
 - **Settings on the screen itself** (firmware 0.2.44+): swipe down from the top edge (firmware 0.28.0+) or hold the
   top bar for about a second and a half and the screen opens its own settings page: brightness, night,
   the clock, back to page 1, swiping, the page buttons, the home button, rotation, and what this screen is
-  (name, IP address, firmware, whether Home Assistant is connected, and Restart). Changes show up in ESP Screens
+  (name, IP address, firmware, whether Home Assistant is connected, and Restart). Changes show up in Tessera
   within a second. See [Settings on the screen](#settings-on-the-screen).
 - **Rotation:** every screen turns upside down (180°) from the management page, and a square
   screen (the Guition) a quarter turn as well: 0°, 90°, 180°, or 270°. Native LVGL rotation turns the
@@ -376,7 +381,7 @@ data:
   night mode wait as long as the card is showing.
 - **`flash`**: `true` makes the backlight blink four times when the alert arrives.
 
-In ESP Screens, **Alerts** in the sidebar opens a cheatsheet with the exact action name for each screen,
+In Tessera, **Alerts** in the sidebar opens a cheatsheet with the exact action name for each screen,
 a ready-to-paste example, and all fields, icons, and colors. It starts with **Try it** (app 0.2.73): fill in
 the same seven fields, choose one screen or all of them, and send a test alert.
 Home Assistant asks for all seven fields; leave a field empty (`""`, `0`, `false`) if you
@@ -389,7 +394,7 @@ button can also perform a Home Assistant action of your choice (below).
 ### All screens at once
 
 From app 0.2.45, one event reaches every screen that is online, screens you add later included.
-ESP Screen Manager passes it on to each screen's `show_alert` action. The fields are the same;
+Tessera Screen Manager passes it on to each screen's `show_alert` action. The fields are the same;
 the ones you leave out stay empty:
 
 ```yaml
@@ -428,11 +433,11 @@ actions:
 - **What to fill in:** the screen's device name (`hallway-screen`), the name Home Assistant shows
   for it (`Hallway Screen`), or a room (`Hallway`), which reaches every screen in it. Case, spaces,
   dashes and underscores don't matter, so the `hallway_screen` of its action works too.
-  **Alerts** in ESP Screens lists the value for every screen, ready to copy, and writes the example
+  **Alerts** in Tessera lists the value for every screen, ready to copy, and writes the example
   for the screen you choose.
 - **Several screens:** give a list, such as `screen: [hallway-screen, kitchen-screen]`.
 - **A name that matches no screen sends nothing,** so an alert meant for one screen never lands on
-  all of them. The ESP Screen Manager log then names the screens it knows.
+  all of them. The Tessera Screen Manager log then names the screens it knows.
 - `esp_screens_dismiss_alert` with `screen` clears the alert on those screens only.
 
 ### With a camera picture
@@ -540,7 +545,7 @@ actions:
 ```
 
 Every one of these fields is optional in the event. A screen with older firmware shows the same alert
-with its first button only, and the ESP Screen Manager log says which screens did. The second button
+with its first button only, and the Tessera Screen Manager log says which screens did. The second button
 ends the alert as **`esphome.screen_alert`** with `action: button2`, so an automation that waits can
 tell the two answers apart without the app. For one screen, add `screen` to the event, or call its own
 action **`esphome.<screen>_show_alert_choice`**: the seven fields of `show_alert` plus `button_color`,
@@ -550,7 +555,7 @@ of an action required, so `show_alert` keeps its seven and no automation that ca
 ### Ask Claude
 
 Use Claude Code in Home Assistant? **Settings → Claude → Install for Claude Code** writes an
-ESP Screens skill to `/homeassistant/.claude/skills/esp-screens`, so Claude knows the events, the
+Tessera skill to `/homeassistant/.claude/skills/esp-screens`, so Claude knows the events, the
 tile settings and every field, color and icon. Then ask, for example: "Put the vacuum on the living
 room screen", "Give the living room lights a brightness slider and make that tile wide", "Move the
 vacuum to page 1" or "Show an alert on all my screens when the mailbox is full." Claude reads what a
@@ -666,7 +671,7 @@ only the name and the time (if that's in the bar).
 ## Settings on the screen
 
 Everything you would want to change while standing in front of the panel is on the screen
-itself (firmware 0.2.44+). Tiles, the top bar and the pages stay in ESP Screens, where you
+itself (firmware 0.2.44+). Tiles, the top bar and the pages stay in Tessera, where you
 have a mouse.
 
 **Opening it:** swipe down from the top edge of the glass (firmware 0.28.0+), or hold the top bar (the strip with
@@ -684,11 +689,11 @@ Home Assistant, `esphome.<screen>_open_settings` opens it too (`page` 0 menu, 1 
 | This screen | Name, IP address, firmware version, Home Assistant connected, Restart |
 
 The language, the 12 or 24-hour clock and how numbers are written are the same on every screen: Settings → Language &
-region in ESP Screens (app 0.2.90, firmware 0.2.76). They follow Home Assistant's language unless you choose otherwise.
-ESP Screens writes the language into each screen's YAML (`LANGUAGE: "nl"` under `substitutions:`), and the screen shows
-it after its next firmware update. A screen whose YAML ESP Screens can't reach, such as one you build with ESPHome on
+region in Tessera (app 0.2.90, firmware 0.2.76). They follow Home Assistant's language unless you choose otherwise.
+Tessera writes the language into each screen's YAML (`LANGUAGE: "nl"` under `substitutions:`), and the screen shows
+it after its next firmware update. A screen whose YAML Tessera can't reach, such as one you build with ESPHome on
 another machine, gets that line from you: a code from [`screen_manager/translations`](screen_manager/translations);
-English is the default. [Translating ESP Screens](docs/TRANSLATING.md) says how to add or check a language.
+English is the default. [Translating Tessera](docs/TRANSLATING.md) says how to add or check a language.
 
 <p align="center">
   <img src="docs/images/guition-settings-menu.png" width="32%" alt="The settings menu on the Guition: Brightness, Night, Screen and This screen">
@@ -698,8 +703,8 @@ English is the default. [Translating ESP Screens](docs/TRANSLATING.md) says how 
 
 Tap a toggle to flip it, `-` and `+` to change a number or a time (hold them and a time walks
 whole hours), and tap a chip like the clock to cycle it. Every change is saved on the screen,
-takes effect at once, and appears in ESP Screens within a second, so both sides always show
-the same value. The **Screen settings** cards in ESP Screens have the same rows.
+takes effect at once, and appears in Tessera within a second, so both sides always show
+the same value. The **Screen settings** cards in Tessera have the same rows.
 
 <p align="center">
   <img src="docs/images/editor-screen-settings.png" width="98%" alt="Screen settings in Tessera: Brightness with Dark mode and standby, Night with its hours and brightness, and Screen with back to Home, swiping, the page buttons and the rotation">
@@ -708,7 +713,7 @@ the same value. The **Screen settings** cards in ESP Screens have the same rows.
 **In Home Assistant** (firmware 0.2.49+), every setting is an entity on the screen's device, under
 *Configuration*: `number.<screen>_normal_brightness`, `switch.<screen>_night_mode`,
 `time.<screen>_night_starts`, `switch.<screen>_dark_mode`, `select.<screen>_rotation` on a
-Guition, and the rest. An automation, the settings page and ESP Screens all change the same value,
+Guition, and the rest. An automation, the settings page and Tessera all change the same value,
 and setting a value the screen already has costs nothing. The full list is in
 [docs/SETTINGS.md](docs/SETTINGS.md#who-owns-a-setting).
 
@@ -716,11 +721,11 @@ and setting a value the screen already has costs nothing. The full list is in
 
 | Change | Action |
 | --- | --- |
-| Tiles, names, colors, or order | Save in ESP Screens; no firmware flash |
-| Screen settings | Change them in ESP Screens (they apply at once), on the screen, or on their entities in Home Assistant |
-| New version of the management page | Update ESP Screen Manager in the HA App store |
+| Tiles, names, colors, or order | Save in Tessera; no firmware flash |
+| Screen settings | Change them in Tessera (they apply at once), on the screen, or on their entities in Home Assistant |
+| New version of the management page | Update Tessera Screen Manager in the HA App store |
 | New feature on the physical screen | The **Update** button on the screen (badge *Update x.y.z*), or **Update automatically every night** under Settings |
-| Your own YAML for one screen | **Override YAML** in ESP Screens; kept through updates (app 0.2.61) |
+| Your own YAML for one screen | **Override YAML** in Tessera; kept through updates (app 0.2.61) |
 
 Every app version belongs to one firmware version. After an app update, the list
 shows per screen whether newer firmware is available. **Update** builds that screen's own profile
@@ -736,7 +741,7 @@ screen preferences stay stored on the device. Updates don't replace this
 user data. Do still make normal Home Assistant backups and keep your
 device profiles; removing an app or wiping flash memory is not an update.
 
-**Your own YAML for one screen (app 0.2.61).** **Override YAML** in ESP Screens edits a small
+**Your own YAML for one screen (app 0.2.61).** **Override YAML** in Tessera edits a small
 `<screen>.local.yaml` beside the screen's profile, for hardware-specific changes such as a slower
 display bus (a CYD's other display controller is a choice in **New screen** since app 0.2.129). It is loaded after the shared board package and stays in place when the app or
 the firmware package updates. The screen's name, Wi-Fi, API, OTA, packages, external components and
@@ -772,8 +777,8 @@ board, so the other screens are not asked to update. `tools/affected_boards.py` 
 
 ## Guides and installation help
 
-- [Complete installation from ESP Screens](docs/EASY_SETUP.md)
-- [ESP Screens with Home Assistant Container (Docker)](docs/DOCKER.md)
+- [Complete installation from Tessera](docs/EASY_SETUP.md)
+- [Tessera with Home Assistant Container (Docker)](docs/DOCKER.md)
 - [Guition hardware, mounting, and rotation](docs/GUITION.md)
 - [CYD calibration and USB diagnostics](docs/CALIBRATING.md)
 - [Camera images and album covers](docs/CAMERA.md)

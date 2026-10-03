@@ -183,6 +183,10 @@ def shapes():
                  # a board with 4 MB of flash, where it would take some 90 KB of the update slot (profiles.hotspot).
                  # The manager writes a new screen's YAML by it and takes both out of an older one before it builds.
                  'hotspot': profiles.hotspot(board),
+                 # Whether its flash takes the wide table (firmware 0.33.1+, profiles.wide_slots): the manager then
+                 # writes `allow_partition_access` into a screen's own YAML and sends a screen that still has
+                 # ESPHome's table the wide one after an update (docs/FLASH_LAYOUT.md).
+                 'wide_slots': profiles.wide_slots(board),
                  # The firmware a screen of this board builds today: the core's version, or the board file's own when
                  # a fix for this board alone went out after it (docs/BOARD_RELEASES.md). The
                  # update offer goes by it, so a fix for one board is not an update for every other one.

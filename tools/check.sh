@@ -267,6 +267,17 @@ EOF
       echo "the flash figures would not be the ones users get. Run tools/generate_entries.py."
       return 1
     fi
+    # And the line that lets the partition table be replaced over Wi-Fi, where a screen's own YAML has it (boards.json
+    # `wide_slots`, firmware 0.33.1+): it brings ESPHome's code for that into the image.
+    wants=$("$PYTHON" -c 'import json, sys; print(json.load(open(sys.argv[1]))[sys.argv[2]].get("wide_slots", False))' \
+      "$ROOT/screen_manager/app/boards.json" "$board") || return 1
+    has=False
+    if grep -q '^    allow_partition_access: true' "$config/check-$board.yaml"; then has=True; fi
+    if [[ $has != "$wants" ]]; then
+      echo "$file: allow_partition_access $has, but a screen of $board gets it: $wants (boards.json);"
+      echo "the flash figures would not be the ones users get. Run tools/generate_entries.py."
+      return 1
+    fi
   done < <(board_entries)
   echo "Check profiles in $config"
 }
@@ -365,7 +376,35 @@ EOF
 }
 
 flash_budget() { flash_report "$1" budget; }
-# The boards with 4 MB of flash (tools/profiles.py flash_mb): two update slots of 1.75 MB, where the budget applies. The
+
+# The bridge (packages/bridge.yaml, app 0.4.56): the firmware a screen with ESPHome's own table for 4 MB runs for a
+# minute while ESP Screen Manager replaces that table, when its own firmware no longer fits the old slot
+# (docs/FLASH_LAYOUT.md). It builds from checkout/bridge.yaml with this tree's component, and it has to fit that old
+# slot with room to spare: three quarters of it at most, so a later ESPHome can grow it without closing the way.
+OLD_SLOT=1835008
+compile_bridge() {
+  cp "$ROOT/checkout/bridge.yaml" "$WORK/config/checkout/check-bridge.yaml" || return 1
+  cd "$WORK/config/checkout" || return 1
+  "${ESPHOME_CMD[@]}" -s DEVICE_NAME check-bridge -s DEVICE_FRIENDLY_NAME "Check bridge" compile check-bridge.yaml || return 1
+  "$PYTHON" - "$ESPHOME_DATA_DIR/build/check-bridge" "$OLD_SLOT" > "$WORK/bridge.txt" <<'EOF' || { cat "$WORK/bridge.txt"; return 1; }
+import sys
+from pathlib import Path
+
+build, slot = Path(sys.argv[1]), int(sys.argv[2])
+images = sorted(build.glob('.pioenvs/*/firmware.ota.bin')) or sorted(build.glob('.pioenvs/*/firmware.bin')) \
+    or sorted(build.rglob('firmware.ota.bin'))
+if not images:
+    sys.exit(f'No firmware.ota.bin under {build}')
+image = images[0].stat().st_size
+print(f'{image:,} B of the {slot:,} B a screen with ESPHome\'s own table can take = {image / slot * 100:.1f} %')
+if image > slot * 3 // 4:
+    print('The bridge is over three quarters of the old slot: it must stay far smaller than any screen firmware.')
+    sys.exit(1)
+EOF
+  cat "$WORK/bridge.txt"
+  note "$(head -n 1 "$WORK/bridge.txt")"
+}
+# The boards with 4 MB of flash (tools/profiles.py flash_mb): two update slots of 1.94 MB, where the budget applies. The
 # CYD was the only one until cyd9342 and hosyond40 joined it; a change that reaches every board builds the sample, which
 # has the CYD only, so the nightly build of every board gates the other two (and a release near the line builds them,
 # below).
@@ -509,6 +548,8 @@ if ((want_firmware)); then
         if ((last_ok)); then run "Flash budget: $board" flash_budget "$board"; built_small+=("$board"); else skip "Flash budget: $board" "no build"; fi
       fi
     done < <(board_entries)
+    # With a board of 4 MB among them, the bridge those boards may need.
+    if ((${#built_small[@]})); then run "Firmware: the bridge" compile_bridge; fi
     unbuilt=()
     for board in ${small_flash[@]+"${small_flash[@]}"}; do [[ " ${built_small[*]-} " == *" $board "* ]] || unbuilt+=("$board"); done
     if ((${#unbuilt[@]})) && [[ " ${built_small[*]-} " == *" cyd "* ]]; then run "Flash budget: 4 MB boards not built" small_flash_unbuilt "${unbuilt[@]}"; fi

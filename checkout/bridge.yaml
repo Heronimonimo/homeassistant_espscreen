@@ -1,0 +1,43 @@
+# ESP Screens - the bridge built from a clone of this repository: the smallest firmware that takes the wide partition
+# table (packages/bridge.yaml, which ESP Screen Manager builds over GitHub; docs/FLASH_LAYOUT.md).
+#
+# This file adds what a build from a checkout needs: the components of this checkout, a name, and the secrets
+# (ota_password, Wi-Fi) from checkout/secrets.yaml. tools/check.sh --firmware builds it and keeps it small enough for
+# the update slot of ESPHome's own table for 4 MB.
+substitutions:
+  DEVICE_NAME: "bridge-new"
+  DEVICE_FRIENDLY_NAME: "Bridge"
+
+packages:
+  build: !include ../packages/hardware/esp-idf.yaml
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [flash_layout]
+
+esphome:
+  name: ${DEVICE_NAME}
+  friendly_name: ${DEVICE_FRIENDLY_NAME}
+  min_version: 2026.6.2
+
+esp32:
+  board: esp32dev
+  variant: esp32
+
+logger:
+  level: INFO
+
+# The component alone, without the sensor a screen reports its table with: the bridge talks to nobody.
+flash_layout:
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+    allow_partition_access: true
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none

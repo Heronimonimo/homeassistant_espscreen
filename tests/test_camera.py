@@ -11,6 +11,7 @@ import re
 import socket
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -176,9 +177,10 @@ class Rules(unittest.TestCase):
         # the spinner turns until the first picture or a note is there.
         opened = TILES.split('inline void camera_open(const std::string &entity, const std::string &name, int map_index, const std::string &focus) {', 1)[1].split('\n}\n', 1)[0]
         self.assertIn('camera_spinner = spinner_create(camera_root,', opened)
-        self.assertIn('if (awake() && fresh() && camera.should_ask(now)) {', opened)
+        # pictures_awake: awake, or the screensaver's picture in standby (firmware 0.29.0+).
+        self.assertIn('if (pictures_awake() && fresh() && camera.should_ask(now)) {', opened)
         answer = TILES.split('inline void camera_answer(const std::string &view, const std::string &entity, const std::string &url) {', 1)[1].split('\n}\n', 1)[0]
-        self.assertIn('if (awake() && camera.should_load(now)) camera_load(now);', answer)
+        self.assertIn('if (pictures_awake() && camera.should_load(now)) camera_load(now);', answer)
         # Never under a finger, from the answer or from the tick.
         load = TILES.split('inline void camera_load(uint32_t now) {', 1)[1].split('\n}\n', 1)[0]
         self.assertIn('lv_indev_get_state(input) == LV_INDEV_STATE_PRESSED) return;', load)
@@ -1147,6 +1149,23 @@ class PublishedPort(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.base(info, {}), 'http://192.168.1.5:8098')
         camera_feed.base_url.__defaults__[0].clear()
         self.assertEqual(await self.base(info, {'SUPERVISOR_TOKEN': 't', 'SCREEN_CAMERA_PORT': '9000'}), 'http://192.168.1.5:9000')
+
+    async def test_the_last_address_stands_while_home_assistant_does_not_say(self):
+        """Discussion 105: the address is asked for again every ten minutes. A Home Assistant that did not answer that
+        once gave a page's pictures an answer without a link, and a page of maps then stayed without its maps."""
+        from unittest import mock
+        self.assertEqual(await self.base({'data': {}}, {}), 'http://192.168.1.5:8098')
+
+        async def silent(kind, **data):
+            raise TimeoutError()
+
+        with mock.patch.dict('os.environ', {}, clear=True), mock.patch('time.monotonic', return_value=time.monotonic() + 601):
+            self.assertEqual(await camera_feed.base_url(silent), 'http://192.168.1.5:8098')
+        # Without an address from before there is none to give.
+        camera_feed.base_url.__defaults__[0].clear()
+        with mock.patch.dict('os.environ', {}, clear=True):
+            self.assertIsNone(await camera_feed.base_url(silent))
+
 
 if __name__ == '__main__':
     unittest.main()

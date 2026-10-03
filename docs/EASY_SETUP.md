@@ -1,14 +1,14 @@
-# Installing and managing from ESP Screens
+# Installing and managing from Tessera
 
 A new screen, from USB to everyday use
 
-With **ESP Screen Manager**, you choose your tiles in Home Assistant. You search by
+With **Tessera Screen Manager**, you choose your tiles in Home Assistant. You search by
 name, device, room, or entity ID, arrange them in the order you want, and click
 **Save & send**. After that, the status stays automatically up to date.
 You don't need to **reflash** for different tiles.
 
 This works with Home Assistant OS on a 64-bit Raspberry Pi or an amd64 machine,
-and one of these exact screen variants. The ESPHome CLI is included in ESP Screen Manager;
+and one of these exact screen variants. The ESPHome CLI is included in Tessera Screen Manager;
 ESPHome Device Builder is optional:
 
 | Choice | Hardware |
@@ -35,16 +35,24 @@ the board profile that matches the hardware. Use a USB cable that supports data.
 Wallbox relays are not used by default; a Guition with relays can switch them
 through its Override YAML (docs/GUITION.md, Relays).
 
-## 1. Install ESP Screen Manager
+<a id="1-install-esp-screen-manager"></a>
+
+## 1. Install Tessera Screen Manager
+
+The app is not in the standard App store, so Home Assistant needs its repository first. One click adds it:
+
+[![Add the Tessera repository to your Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FMaxGramser%2Fhomeassistant_espscreen)
+
+Then continue with step 3. Or add it by hand:
 
 1. Open **Settings → Apps → Install app** (on older HA versions:
    **Settings → Add-ons → Add-on Store**).
 2. Open the menu in the top right → **Repositories** and add:
    `https://github.com/MaxGramser/homeassistant_espscreen`.
-3. Install and start **ESP Screen Manager**. Turn on **Start on boot**
-   and **Show in sidebar**. Open the **ESP Screens** web interface.
+3. Install and start **Tessera Screen Manager**. Turn on **Start on boot**
+   and **Show in sidebar**. Open **Tessera** in the sidebar.
 
-ESP Screens opens on **Your screens**: every screen in the house with its home page as it looks
+Tessera opens on **Your screens**: every screen in the house with its home page as it looks
 right now. Click a screen to change it; the logo at the top of the sidebar brings you back.
 
 This app includes the tested ESPHome 2026.9.0 CLI and runs within your HA login.
@@ -56,7 +64,7 @@ Use the GitHub version for updates; a local test add-on is a separate app.
 1. Connect the screen with a **USB data cable** to the machine running Home
    Assistant. With multiple boards: connect them one at a time for the first
    installation, or check which port belongs to this screen.
-2. Click the **+** beside **Screens** in the sidebar of ESP Screens. New screen walks you through three steps.
+2. Click the **+** beside **Screens** in the sidebar of Tessera. New screen walks you through three steps.
    **Screen**: under **Which screen do you have?** pick your board. Type its brand, size or what is printed on
    it to find it, or narrow the list by size. **Set up**: give the screen a name, for example `Kitchen`, and watch
    it appear on the drawing of your screen. A board that can hang both ways asks **Which way will it hang?**
@@ -65,11 +73,11 @@ Use the GitHub version for updates; a local test add-on is a separate app.
    different one, and lists what the board can and cannot do.
 3. Wi-Fi: if `wifi_ssid` and `wifi_password` are already in the ESPHome `secrets.yaml`,
    the screen uses them automatically. If they're missing, or the file doesn't
-   exist yet, the Set up step asks for them once and ESP Screens only adds the
+   exist yet, the Set up step asks for them once and Tessera only adds the
    missing lines to `secrets.yaml`; comments and other secrets are left
    alone. If `secrets.yaml` isn't valid YAML, fix that yourself first.
 4. **Install**: choose **USB on Home Assistant** (the port it found has a green light) and click
-   **Install**. ESP Screens stores the profile (`kitchen.yaml`, with unique
+   **Install**. Tessera stores the profile (`kitchen.yaml`, with unique
    API and OTA keys) in the ESPHome folder, builds the firmware, and writes it
    over USB. The page follows it in steps (getting ready, building the firmware, putting it on the screen,
    starting up), each with how far it is, while the drawing of your screen fills in. **Show details** opens
@@ -96,7 +104,7 @@ opened over https (see below):
 1. Plug the screen into this computer with a USB data cable.
 2. In the Install step of **New screen**, choose **From this computer** and click
    **Connect & install**.
-3. The browser asks which port to use: choose the screen's. ESP Screens first checks that the
+3. The browser asks which port to use: choose the screen's. Tessera first checks that the
    board carries the chip the chosen board needs (an ESP32, ESP32-S3 or ESP32-P4), then builds the
    firmware the same way as over USB. Keep the tab open. As soon as the build is ready, the page
    erases the board and writes the firmware, which takes about two minutes, and the screen
@@ -113,7 +121,7 @@ port, until the installation starts.
 **Download.** For any other browser:
 
 1. In the Install step of **New screen**, choose **Download the file** and click
-   **Build & download**. ESP Screens builds the firmware the same way; when it's ready,
+   **Build & download**. Tessera builds the firmware the same way; when it's ready,
    the window offers the file, for example `kitchen.factory.bin`.
 2. Plug the screen into your own computer with a USB data cable.
 3. Open [ESPHome Web](https://web.esphome.io/?dashboard_install) in Chrome or Edge on that
@@ -133,7 +141,8 @@ in the sidebar, open its details with the arrow at its right and use **Download 
 screen that isn't in Home Assistant yet has it under its API key). The zip holds the screen's own
 YAML, its Override YAML and a `secrets.yaml` with only the secrets the two use, normally the Wi-Fi.
 Unpack it and run `esphome run <name>.yaml` in that folder. Like the firmware file, it holds your
-Wi-Fi password and the screen's keys.
+Wi-Fi password and the screen's keys. A CYD or a Hosyond you build yourself needs one more step once, for the
+partition table its firmware has had since 0.33.1: [UPDATING_4MB_SCREENS.md](UPDATING_4MB_SCREENS.md) says what.
 
 **CYD:** calibration appears on first boot. Calmly tap the visible crosshair
 three times, hold each tap briefly, and follow each next crosshair in turn.
@@ -149,7 +158,7 @@ USB, see [CALIBRATING.md](CALIBRATING.md).
 
 ## 3. Pair the screen with Home Assistant
 
-This happens in Home Assistant itself, outside ESP Screens. As long as a profile
+This happens in Home Assistant itself, outside Tessera. As long as a profile
 hasn't been added to Home Assistant yet, it appears in the sidebar under **Screens**
 as a *not yet in Home Assistant* card, with an **Open Devices & services**
 button and **Copy API key**; the done screen of **New screen** has the same
@@ -166,7 +175,7 @@ button. The card disappears once the screen is in the list.
 3. On the ESPHome integration, open **Configure** and enable **Allow the device to
    perform Home Assistant actions**. Without this permission, values still show up,
    but the screen can't control lights and devices.
-4. Open ESP Screens. The screen appears within about 30 seconds.
+4. Open Tessera. The screen appears within about 30 seconds.
 
 ## 4. Choose and edit your tiles
 
@@ -230,7 +239,7 @@ Click **Save & send** to send your changes.
   the light supports those features.
 - Climate, vacuum, and cover: tap to open the control card. Under **On tap**, choose **On / off**
   to open, close, or stop a cover with a tap instead (firmware 0.2.58+); holding it still opens the card.
-  ESP Screens offers **On / off**, a small slider, and direct controls only when Home Assistant has
+  Tessera offers **On / off**, a small slider, and direct controls only when Home Assistant has
   the action for that entity. **Perform action** runs any action Home Assistant offers for the
   entity, such as **Set cover position** with a position, under Home Assistant's own names
   (firmware 0.2.58+).
@@ -297,7 +306,7 @@ the screen's own settings page, takes it away.
 The default standby time is ten minutes. For offline devices, the screen blocks
 actions. If the connection to Home Assistant drops, the screen immediately shows
 "HA not connected"; if the app sends nothing for two rounds (about five minutes),
-it shows "ESP Screens not active". In both cases, control is blocked
+it shows "Tessera not active". In both cases, control is blocked
 until data is received again.
 
 You can save layouts while a screen is offline. The app sends them
@@ -307,8 +316,8 @@ as soon as the screen comes back. The app must keep running for current tile dat
 
 | What changes? | What do you do? | What's kept? |
 | --- | --- | --- |
-| Different entities, names, or order | Save in ESP Screens | Wi-Fi, keys, calibration |
-| New management page/app version | App store → ESP Screen Manager → Update | All layouts in `/data/screens.json` |
+| Different entities, names, or order | Save in Tessera | Wi-Fi, keys, calibration |
+| New management page/app version | App store → Tessera Screen Manager → Update | All layouts in `/data/screens.json` |
 | New screen feature/card | The **Update** button on the screen, or **Update automatically every night** under Settings (manually: Firmware & USB → Wi-Fi / OTA) | Own YAML, keys, and CYD calibration; the app resends tiles |
 
 The device's own YAML references the firmware packages on `main`. On a new build,
@@ -349,8 +358,13 @@ that screen and says where it is set.
 | `DISPLAY_MODEL` | CYD, Hosyond | ESPHome's `mipi_spi` model of the display controller (`ILI9341`, `ST7789V`, ...) |
 | `DISPLAY_DATA_RATE` | CYD, Hosyond | the display's SPI clock (`40MHz`; some boards want `20MHz`) |
 | `DISPLAY_INVERT_COLORS` | CYD, Hosyond | `true` for a panel that shows its colours inverted |
+<<<<<<< HEAD
 | `GRID_ROWS` | 4-inch Guition, M5Stack Tab5 | `4` for four rows of smaller tiles on a page instead of three (New screen asks) |
 | `BACKLIGHT_FREQUENCY` | CYD, 4-inch Guition, 3.5-inch Guition, Waveshare 4B, Waveshare 3.5, Hosyond | the backlight's PWM frequency (the 4-inch Guition runs `150Hz` since firmware 0.3.5, the CYD `20000Hz`) |
+=======
+| `GRID_ROWS` | 4-inch Guition | `4` for two columns of four smaller tiles a page instead of three (firmware 0.18.1; New screen asks) |
+| `BACKLIGHT_FREQUENCY` | CYD, 4-inch Guition, 3.5-inch Guition, Waveshare 4B, Waveshare 3.5, Hosyond | the backlight's PWM frequency (the 4-inch Guition runs `150Hz` since firmware 0.3.5, the CYD and the Hosyond `1000Hz` since firmware 0.29.0) |
+>>>>>>> upstream/main
 
 The parts an override names stay the same on every board and in every update:
 `my_display` (the display), `ts_touch` (the touch panel), `gpio_backlight_pwm`
@@ -367,12 +381,12 @@ The override is advanced configuration: the display model, dimensions, pins,
 touchscreen and initialization sequence must still match the physical board.
 For a similar-looking CYD, check the exact USB/controller variant first.
 
-Make a Home Assistant backup before updates, including ESP Screen Manager and
+Make a Home Assistant backup before updates, including Tessera Screen Manager and
 the device's own ESPHome configurations. **Removing/reinstalling** an app is not the same
 as updating; that can wipe the data folder. Keep the device name and the
 entity ID of **Tile settings** the same, so the existing layout stays linked.
 
-Update ESP Screen Manager first, then update the screens. The page-owned layout
+Update Tessera Screen Manager first, then update the screens. The page-owned layout
 release changes the storage and firmware protocol. New firmware connected to an
 older app displays "Configuration problem. Update add-on." Screens can update at
 different times: the new app keeps sending compatible layouts to older firmware.
@@ -386,14 +400,14 @@ Reload any editor tabs left open during the update before saving changes.
 ## 6. Removing a screen
 
 A screen you no longer use goes in one place: choose it in the sidebar, open its
-details with the arrow at its right, and click **Remove screen**. The list in ESP Screens is Home Assistant's own, so removing
+details with the arrow at its right, and click **Remove screen**. The list in Tessera is Home Assistant's own, so removing
 only the YAML in ESPHome leaves the screen in the list. What the button does:
 
 - Home Assistant loses the screen's ESPHome integration, with its device and all
   of its entities. Anything that used those entities, such as an automation or a
   dashboard card, loses them too.
 - The screen's own YAML profile and its `.local.yaml` leave the ESPHome folder,
-  along with what the app built from them. A screen installed outside ESP Screens
+  along with what the app built from them. A screen installed outside Tessera
   has no profile there, and nothing in that folder is touched.
 - The tiles, the screen settings and the update history kept in the app are gone.
 
@@ -429,7 +443,7 @@ should stay away.
 
 HA Container without Supervisor has no App store. This installation guide
 targets Home Assistant OS; for Home Assistant Container, run the app next to it as in
-[ESP Screens with Docker](DOCKER.md). The development server is not a production route for
+[Tessera with Docker](DOCKER.md). The development server is not a production route for
 a standalone public portal.
 
 HA mechanisms used: [Ingress](https://developers.home-assistant.io/docs/apps/presentation/),
@@ -439,7 +453,7 @@ HA mechanisms used: [Ingress](https://developers.home-assistant.io/docs/apps/pre
 
 ## Adjusting screen settings
 
-Open the screen in ESP Screens and its **Screen settings** tab. A change there applies at
+Open the screen in Tessera and its **Screen settings** tab. A change there applies at
 once; there is nothing to save, and no firmware flash is needed. The same settings are on the
 screen itself (swipe down from the top edge or hold the top bar, firmware 0.2.44+) and, with firmware 0.2.49+, on the screen's
 device in Home Assistant ([SETTINGS.md](SETTINGS.md)).
@@ -454,7 +468,7 @@ device in Home Assistant ([SETTINGS.md](SETTINGS.md)).
 | Night mode | On/off; applies during standby | On |
 | Starts / Ends | Night hours, hour and minute, can span midnight | 22:00–07:00 |
 | Night brightness | 0–100%, capped at normal brightness | 10% |
-| Clock | 24 or 12 hour, the same on every screen: Settings → Language & region in ESP Screens (firmware 0.2.76+); the Simple dial shows AM or PM beside the time (firmware 0.3.6+); the Flip clock on a card as wide as the page and the bedside clock put it under the time (firmware 0.17.0+) | Follows the language |
+| Clock | 24 or 12 hour, the same on every screen: Settings → Language & region in Tessera (firmware 0.2.76+); the Simple dial shows AM or PM beside the time (firmware 0.3.6+); the Flip clock on a card as wide as the page and the bedside clock put it under the time (firmware 0.17.0+) | Follows the language |
 | Back to Home | Closes an open card and goes back to the Home page after 30 seconds to 60 minutes without a touch, firmware 0.2.44+ | On, 2 minutes |
 | Also on standby | Standby goes back to the Home page too (it always closes an open card) | Off |
 | Swipe between pages | Native horizontal swipe, firmware 0.2.7+ | Off |
@@ -471,7 +485,7 @@ Home Assistant shows these settings on each screen's ESPHome device, under *Conf
 with firmware 0.2.49+ every one of them, older firmware the switch **Auto standby**
 (firmware 0.2.41+) and the numbers **Standby after**, **Normal brightness**,
 **Standby brightness** and **Night brightness**. Changing them there, for example from an
-automation, also changes them in ESP Screens and keeps them after a restart. Turning Auto
+automation, also changes them in Tessera and keeps them after a restart. Turning Auto
 standby off wakes the screen and keeps it on; turning it on counts the standby time from
 that moment. To keep a screen on while someone is home and a light is on:
 
@@ -500,7 +514,7 @@ actions:
 ```
 
 Every change is saved on the screen, so switch on changes that happen a few times a day,
-not on every motion. ESP Screens → Settings → Claude installs a skill that writes such
+not on every motion. Tessera → Settings → Claude installs a skill that writes such
 automations for you.
 
 Night hours use the ESPHome device's timezone and the time from HA.
@@ -511,13 +525,13 @@ The first tap wakes the screen without controlling a device, except on a page th
 one full-page switch (firmware 0.2.65+): there the waking push also switches it.
 
 With firmware 0.2.49+ the screen owns its settings and keeps them in its preferences;
-an offline screen shows them as unknown in ESP Screens and takes no changes until it is back.
+an offline screen shows them as unknown in Tessera and takes no changes until it is back.
 Older firmware gets them from the add-on's persistent data, also as soon as it comes back.
 ESPHome batches the preference writes (normally up to a minute), so don't unplug the power
 right after a change. Existing CYD calibration, tiles, API, and OTA keys are preserved.
 Regular HA status updates don't wake the screen and don't reset the standby timer.
 
-A setting that needs newer firmware than the screen has doesn't show in ESP Screens until
+A setting that needs newer firmware than the screen has doesn't show in Tessera until
 the screen is updated. The tiles remain usable.
 
 The current Guition uses the native ST7701S configuration; see

@@ -11,7 +11,7 @@ not tried it on a real unit yet. If you have one, [tell others how it went](http
 
 ## Install
 
-Update ESP Screen Manager and choose **Hosyond · 4 inch** (ESP32-32E E32R40T) in **New screen**. Follow
+Update Tessera Screen Manager and choose **Hosyond · 4 inch** (ESP32-32E E32R40T) in **New screen**. Follow
 [Easy setup](EASY_SETUP.md) to create a profile with its own name, Wi-Fi references and unique API/OTA keys, then
 flash it over USB or download the firmware for ESPHome Web. The screen shows its touch calibration on the first
 start: tap the crosshairs ([Calibrating](CALIBRATING.md)).

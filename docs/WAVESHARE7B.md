@@ -1,20 +1,20 @@
 # Waveshare ESP32-S3-Touch-LCD-7B, experimental
 
-Added in ESP Screen Manager 0.4.14, on the shared firmware 0.9.0, for [issue #25](https://github.com/MaxGramser/homeassistant_espscreen/issues/25).
+Added in app 0.4.14, on the shared firmware 0.9.0, for [issue #25](https://github.com/MaxGramser/homeassistant_espscreen/issues/25).
 This is the **ESP32-S3-Touch-LCD-7B**: a 7-inch 1024 x 600 IPS panel over RGB, GT911 capacitive touch, 8 MB octal
 PSRAM and 16 MB flash. It is not the 800 x 480 ESP32-S3-Touch-LCD-7 without the "B" ([its own page](WAVESHARE7.md)),
 which has another expander chip. Physical acceptance has not been performed.
 
 ## Install
 
-Update ESP Screen Manager and choose **Waveshare · 7 inch** (ESP32-S3-Touch-LCD-7B, marked Experimental) in **New screen**.
+Update Tessera Screen Manager and choose **Waveshare · 7 inch** (ESP32-S3-Touch-LCD-7B, marked Experimental) in **New screen**.
 Follow [Easy setup](EASY_SETUP.md) to create a profile with its own name, Wi-Fi references and unique API/OTA keys.
 Choose the correct USB port, or download the firmware to flash with ESPHome Web from your own computer.
 Keep an existing working profile if the board is already installed. Pair it through the ESPHome integration before adding tiles.
 
 The remote package is `packages/waveshare7b.yaml`; the checkout entry is `checkout/waveshare7b.yaml`.
 Both combine `packages/core.yaml` with `packages/boards/waveshare-esp32s3-7b.yaml`.
-The board needs ESPHome 2026.7.0 or newer, the first release with a component for its expander. ESP Screen Manager
+The board needs ESPHome 2026.7.0 or newer, the first release with a component for its expander. Tessera Screen Manager
 builds with a newer one; a build of your own in ESPHome Device Builder needs at least that version.
 The board's one USB-C port goes through a USB-to-UART chip, and the logs go out over it.
 
@@ -51,7 +51,7 @@ The board's one USB-C port goes through a USB-to-UART chip, and the logs go out 
 
 ## What to report while testing
 
-1. Board revision, successful boot, pairing and appearance in ESP Screens.
+1. Board revision, successful boot, pairing and appearance in Tessera.
 2. Correct colours and a stable picture across several page changes and cold starts. A picture that drifts sideways,
    flickers or has shifted colours points at the display block and its pixel clock.
 3. Physical taps near each corner, slider drags and edge swipes, lying down and standing up. Touch that lands mirrored

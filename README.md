@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="https://tessera-maxgramser.on-forge.com"><img src="docs/images/tessera-mosaic.jpg" width="100%" alt="A mosaic of real Tessera screens in every size, from the 2.8-inch CYD to the 10.1-inch Guition: lights, music, the thermostat, the weather, locks, blinds and the vacuum, in light and dark mode"></a>
+</p>
+
+<p align="center">
   <a href="https://tessera-maxgramser.on-forge.com"><img src="docs/images/tessera-mark.svg" width="112" alt="The Tessera logo: four rounded tiles in yellow, blue, purple and green, like a small mosaic"></a>
 </p>
 
@@ -14,11 +18,22 @@
   <a href="https://tessera-maxgramser.on-forge.com/community/share?type=installation">My screen works</a>
 </p>
 
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FMaxGramser%2Fhomeassistant_espscreen"><img src="https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg" alt="Add the Tessera repository to your Home Assistant"></a>
+</p>
+
+<p align="center"><sub>Tessera is not in the standard App store. This button adds its repository to your Home Assistant. After that, Tessera Screen Manager is in the store like any other app.</sub></p>
+
 <p align="center"><sub>Tessera is the new name for ESP Screens. In Home Assistant the app is called Tessera Screen Manager and its panel Tessera (app 0.3.18); the repository, the add-on and your screens stay exactly as they are.</sub></p>
+
+<p align="center"><sub>Looking for e-ink? Tessera is for colour LCD touch screens. For calm dashboards on e-ink panels, have a look at <a href="https://tesserae.ink">Tesserae (tesserae.ink)</a>, a separate open-source project for Home Assistant with a similar name.</sub></p>
 
 Thank you! I work on this project with a lot of love, and every bit of support helps. I truly love the Home Assistant community.
 
-<a href="https://buymeacoffee.com/f5j9jnkmhpv"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=f5j9jnkmhpv&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="42"></a>
+If you'd like me to keep building new cards and boards, consider a small monthly contribution. A one-time coffee is just as welcome.
+
+<a href="https://buymeacoffee.com/f5j9jnkmhpv/membership"><img src="https://img.buymeacoffee.com/button-api/?text=Support%20monthly&emoji=&slug=f5j9jnkmhpv&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Support monthly" height="42"></a>
+&nbsp; or <a href="https://buymeacoffee.com/f5j9jnkmhpv">buy me a coffee once</a>
 
 <p align="center">
   <img src="docs/images/photo-guition-page-2.jpg" width="49%" alt="The Guition 4-inch screen on a table: the Evening page with Movie night and Good night in pastel lilac and blue, and the ceiling light and the bedroom fan as tall tiles with their sliders">
@@ -38,14 +53,14 @@ looking, and a tile can go to another page. An automation can put an alert on ev
 the bell, and a screen with room for pictures shows who is there with the doorbell camera's picture. A tap can run any
 action Home Assistant has for a tile, and Dark mode suits a screen beside the bed.
 
-**How.** ESP Screen Manager is an app inside Home Assistant. It flashes a new screen over USB, updates
+**How.** Tessera Screen Manager is an app inside Home Assistant. It flashes a new screen over USB, updates
 it over Wi-Fi and sends it your tiles. Changing a screen is pick, drag and **Save & send**:
 no reflash, no YAML to write, no blueprint, MQTT or token. Brightness, night hours and Dark mode can
 also be changed on the screen or by an automation, and your own YAML for one screen survives every update.
 
-**[Install it](#installing-from-home-assistant)** · [Documentation](https://tessera-maxgramser.on-forge.com/docs) · [Pages and tiles](https://tessera-maxgramser.on-forge.com/docs/pages-and-tiles) · [Troubleshooting](https://tessera-maxgramser.on-forge.com/docs/troubleshooting) · [What's new](screen_manager/CHANGELOG.md)
+**[Install it](#installing-from-home-assistant)** · [The manual](https://tessera-maxgramser.on-forge.com/docs/) · [Pages](https://tessera-maxgramser.on-forge.com/docs/pages) · [Screen settings](https://tessera-maxgramser.on-forge.com/docs/screen-settings) · [Troubleshooting](https://tessera-maxgramser.on-forge.com/docs/troubleshooting) · [What's new](screen_manager/CHANGELOG.md)
 
-> **The full documentation is on the [Tessera website](https://tessera-maxgramser.on-forge.com/docs):** a [quick start](https://tessera-maxgramser.on-forge.com/docs/quick-start), getting started, pages and tiles, screen settings, cameras, Docker and troubleshooting, kept up to date for users. This README is the overview; the files under `docs/` are the reference for contributors.
+> **The manual is on the [Tessera website](https://tessera-maxgramser.on-forge.com/docs/):** from the [quick start](https://tessera-maxgramser.on-forge.com/docs/quick-start) to every tile, every screen setting, every supported screen and troubleshooting, with search. Anyone with a GitHub account can improve a page with **Edit this page**. This README is the overview; the files under `docs/` are the reference for contributors.
 
 ## In real life
 
@@ -160,7 +175,7 @@ home fits on one page.
   <img src="docs/images/guition-map-dark.png" width="25%" alt="The same map tapped open over the whole screen in Dark mode: dark streets, the people in their own colours, the round back key and the name Family at the top">
   <img src="docs/images/waveshare43-map.png" width="41%" alt="The 4.3-inch Waveshare with the map tile following everyone: four people, two with a photo in their marker, and a car">
 </p>
-<p align="center"><sub>A person tile can be a map of where they and the people with them are, and the map tile follows everyone Home Assistant knows the place of, or only whom you choose. Photos in the markers and the same colours as Home Assistant's own maps; a tap opens the map over the whole screen. ESP Screens draws it in the screen's own colours, light or dark, from Home Assistant's own map tiles, and draws it again only when someone moves; the screen gets a picture, never a location (<a href="docs/MAP.md">how</a>). Rendered from the firmware's own LVGL code with a made-up household; map data © OpenStreetMap contributors.</sub></p>
+<p align="center"><sub>A person tile can be a map of where they and the people with them are, and the map tile follows everyone Home Assistant knows the place of, or only whom you choose. Photos in the markers and the same colours as Home Assistant's own maps; a tap opens the map over the whole screen. Tessera draws it in the screen's own colours, light or dark, from Home Assistant's own map tiles, and draws it again only when someone moves; the screen gets a picture, never a location (<a href="docs/MAP.md">how</a>). Rendered from the firmware's own LVGL code with a made-up household; map data © OpenStreetMap contributors.</sub></p>
 
 ## A clock beside your bed
 
@@ -224,13 +239,13 @@ home fits on one page.
   <img src="docs/images/guition-dark-controls.png" width="32%" alt="Dark mode on the Good morning page: graphite cards and soft white text, the clock, the weather, the coffee machine in a deep orange and Sam">
   <img src="docs/images/guition-dark-page-4.png" width="32%" alt="Dark mode on the Evening page: the two scenes in deeper lilac and blue, and the tall ceiling light and fan sliders keep their colours">
 </p>
-<p align="center"><sub>Dark mode, for a screen beside the bed: the same pages, darker. It is a switch on the screen, in ESP Screens and in Home Assistant, so an automation can turn it on at bedtime.</sub></p>
+<p align="center"><sub>Dark mode, for a screen beside the bed: the same pages, darker. It is a switch on the screen, in Tessera and in Home Assistant, so an automation can turn it on at bedtime.</sub></p>
 <p align="center">
   <img src="docs/images/guition-settings-screen.png" width="32%" alt="The settings page on the Guition, Screen: back to Home by itself and after how long, also on standby, swiping between pages and the page buttons, with the rotation on its second page">
   <img src="docs/images/guition-settings.png" width="32%" alt="The settings page on the Guition, Brightness: the brightness with minus and plus, Dark mode off, Auto standby on, standby after 10 minutes and the standby brightness">
   <img src="docs/images/guition-dark-settings.png" width="32%" alt="The same Brightness page right after turning Dark mode on: a black page with graphite rows and soft white text">
 </p>
-<p align="center"><sub>Settings on the screen itself: hold the top bar. The same brightness, Dark mode, standby, night hours, clock and rotation as in ESP Screens, and every one of them is an entity in Home Assistant.</sub></p>
+<p align="center"><sub>Settings on the screen itself: hold the top bar. The same brightness, Dark mode, standby, night hours, clock and rotation as in Tessera, and every one of them is an entity in Home Assistant.</sub></p>
 
 ## Managed from Home Assistant
 
@@ -277,7 +292,7 @@ home fits on one page.
 <p align="center"><sub>The same home in German, French and Polish, its rooms and tiles named in each. The screens follow your Home Assistant: its language, its words for a light or a robot, and how your country writes a date, a time and a number: 75 % in German and French, 75% in Polish and English.</sub></p>
 
 The screens, the editor and its messages speak **English (US and UK), Nederlands, Deutsch, Français, Italiano,
-Español, Português, Polski and Magyar**. Nothing to set up: ESP Screens takes the language of your Home Assistant.
+Español, Português, Polski and Magyar**. Nothing to set up: Tessera takes the language of your Home Assistant.
 
 <p align="center">
   <img src="docs/images/editor-language.png" width="36%" alt="Language and region in Tessera: the screen language set to Home Assistant's language, the time format on 24 hour and the number format following the language">
@@ -292,7 +307,7 @@ Español, Português, Polski and Magyar**. Nothing to set up: ESP Screens takes 
   card is the word its own dashboard shows, in your language.
 
 Most languages still need someone who speaks them to read the texts through, and a new language is one file.
-[Translating ESP Screens](docs/TRANSLATING.md) walks through both; a language without a file falls back to English
+[Translating Tessera](docs/TRANSLATING.md) walks through both; a language without a file falls back to English
 while it keeps your country's clock and numbers.
 
 ## Alerts
@@ -351,7 +366,7 @@ AliExpress being AliExpress, that link may go dead at some point. If it does, se
 "ESP32-S3-4848S040" and check the listing says 480 x 480, ST7701S and a capacitive GT911
 touch panel before you order.
 
-ESP Screens builds with its own **ESPHome 2026.9.0**. The firmware also builds in your own ESPHome Device Builder
+Tessera builds with its own **ESPHome 2026.9.0**. The firmware also builds in your own ESPHome Device Builder
 with ESPHome 2026.6.2 or newer; the 10.1-inch Guition asks for 2026.8.0 or newer, because its touch panel is
 newer than that.
 
@@ -364,7 +379,7 @@ so far; rev3 silicon needs a firmware of its own.
 ### Do I need ESPHome?
 
 **You don't need to install the separate ESPHome Device Builder app.**
-ESP Screen Manager already includes the ESPHome CLI and can build firmware itself,
+Tessera Screen Manager already includes the ESPHome CLI and can build firmware itself,
 install it via USB, put it on a screen plugged into your own computer from the browser, or give
 you the file,
 and later update it wirelessly over OTA.
@@ -378,8 +393,8 @@ and grant the device permission to perform Home Assistant actions.
 
 | Component | Needed? | What for? |
 | --- | --- | --- |
-| ESP Screen Manager app | Yes, for this installation route | Installing firmware, managing tiles, and sending current data to the screen |
-| ESPHome Device Builder app | No, optional | Alternative editor and firmware installer; the same CLI is already in ESP Screens |
+| Tessera Screen Manager app | Yes, for this installation route | Installing firmware, managing tiles, and sending current data to the screen |
+| ESPHome Device Builder app | No, optional | Alternative editor and firmware installer; the same CLI is already in Tessera |
 | ESPHome integration in HA | Yes, pair every screen | The connection between Home Assistant and the physical screen |
 
 So a fresh installation without ESPHome Device Builder also works. If there's
@@ -393,21 +408,25 @@ For Home Assistant Container (Docker) without the App store, follow [Install wit
 
 For Home Assistant OS with Apps/Add-ons on **aarch64 or amd64**:
 
-1. Open the App store and add this repository:
+1. Tessera is not in the standard App store, so add its repository first. One click does it:
+
+   [![Add the Tessera repository to your Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FMaxGramser%2Fhomeassistant_espscreen)
+
+   Or add it by hand: open the App store, choose **Repositories** in the menu in the top right, and add
    `https://github.com/MaxGramser/homeassistant_espscreen`.
-2. Install **ESP Screen Manager**, start the app, and open **ESP Screens**.
+2. Install **Tessera Screen Manager** from the store, start the app, and open **Tessera** in the sidebar.
    ESPHome Device Builder is optional: the ESPHome CLI is already in this app.
 3. Connect the screen with a USB data cable to the **Home Assistant machine**
    and click **+** beside Screens in the sidebar. New screen takes three steps: **Screen** (pick your board),
    **Set up** (name it and choose which way it hangs) and **Install** (choose **USB on Home Assistant** and click
    **Install**). If Wi-Fi is missing from the ESPHome `secrets.yaml`, Set up
-   asks for it once and ESP Screens only adds the missing lines. The profile
+   asks for it once and Tessera only adds the missing lines. The profile
    with unique API and OTA keys goes into the ESPHome folder; the build
    and flash run in the same window (a first build takes a few minutes on a
    Raspberry Pi). Each screen gets its own profile.
    Is Home Assistant on a server or in a virtual machine, out of reach of the screen?
    Plug the screen into your own computer and choose **From this computer** in the Install step:
-   ESP Screens builds the firmware and the page puts it on the screen, in Chrome or Edge with
+   Tessera builds the firmware and the page puts it on the screen, in Chrome or Edge with
    Home Assistant opened over https. Or choose **Download the file** and put it on the screen with
    [ESPHome Web](https://web.esphome.io). After that, updates go over Wi-Fi as usual.
 4. **CYD:** go through the calibration on the screen. **Guition:** uses GT911
@@ -415,7 +434,7 @@ For Home Assistant OS with Apps/Add-ons on **aarch64 or amd64**:
    **Settings → Devices & services** using the API key the window
    shows after installation (copy button). Grant the device permission to
    perform Home Assistant actions.
-5. Select the screen in ESP Screens, choose your tiles, and click
+5. Select the screen in Tessera, choose your tiles, and click
    **Save & send**. Then test the physical controls.
 
 <p align="center">
@@ -424,17 +443,17 @@ For Home Assistant OS with Apps/Add-ons on **aarch64 or amd64**:
 </p>
 <p align="center"><sub>New screen, its first step (step 3 above), and choosing your tiles (step 5).</sub></p>
 
-New firmware goes on over Wi-Fi with the **Update** button of a screen in ESP Screens, or by itself
+New firmware goes on over Wi-Fi with the **Update** button of a screen in Tessera, or by itself
 every night if you turn that on under **Settings**; **Firmware & USB → Wi-Fi / OTA** in the sidebar
 installs it by hand. For an existing screen, always use the existing profile; creating a new
 installation profile generates new keys.
 
-The [getting started guide](https://tessera-maxgramser.on-forge.com/docs/getting-started) on the website walks through every step in more detail.
+The [manual](https://tessera-maxgramser.on-forge.com/docs/install) on the website walks through every step in more detail.
 
 ## More
 
-- **[Documentation on the Tessera website](https://tessera-maxgramser.on-forge.com/docs):** [getting started](https://tessera-maxgramser.on-forge.com/docs/getting-started),
-  [pages and tiles](https://tessera-maxgramser.on-forge.com/docs/pages-and-tiles), [screen settings](https://tessera-maxgramser.on-forge.com/docs/screen-settings),
+- **[The manual on the Tessera website](https://tessera-maxgramser.on-forge.com/docs/):** [installing](https://tessera-maxgramser.on-forge.com/docs/install),
+  [pages](https://tessera-maxgramser.on-forge.com/docs/pages), [tiles](https://tessera-maxgramser.on-forge.com/docs/tiles), [screen settings](https://tessera-maxgramser.on-forge.com/docs/screen-settings),
   [cameras](https://tessera-maxgramser.on-forge.com/docs/cameras), [Docker](https://tessera-maxgramser.on-forge.com/docs/docker) and [troubleshooting](https://tessera-maxgramser.on-forge.com/docs/troubleshooting).
 - **[Full reference](README_EXTENDED.md):** every card and setting, alerts and wake/sleep from an
   automation, the top bar, the settings page on the screen, and how updates keep your settings.
@@ -448,6 +467,10 @@ The very first version started from Adrian Kuehlewind's
 [ESPHome-touch-display-mount](https://github.com/akuehlewind/ESPHome-touch-display-mount).
 Little of that code is left, but his repository has 3D-printable desk, under-desk, wall and flush
 mounts for the CYD.
+
+Not to be confused with [Tesserae (tesserae.ink)](https://tesserae.ink), a separate open-source project that
+makes calm dashboards for e-ink panels in Home Assistant. Same word, different screens: Tessera is for colour LCD
+touch screens, Tesserae for e-ink. A question meant for the other project is gladly passed on.
 
 The front door in the camera pictures is a photo by
 [Virginia Marinova](https://unsplash.com/photos/the-door-welcomes-with-plants-on-both-sides-80uwJgdeqWg) on Unsplash.

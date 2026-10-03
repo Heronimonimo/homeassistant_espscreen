@@ -19,4 +19,4 @@ external_components:
       ref: main
       path: components
     refresh: 0s
-    components: [xpt2046, smart_display]
+    components: [xpt2046, flash_layout, smart_display]

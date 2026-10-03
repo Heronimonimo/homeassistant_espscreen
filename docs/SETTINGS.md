@@ -1,4 +1,4 @@
-# Settings: on the screen, in Home Assistant and in ESP Screens
+# Settings: on the screen, in Home Assistant and in Tessera
 
 Every screen setting can be changed in three places: the **settings page on the screen itself**
 (firmware 0.2.44+), its **entity in Home Assistant** (firmware 0.2.49+), and the **Screen settings**
@@ -8,12 +8,12 @@ adding one more setting takes.
 ## Who owns a setting
 
 **Firmware 0.2.49 and newer: the screen.** It keeps every value in its own preferences and offers each one
-as an entity in the *config* category of its ESPHome device. The settings page, an automation and ESP Screens
+as an entity in the *config* category of its ESPHome device. The settings page, an automation and Tessera
 all change a value through `settings_screen::set()`, so they never disagree, and nothing has to catch up
-after ESP Screens or Home Assistant was away. ESP Screens reads the values from Home Assistant's states,
+after Tessera or Home Assistant was away. Tessera reads the values from Home Assistant's states,
 changes them with the entity's own action, and leaves them out of the layout message.
 
-| Row on the screen | Entity | Key in ESP Screens |
+| Row on the screen | Entity | Key in Tessera |
 |---|---|---|
 | Brightness | `number.<screen>_normal_brightness` | `brightness` |
 | Dark mode (0.2.54+) | `switch.<screen>_dark_mode` | `dark_mode` |
@@ -38,22 +38,22 @@ The row on the screen and in the editor says Back to Home; its three entities ke
 
 Not every board has every row. A board whose screen cannot go dark (`CAN_STANDBY` false: the Waveshare 4.3 and
 7 inch) has no Auto standby, Standby after, Standby brightness, Also on standby or Night group, on the screen, in
-Home Assistant or in ESP Screens. A board whose backlight takes no levels (`BACKLIGHT_DIMMABLE` false) has no
+Home Assistant or in Tessera. A board whose backlight takes no levels (`BACKLIGHT_DIMMABLE` false) has no
 Brightness row and shows Standby and Night brightness as the Screen on in standby and Screen on at night toggles,
 which write 0 or 100 to the same keys.
 
 The 12 or 24-hour clock was a row and an entity of its own (`switch.<screen>_24_hour_clock`) from firmware 0.2.49 to
 0.2.75. Since app 0.2.90 and firmware 0.2.76 it is one setting for every screen, with the language and the number format:
-Settings → Language & region in ESP Screens, which sends `clock_24h` and `numbers` in the layout message.
+Settings → Language & region in Tessera, which sends `clock_24h` and `numbers` in the layout message.
 
-The first four entities and Auto standby existed before 0.2.49; ESP Screens recognizes a screen that owns
+The first four entities and Auto standby existed before 0.2.49; Tessera recognizes a screen that owns
 its settings by one of the others (`OWNED_SETTINGS_MARKERS` in `core.py`). Dark mode came with firmware 0.2.54:
-a screen without its switch shows no Dark mode row in ESP Screens, and firmware that gets its settings with the
+a screen without its switch shows no Dark mode row in Tessera, and firmware that gets its settings with the
 layout never gets it at all. What Dark mode changes on the glass is in [docs/THEME.md](THEME.md).
 
-**Older firmware: ESP Screens.** The values travel in the layout message: `settings`, the frozen block of
+**Older firmware: Tessera.** The values travel in the layout message: `settings`, the frozen block of
 eleven keys, with `swipe_pages`, `auto_home`, `auto_home_seconds` and `rotation` as keys of their own. A
-change on the screen comes back as an `esphome.screen_setting` event, which ESP Screens stores with the
+change on the screen comes back as an `esphome.screen_setting` event, which Tessera stores with the
 layout without sending it back.
 
 ## What the user sees
@@ -75,7 +75,7 @@ The page is a menu of groups, each of which opens a page of its own:
 | This screen | Screen, Address, Firmware, Home Assistant, Calibrate touch (a resistive panel that has a wizard), Restart |
 
 Every change is stored on the screen, applied at once and published on its entity, so Home Assistant and
-ESP Screens show it within a second. The editor's **Screen settings** panel has the first three groups as
+Tessera show it within a second. The editor's **Screen settings** panel has the first three groups as
 cards with the same rows: a switch for a toggle, `-` and `+` that repeat while held, chips for the
 rotation. A screen whose device has a Calibrate touch button also gets a This screen card with that button.
 The 12 or 24-hour clock is not on this panel: it is Settings → Language & region, for every screen. A change there applies at once, without Save. An offline screen shows its values as
@@ -102,7 +102,7 @@ settings, so a new setting never travels in the layout message.
 ### 1. Where the value lives
 
 - `screen_settings::Settings` in `components/smart_display/screen_settings.h` is the **frozen** block of
-  eleven values that ESP Screens sends older firmware as `settings`. Its format is version 1 and changing it
+  eleven values that Tessera sends older firmware as `settings`. Its format is version 1 and changing it
   needs a preference migration *and* firmware-version gating in the add-on, because older firmware refuses a
   `settings` object that does not have exactly its own keys. Don't.
 - Anything new is a plain value in `settings_screen.h` next to `swipe_pages`, `rotation` and `auto_home`,

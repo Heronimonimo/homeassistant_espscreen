@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Cette entité est désactivée dans Home Assistant, ou l'écran redémarre.",
       "lower": "{name} : diminuer",
-      "higher": "{name} : augmenter"
+      "higher": "{name} : augmenter",
+      "screensaver": {
+        "title": "Économiseur d'écran",
+        "show": "Afficher en veille",
+        "standby_off": "Active Veille auto pour l'utiliser.",
+        "needs_firmware": "Mets cet écran à jour vers le firmware {version} pour utiliser un économiseur d'écran.",
+        "order": "L'écran affiche le premier élément disponible. Fais glisser pour changer l'ordre.",
+        "no_pictures": "Cet écran n'a pas de mémoire pour les images, il affiche donc l'horloge.",
+        "tap": "Un appui réveille l'écran. Seules les touches d'un lecteur fonctionnent sur l'écran de veille : lecture ou pause et le volume.",
+        "use": "Utiliser {name}",
+        "choose_media": "Choisir un lecteur",
+        "add_media": "Un autre lecteur",
+        "players": "Lecteurs, le premier en haut",
+        "choose_camera": "Choisir une caméra",
+        "weather_auto": "Température extérieure de Home Assistant",
+        "weather_none": "Pas de température",
+        "kinds": {
+          "media": "Musique en cours",
+          "camera": "Caméra",
+          "clock": "Horloge"
+        },
+        "details": {
+          "media": "Pendant la lecture, avec sa pochette",
+          "media_unset": "Choisis un lecteur pour l'utiliser",
+          "media_more": "Le premier en lecture, avec sa pochette",
+          "camera": "Son image, toutes les 15 secondes",
+          "camera_unset": "Choisis une caméra pour l'utiliser",
+          "clock": "L'heure, la date et la température extérieure, en blanc sur noir"
+        }
+      }
     },
     "update": {
       "starting": "Démarrage de la mise à jour…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Fait par une seule personne",
-      "body": "Tessera est gratuit et sans abonnement. Je le développe sur mon temps libre. Si vos écrans rendent votre maison un peu plus agréable, un café m'aide à continuer.",
-      "buy": "Offrir un café à Max",
+      "body": "Tessera est gratuit et le restera. Je le développe sur mon temps libre. Si vous voulez que je continue à ajouter de nouvelles cartes et de nouveaux écrans, une petite contribution mensuelle le rend possible. Un café ponctuel est tout aussi bienvenu.",
+      "monthly": "Soutenir chaque mois",
+      "once": "ou m'offrir un café une fois",
       "later": "Plus tard",
       "donated": "J'ai déjà fait un don",
       "thanks": "Merci ! Ce message ne reviendra plus."

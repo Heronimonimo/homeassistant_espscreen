@@ -29,10 +29,12 @@ REPO = 'https://github.com/MaxGramser/homeassistant_espscreen'
 
 def components(board):
     """The components of this repository a board's firmware needs: smart_display, and before it every other component
-    under components/ that the board's files name as a platform (in the order they are found)."""
+    under components/ that the board's files name, as a platform or as a block of its own (in the order they are
+    found)."""
     text = '\n'.join(path.read_text() for path in profiles.chain(profiles.BOARDS[board]))
     own = {path.name for path in (ROOT / 'components').iterdir() if path.is_dir() and path.name != 'smart_display'}
-    found = [name for name in dict.fromkeys(re.findall(r'(?m)^\s*-?\s*platform: ([a-z0-9_]+)\s*$', text)) if name in own]
+    named = re.findall(r'(?m)^\s*-?\s*platform: ([a-z0-9_]+)\s*$', text) + re.findall(r'(?m)^([a-z0-9_]+):', text)
+    found = [name for name in dict.fromkeys(named) if name in own]
     return found + ['smart_display']
 
 
@@ -97,13 +99,20 @@ api:
 ota:
   - platform: esphome
     password: !secret ota_password
-
+{table_access_of(board)}
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   # Mains-powered panel: no modem sleep, so HA updates and OTA arrive without beacon latency.
   power_save_mode: none
 {hotspot_of(board)}'''
+
+
+def table_access_of(board):
+    """What lets the partition table be replaced over Wi-Fi, as a screen's own YAML has it (core.installation_yaml):
+    on a board whose flash takes the wide table (profiles.wide_slots, firmware 0.33.1+), so tools/check.sh measures the
+    image users get."""
+    return '    allow_partition_access: true\n' if profiles.wide_slots(board) else ''
 
 
 def hotspot_of(board):

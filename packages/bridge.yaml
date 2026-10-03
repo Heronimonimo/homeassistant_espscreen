@@ -1,0 +1,36 @@
+# ESP Screens - the bridge: the smallest firmware that takes the wide partition table (app 0.4.56).
+#
+# A screen with 4 MB of flash that still has ESPHome's own partition table cannot take a firmware larger than that
+# table's update slot, and firmware from before the component cannot take a new table. ESP Screen Manager then builds this
+# in between (Firmware.bridge writes the screen's name, Wi-Fi and `ota:` around it): Wi-Fi, updates over Wi-Fi, and
+# the component that keeps the settings (components/flash_layout). The manager installs it, sends the wide table,
+# and installs the screen's own firmware over it; docs/FLASH_LAYOUT.md has the whole story.
+#
+# It has no display, so the glass is dark for the minute or two it runs, and no `api:`, on purpose: Home Assistant
+# removes the entities a device stops offering, so the bridge must not talk to it. checkout/bridge.yaml builds the
+# same from a clone of this repository, and tools/check.sh --firmware keeps it small enough for the old slot.
+packages:
+  build: !include hardware/esp-idf.yaml
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/MaxGramser/homeassistant_espscreen.git
+      ref: main
+      path: components
+    refresh: 0s
+    components: [flash_layout]
+
+esphome:
+  min_version: 2026.6.2
+
+# Every board with 4 MB of flash is a plain ESP32 (tests/test_flash_layout.py holds them to it).
+esp32:
+  board: esp32dev
+  variant: esp32
+
+logger:
+  level: INFO
+
+# The component alone, without the sensor a screen reports its table with: the bridge talks to nobody.
+flash_layout:

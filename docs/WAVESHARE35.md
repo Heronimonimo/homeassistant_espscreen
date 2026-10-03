@@ -8,7 +8,7 @@ correct on all four physical corners on a real unit.
 
 ## Install
 
-Update ESP Screen Manager and choose **Waveshare · 3.5 inch** (ESP32-S3-Touch-LCD-3.5) in **New screen**.
+Update Tessera Screen Manager and choose **Waveshare · 3.5 inch** (ESP32-S3-Touch-LCD-3.5) in **New screen**.
 Follow [Easy setup](EASY_SETUP.md) to create a profile with its own name, Wi-Fi references and unique API/OTA keys.
 Choose the correct USB port, or download the firmware to flash with ESPHome Web from your own computer.
 Keep an existing working profile if the board is already installed. Pair it through the ESPHome integration before adding tiles.
@@ -20,26 +20,25 @@ Both combine `packages/core.yaml` with `packages/boards/waveshare-esp32s3-35.yam
 
 - Landscape: 480 x 320, two columns of two cells. Portrait: 320 x 480, one column of three cells.
 - Standard look at 165 dpi, following the existing physical size rules.
-- No camera package: the board's PSRAM stays disabled (see "PSRAM stays off" below), so camera tiles,
-  snapshots and media artwork are not included, the same as the CYD.
+- No camera package yet: camera tiles, snapshots and media artwork are not included. The board has the memory
+  for them (see "PSRAM" below), but the package has not been added and tested on this glass.
 - FT6336 reports pixel coordinates, with no resistive calibration. The touch transform (`TOUCH_SWAP_XY`,
   `TOUCH_MIRROR_X`, `TOUCH_MIRROR_Y`) needs none of `packages/core.yaml`'s `false` defaults changed,
   confirmed on real hardware, see "Testing touch" below.
 - The backlight is a direct PWM GPIO (no I2C expander involved): dimming, standby, night mode and the
   alert's flashes all work as on the Guition.
-- LVGL uses a 12% draw buffer, since there's no PSRAM to spare.
+- LVGL uses a 12% draw buffer in the chip's own memory.
 
-## PSRAM stays off
+## PSRAM
 
-The board has 8 MB of embedded PSRAM, but the profile disables it entirely. Enabling it, in any mode and at
-any SPI speed, hangs the boot silently right after the bootloader's last line, before any ESPHome log
-output; no panic, no brownout message. Lowering the PSRAM clock and disabling `execute_from_psram` had
-no effect, which pointed at something earlier than PSRAM SPI traffic itself (cache/MMU setup during
-octal PSRAM init), not a signal-timing issue. Removing the `psram:` block entirely was sufficient and
-is the confirmed working configuration; this hasn't been root-caused further since it wasn't needed to
-get a working unit. Worth trying `mode: quad` before `octal` if a future change (e.g. adding the camera
-package) makes LVGL buffer allocation actually fail at runtime. The 12% buffer currently fits
-comfortably in internal RAM.
+The board's 8 MB of embedded PSRAM is enabled, in octal mode at 80MHz, and confirmed working on a real unit.
+An earlier version of this profile left it off, after a boot that hung right after the bootloader with PSRAM
+enabled. That hang could not be reproduced later, with the app's ESPHome or with a desktop ESPHome, so it most
+likely came from something else in that early configuration. If a unit does hang at boot, removing the `psram:`
+block from the board file (or overriding it in the screen's own YAML) is the way back, over USB.
+
+The profile also inverts the panel's colours (`invert_colors: true`): without it every colour shows as its
+complement, orange as blue and purple as green.
 
 ## Testing touch
 
@@ -76,11 +75,11 @@ board file overrides none of them.
 
 ## What to report while testing
 
-1. Board revision, successful boot, pairing and appearance in ESP Screens.
+1. Board revision, successful boot, pairing and appearance in Tessera.
 2. Correct colours and a stable picture across several page changes and cold starts.
 3. Physical taps near each corner, slider drags and edge swipes, in both orientations.
 4. Brightness, standby after the timeout and wake by touch, and night mode, several times in a row.
 5. A full page of tiles, opening and closing the settings and detail cards, and the quarter/half-turn setting.
-6. Free internal heap with a full layout, any reset or I2C errors, and how long the screen stayed running.
+6. Free internal heap and free PSRAM with a full layout, any reset or I2C errors, and how long the screen stayed running.
 
 Do not publish Wi-Fi passwords or API/OTA keys with logs.

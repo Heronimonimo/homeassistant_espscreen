@@ -15,6 +15,8 @@
 packages:
   # How every board's firmware is built (ESP-IDF, as ESPHome recommends it).
   build: !include ../hardware/esp-idf.yaml
+  # Wide update slots for 4 MB of flash, and the way a screen that is out there gets them.
+  flash: !include ../hardware/flash-4mb.yaml
   # The cards of this board's grid, one per cell (tools/generate_cells.py writes them; docs/RESPONSIVE.md).
   cells: !include ../cells/6.yaml
   # Every size of the compact look, scaled to DISPLAY_DPI below. This glass is where that look was drawn.
@@ -28,6 +30,9 @@ packages:
 substitutions:
   # The key of this board file; the firmware reports it so ESP Screens knows what board a screen is.
   BOARD_ID: "cyd"
+  # This board's own firmware revision (docs/BOARD_RELEASES.md): the wide partition table of a board with 4 MB of flash
+  # (docs/FLASH_LAYOUT.md). The next shared release takes this line out again.
+  SCREEN_FIRMWARE_VERSION: "0.33.1"
   DEVICE_NAME: "cyd-new"
   DEVICE_FRIENDLY_NAME: "My CYD"
 
@@ -57,7 +62,7 @@ substitutions:
   DISPLAY_MODEL: "ILI9341"                      # ESPHome's mipi_spi model of the display controller
   DISPLAY_DATA_RATE: "40MHz"                    # the display's SPI clock; 40MHz matches ESPHome's board preset
   DISPLAY_INVERT_COLORS: "false"
-  BACKLIGHT_FREQUENCY: "20000Hz"                # the backlight's PWM (see the output block)
+  BACKLIGHT_FREQUENCY: "1000Hz"                 # the backlight's PWM; see the output block (GitHub #42)
 
   # Measured on this board: median top-right raw=(523,3390),
   # bottom-left raw=(3487,482), at screen (299,20) and (20,219).
@@ -103,12 +108,10 @@ output:
   - platform: ledc
     pin: GPIO21
     id: gpio_backlight_pwm
-    # ESPHome's ledc default is 1kHz. You don't see that while still (well
-    # above what the eye perceives as flicker), but moving the screen reveals
-    # motion blur turning the on/off pulses into streaks (the same effect as
-    # a PWM LED that "judders" when you move it). 20kHz sits well above the
-    # speed at which motion still makes that visible, and still leaves ample
-    # duty-cycle resolution left over for smooth dimming.
+    # 1 kHz, ESPHome's ledc default (GitHub #42, #20): at 20 kHz the transistor that switches the backlight could
+    # not follow the pulses, so 100 % was full and 95 % already almost dark, with little change below. At 1 kHz
+    # every level from 5 to 100 % steps evenly and nothing flickers, also when you move your head (checked on the
+    # bench CYD). The 4-inch Guition went the same way for the same reason (GitHub #5, 150 Hz).
     frequency: ${BACKLIGHT_FREQUENCY}
 
   - platform: ledc

@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Diese Entität ist in Home Assistant deaktiviert, oder der Bildschirm startet neu.",
       "lower": "{name} verringern",
-      "higher": "{name} erhöhen"
+      "higher": "{name} erhöhen",
+      "screensaver": {
+        "title": "Bildschirmschoner",
+        "show": "Im Standby anzeigen",
+        "standby_off": "Schalte Auto-Standby ein, um ihn zu nutzen.",
+        "needs_firmware": "Aktualisiere diesen Bildschirm auf Firmware {version}, um einen Bildschirmschoner zu nutzen.",
+        "order": "Der Bildschirm zeigt das Erste, was verfügbar ist. Ziehen, um die Reihenfolge zu ändern.",
+        "no_pictures": "Dieser Bildschirm hat keinen Speicher für Bilder und zeigt deshalb die Uhr.",
+        "tap": "Ein Tippen weckt den Bildschirm. Nur die Tasten eines Players funktionieren auf dem Bildschirmschoner: Wiedergabe oder Pause und die Lautstärke.",
+        "use": "{name} verwenden",
+        "choose_media": "Player wählen",
+        "add_media": "Weiterer Player",
+        "players": "Player, der erste oben",
+        "choose_camera": "Kamera wählen",
+        "weather_auto": "Außentemperatur aus Home Assistant",
+        "weather_none": "Keine Temperatur",
+        "kinds": {
+          "media": "Laufende Musik",
+          "camera": "Kamera",
+          "clock": "Uhr"
+        },
+        "details": {
+          "media": "Während sie läuft, mit dem Cover",
+          "media_unset": "Wähle einen Player, um ihn zu nutzen",
+          "media_more": "Der erste, der läuft, mit dem Cover",
+          "camera": "Ihr Bild, alle 15 Sekunden",
+          "camera_unset": "Wähle eine Kamera, um sie zu nutzen",
+          "clock": "Uhrzeit, Datum und Außentemperatur, weiß auf Schwarz"
+        }
+      }
     },
     "update": {
       "starting": "Update wird gestartet…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Von einer Person gemacht",
-      "body": "Tessera ist kostenlos und ohne Abo. Ich entwickle es in meiner Freizeit. Wenn deine Bildschirme dein Zuhause ein bisschen schöner machen, hilft mir ein Kaffee weiterzumachen.",
-      "buy": "Spendiere Max einen Kaffee",
+      "body": "Tessera ist kostenlos und bleibt kostenlos. Ich entwickle es in meiner Freizeit. Wenn ich weiter neue Karten und Bildschirme hinzufügen soll, macht ein kleiner monatlicher Beitrag das möglich. Ein einmaliger Kaffee ist genauso willkommen.",
+      "monthly": "Monatlich unterstützen",
+      "once": "oder einmal einen Kaffee spendieren",
       "later": "Vielleicht später",
       "donated": "Ich habe schon gespendet",
       "thanks": "Danke! Diese Frage kommt nicht wieder."

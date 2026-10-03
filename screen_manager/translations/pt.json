@@ -1906,7 +1906,36 @@
       },
       "unavailable": "Esta entidade está desativada no Home Assistant ou o ecrã está a reiniciar.",
       "lower": "{name}: menos",
-      "higher": "{name}: mais"
+      "higher": "{name}: mais",
+      "screensaver": {
+        "title": "Proteção de ecrã",
+        "show": "Mostrar em espera",
+        "standby_off": "Ativa Espera automática para a usar.",
+        "needs_firmware": "Atualiza este ecrã para o firmware {version} para usar uma proteção de ecrã.",
+        "order": "O ecrã mostra o primeiro que estiver disponível. Arrasta para mudar a ordem.",
+        "no_pictures": "Este ecrã não tem memória para imagens, por isso mostra o relógio.",
+        "tap": "Um toque acorda o ecrã. Só os botões de um leitor funcionam na proteção de ecrã: reproduzir ou pausar e o volume.",
+        "use": "Usar {name}",
+        "choose_media": "Escolhe um leitor",
+        "add_media": "Outro leitor",
+        "players": "Leitores, o primeiro em cima",
+        "choose_camera": "Escolhe uma câmara",
+        "weather_auto": "Temperatura exterior do Home Assistant",
+        "weather_none": "Sem temperatura",
+        "kinds": {
+          "media": "Música a tocar",
+          "camera": "Câmara",
+          "clock": "Relógio"
+        },
+        "details": {
+          "media": "Enquanto toca, com a capa",
+          "media_unset": "Escolhe um leitor para o usar",
+          "media_more": "O primeiro a reproduzir, com a capa",
+          "camera": "A sua imagem, a cada 15 segundos",
+          "camera_unset": "Escolhe uma câmara para a usar",
+          "clock": "A hora, a data e a temperatura exterior, a branco sobre preto"
+        }
+      }
     },
     "update": {
       "starting": "A iniciar a atualização…",
@@ -2628,8 +2657,9 @@
     },
     "donate": {
       "title": "Feito por uma pessoa",
-      "body": "O Tessera é gratuito e não tem assinatura. Desenvolvo-o no meu tempo livre. Se os teus ecrãs tornam a tua casa um pouco mais agradável, um café ajuda-me a continuar.",
-      "buy": "Paga um café ao Max",
+      "body": "O Tessera é gratuito e vai continuar a ser. Desenvolvo-o no meu tempo livre. Se queres que continue a acrescentar cartões e ecrãs novos, uma pequena contribuição mensal torna isso possível. Um café único é igualmente bem-vindo.",
+      "monthly": "Apoiar todos os meses",
+      "once": "ou paga-me um café uma vez",
       "later": "Talvez mais tarde",
       "donated": "Já fiz um donativo",
       "thanks": "Obrigado! Esta mensagem não volta a aparecer."

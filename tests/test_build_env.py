@@ -16,7 +16,7 @@ from firmware import Firmware  # noqa: E402
 
 PROFILE = {'board': 'cyd', 'name': 'kitchen', 'friendly_name': 'Kitchen', 'wifi_ssid': 'ssid', 'wifi_password': 'password'}
 KEYS = ('ESPHOME_BUILD_PATH', 'ESPHOME_DATA_DIR', 'ESPHOME_ESP_IDF_PREFIX', 'CCACHE_MAXSIZE', 'PLATFORMIO_CORE_DIR',
-        'ESPHOME_DEFAULT_COMPILE_PROCESS_LIMIT')
+        'ESPHOME_DEFAULT_COMPILE_PROCESS_LIMIT', 'CCACHE_IGNOREOPTIONS', 'CCACHE_COMPILERCHECK')
 
 # Stands in for the ESPHome CLI: it writes the environment it got, and whether PlatformIO's old folder was still there.
 FAKE_CLI = '''#!{python}
@@ -36,7 +36,8 @@ def fake_cli(folder, data):
     cli = bin_dir / 'esphome'
     cli.write_text(FAKE_CLI.format(python=sys.executable, keys=KEYS))
     cli.chmod(0o755)
-    return {'PATH': f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", 'FAKE_DATA': str(data)}
+    return {'PATH': f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", 'FAKE_DATA': str(data),
+            'ESP_SCREENS_BUILD_CACHE': 'off'}
 
 
 def records(data):
@@ -67,6 +68,10 @@ class BuildEnvironment(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(got['PLATFORMIO_CORE_DIR'], str(data / 'platformio'))
             # As many compilers at once as cores, as PlatformIO ran them; ninja alone would start two more.
             self.assertEqual(got['ESPHOME_DEFAULT_COMPILE_PROCESS_LIMIT'], str(os.cpu_count() or 1))
+            # A compile cache GitHub made answers here (build_cache, app 0.4.49): paths only mapped, the compiler by its
+            # version rather than its file date.
+            self.assertIn('-fdebug-prefix-map=*', got['CCACHE_IGNOREOPTIONS'])
+            self.assertEqual(got['CCACHE_COMPILERCHECK'], '%compiler% --version')
 
     async def test_limits_of_the_owner_win(self):
         with tempfile.TemporaryDirectory() as tmp:

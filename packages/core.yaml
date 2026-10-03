@@ -16,7 +16,7 @@
 # fonts/materialdesignicons-webfont.ttf (Apache 2.0, github.com/Templarian/MaterialDesign-Webfont).
 ############################################################
 substitutions:
-  SCREEN_FIRMWARE_VERSION: "0.28.0"
+  SCREEN_FIRMWARE_VERSION: "0.33.0"
   DASHBOARD_INBOX_INTERNAL: "false"
   CALIBRATION_ON_BOOT: "false"                     # a bench build: start on the touch test page
   ROOM_NAME: ""                                    # top left until ESP Screens sends the screen name
@@ -128,6 +128,8 @@ esphome:
           runtime_tiles::firmware_version = "${SCREEN_FIRMWARE_VERSION}";
           runtime_tiles::now_time = []() { return id(homeassistant_time).now(); };
           runtime_tiles::screen_awake = []() { return !id(display_dimmed); };
+          // The screensaver (firmware 0.29.0+): a new word from ESP Screens in standby sets the level and the glass again.
+          runtime_tiles::saver_changed = []() { id(apply_screen_settings).execute(); };
           runtime_tiles::mini_icon_font = id(materialdesign_icons_mini)->get_lv_font();
           runtime_tiles::big_icon_font = id(materialdesign_icons_big)->get_lv_font();
           runtime_tiles::control_font = id(sublabel_big)->get_lv_font();
@@ -578,6 +580,11 @@ api:
                     // media_library (firmware 0.24.0+, app 0.4.42+): a player's speaker menu, shuffle, repeat, seek, its
                     // cover's colours as the card's ground, and its library with covers and a tap that plays.
                     features.add("media_library");
+                    // screensaver (firmware 0.29.0+, app 0.4.48): the op "saver", what to show in standby instead of the dimmed tiles.
+                    features.add("screensaver");
+                    // saver_keys (firmware 0.33.0+, app 0.4.55): a player's screensaver has keys, so the app also names
+                    // a paused player and sends its state and what it can do.
+                    features.add("saver_keys");
                     // speaker_groups (firmware 0.26.0+, app speakers.py): a player's speakers with a key to join or leave
                     // the group and each one's volume, its inputs behind a key of their own, and the speaker it follows.
                     features.add("speaker_groups");
@@ -2275,6 +2282,9 @@ script:
           ${APPLY_BACKLIGHT}
           if (id(display_dimmed)) { lv_obj_clear_flag(id(dim_wake_overlay), LV_OBJ_FLAG_HIDDEN); lv_obj_move_foreground(id(dim_wake_overlay)); }
           else lv_obj_add_flag(id(dim_wake_overlay), LV_OBJ_FLAG_HIDDEN);
+          // The screensaver (firmware 0.29.0+) in standby, at the standby level: it lies over everything on the top layer
+          // without a tap of its own, so the overlay takes the touch. Sleep pressed in Home Assistant stays without it.
+          runtime_tiles::saver_sync(id(display_dimmed) && !id(sleep_requested) && level > 0);
           // The setting numbers and times only publish a changed value (HA keeps identical states anyway); the
           // switches publish their own changes. An open settings page shows a change from Home Assistant too.
           // A number without a state publishes too: a night brightness of 0 equals the number's initial state and
@@ -2426,9 +2436,7 @@ script:
           condition:
             lambda: 'return settings_screen::can_standby;'
           then:
-            - lambda: |-
-                id(display_dimmed) = true;
-                id(apply_screen_settings).execute();
+            - lambda: 'id(display_dimmed) = true;'
             - if:
                 condition:
                   lambda: 'return screen_settings::current.home_on_standby;'
@@ -2437,6 +2445,8 @@ script:
                 else:
                   - lambda: 'settings_screen::close();'
                   - script.execute: close_cards
+            # After the cards closed: the screensaver (firmware 0.29.0+) may open the camera's full view itself.
+            - lambda: 'id(apply_screen_settings).execute();'
 
   # Isolated 40-second preview; every light commit is suppressed in the helper.
   - id: light_controls_preview
