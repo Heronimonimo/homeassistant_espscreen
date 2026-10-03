@@ -67,7 +67,11 @@ class Catalog(unittest.TestCase):
                 self.assertEqual(options[0], values[key].strip('"'), f'{board} {key}: the board file\'s own value first')
 
     def test_tab5_exposes_its_battery_level_from_the_ina226(self):
-        hardware = yaml.safe_load((ROOT / 'packages/hardware/m5stack-tab5.yaml').read_text())
+        class IncludeLoader(yaml.SafeLoader):
+            pass
+
+        IncludeLoader.add_constructor('!include', lambda loader, node: loader.construct_scalar(node))
+        hardware = yaml.load((ROOT / 'packages/hardware/m5stack-tab5.yaml').read_text(), Loader=IncludeLoader)
         ina226 = next(sensor for sensor in hardware['sensor'] if sensor.get('platform') == 'ina226')
         level = next(sensor for sensor in hardware['sensor'] if sensor.get('name') == 'Battery Level')
 
