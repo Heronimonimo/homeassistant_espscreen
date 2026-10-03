@@ -4,7 +4,7 @@
 packages:
   hardware: !include ../hardware/m5stack-tab5.yaml
   # The cards of this board's grid, one per cell (tools/generate_cells.py writes them; docs/RESPONSIVE.md).
-  cells: !include ../cells/6.yaml
+  cells: !include ../cells/${GRID_CELLS}.yaml
   look: !include ../looks/standard.yaml
   touch: !include ../features/capacitive-touch.yaml
   backlight: !include ../features/backlight.yaml
@@ -24,11 +24,12 @@ substitutions:
   DISPLAY_DPI: "293.721"
   # The LVGL angle that lays this panel out lying down (1280 x 720). Standing up is a quarter further.
   ROTATION_LANDSCAPE: "90"
-  # The tile grid: three columns by two rows lying down, and one column by five rows standing up.
+  # The tile grid: three columns by three rows lying down, or four rows when selected, and one column by five rows standing up.
   GRID_COLS: "3"
-  GRID_ROWS: "2"
+  GRID_ROWS: "3"
   GRID_COLS_PORTRAIT: "1"
   GRID_ROWS_PORTRAIT: "5"
+  GRID_CELLS: "${ (GRID_COLS | int) * (GRID_ROWS | int) }"
   LVGL_BUFFER_SIZE: "50%"                       # LVGL's draw buffer as a share of the screen
   TOUCH_CONTROLLER: "ST7121"                    # The ESPHome driver is named st7123; the glass reports ST7121.
   TOUCH_TEST_READY_LOG: "ST7121 touch test ready; no tile actions"

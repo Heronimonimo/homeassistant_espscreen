@@ -127,3 +127,6 @@ tab5:
   name: M5Stack Tab5
   model: Tab5 ST7121
   status: experimental
+  choices:
+    # Three columns of three, or four with smaller tiles and more on a page.
+    GRID_ROWS: ["3", "4"]

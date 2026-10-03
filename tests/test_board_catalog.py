@@ -103,6 +103,24 @@ class Choices(unittest.TestCase):
         reported = {'width': 480, 'height': 480, 'columns': 2, 'rows': 3, 'dpi': 170, 'look': 'standard'}
         self.assertEqual(core.grid_of({'board': 'guition', 'grid_rows': 4, 'shape': reported}), core.Grid(2, 3))
 
+    def test_tab5_defaults_to_three_rows_and_offers_four(self):
+        text = core.installation_yaml({'board': 'tab5', 'name': 'hall', 'friendly_name': 'Hall'})
+        self.assertNotIn('GRID_ROWS', re.search(r'(?ms)^substitutions:\n(.*?)\n\n', text)[1])
+        selected = core.installation_yaml({
+            'board': 'tab5', 'name': 'hall', 'friendly_name': 'Hall', 'choices': {'GRID_ROWS': '4'}
+        })
+        self.assertIn('  GRID_ROWS: "4"', re.search(r'(?ms)^substitutions:\n(.*?)\n\n', selected)[1].split('\n'))
+        board = profiles.BOARDS['tab5']
+        include = re.search(r'cells: !include (\S+)', board.read_text())[1]
+        for rows, cells in (('3', 9), ('4', 12)):
+            values = profiles.evaluate({**profiles.substitutions_of(board), 'GRID_ROWS': rows})
+            path = (board.parent / profiles._render(include, values, strict=True)).resolve()
+            self.assertEqual(path.name, f'{cells}.yaml')
+            self.assertTrue(path.exists(), path)
+            self.assertEqual(path.read_text().count('runtime_tiles::bind('), cells)
+        import generate_cells
+        self.assertIn(12, generate_cells.counts())
+
     def test_a_choice_the_board_does_not_offer_is_refused(self):
         for choices in ({'DISPLAY_MODEL': 'GC9A01'}, {'DISPLAY_DATA_RATE': '20MHz'}, ['DISPLAY_MODEL'], 'ST7789V'):
             with self.assertRaises(ValueError, msg=choices):

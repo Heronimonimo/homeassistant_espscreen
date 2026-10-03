@@ -22,6 +22,9 @@ The display uses the explicit ST7121 model. ESPHome's available touch platform i
 here for the ST7121 controller using the community reference. The display and touch behavior on this board still needs
 to be checked on glass.
 
+The landscape grid defaults to three rows of tiles. In **New screen**, choose four rows to fit more, smaller tiles on a
+page. The portrait grid remains one column by five rows.
+
 After flashing, confirm that the screen boots, has a stable picture with correct colors, responds at the four corners
 and across the surface, changes pages, pairs with Home Assistant, and remains working after a restart and a cold start.
 Check the USB log and report the firmware and board variant with the results.
