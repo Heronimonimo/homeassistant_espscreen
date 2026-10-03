@@ -102,7 +102,7 @@ nothing falls outside its area), and saves every page, the alerts (a camera pict
 pictures) and Dark mode as PNGs under `.esphome/render/out/<board>/`, with a sheet of all of them. A board whose glass
 is not square is done standing up as well (`<board>-portrait`). That catches a cramped forecast, a clipped name or a
 card that falls outside its area without a board on the desk. `tools/check.sh --render` does it for every board and
-`tools/check.sh --render --sample` for the smallest, a middle and the largest glass (`RENDER_SAMPLE` in
+`tools/check.sh --render --sample` for the smallest, a middle and the largest glass, plus Tab5's high-density profile (`RENDER_SAMPLE` in
 `tools/profiles.py`). Renders run by hand, not in CI. docs/TESTING.md says what it checks and what only the glass shows.
 
 ## 6. Then the board itself

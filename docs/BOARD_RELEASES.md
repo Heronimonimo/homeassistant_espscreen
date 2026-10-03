@@ -20,7 +20,7 @@ to write, and the checks to run. `--base <ref>` compares with something else, an
 `--build-keys` prints the boards a build of the change needs: the same keys, and every board when something every
 build reads changed (`tools/check.sh`, `tools/profiles.py`, `boards.yaml`, `checkout/`, the override fixtures, the CI
 workflow, the add-on's ESPHome in `screen_manager/Dockerfile`, or this tool). That is what `tools/check.sh --affected`
-and CI build, with one exception: when the answer is every board, they build the sample of four in `tools/profiles.py`
+and CI build, with one exception: when the answer is every board, they build the sample in `tools/profiles.py`
 (`SAMPLE`). A moved file counts at both its old and its new place. Any error stops with a message and prints no
 keys, and `tools/check.sh` then stops too instead of reading it as "nothing to build".
 
@@ -272,7 +272,7 @@ version, its Screen firmware sensor and its settings page, and the CYD next to i
 The firmware job of CI builds only the boards that can have changed (`tools/affected_boards.py --build-keys`). A push
 compares with the last commit on main where the same build (same ESPHome) succeeded, so the commits of a run that was
 cancelled or failed are built by the next one; a pull request compares with its base. When a change reaches every board,
-`tools/check.sh --firmware --affected` builds the sample of four (`SAMPLE` in tools/profiles.py) instead. It builds
+`tools/check.sh --firmware --affected` builds the sample (`SAMPLE` in tools/profiles.py) instead. It builds
 every board every night, when started by hand, and when there is no such commit. `--build-keys` differs from `--keys`
 in one way: a change to what makes a build (the add-on's ESPHome, tools/check.sh, tools/profiles.py, boards.yaml,
 checkout/, the override fixtures, the CI workflow, the selector itself) counts as reaching every board, although no

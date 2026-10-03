@@ -912,7 +912,7 @@
    "name": "M5Stack Tab5",
    "order": 16,
    "status": "experimental",
-   "touch": "GSL3670"
+   "touch": "ST7121"
   },
   "chip": "ESP32-P4",
   "columns": 3,
@@ -3098,7 +3098,7 @@
    "name": "M5Stack Tab5",
    "order": 16,
    "status": "experimental",
-   "touch": "GSL3670"
+   "touch": "ST7121"
   },
   "chip": "ESP32-P4",
   "columns": 3,
@@ -3684,7 +3684,7 @@
    "name": "M5Stack Tab5",
    "order": 16,
    "status": "experimental",
-   "touch": "GSL3670"
+   "touch": "ST7121"
   },
   "chip": "ESP32-P4",
   "columns": 3,
