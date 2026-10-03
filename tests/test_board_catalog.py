@@ -42,6 +42,13 @@ class Catalog(unittest.TestCase):
         big = firmware_module.BOARD_CHOICES['jc8012p4a1']
         self.assertEqual((big['name'], big['inch'], big['touch'], big['status'], big['calibrate']),
                          ('Guition', 10.1, 'GSL3670', 'new', False))
+        tab5 = firmware_module.BOARD_CHOICES['tab5']
+        self.assertEqual((tab5['name'], tab5['model'], tab5['inch'], tab5['touch'], tab5['status'], tab5['calibrate']),
+                         ('M5Stack Tab5', 'Tab5 ST7121', 5.0, 'ST7121', 'experimental', False))
+        source = profiles.BOARDS['tab5'].read_text()
+        self.assertIn('model: M5STACK-TAB5-ST7121', source)
+        self.assertIn('platform: st7123', source)
+        self.assertIn('TOUCH_CONTROLLER: "ST7121"', source)
 
     def test_what_the_files_say_is_worked_out_not_written(self):
         for board in profiles.CATALOG:
