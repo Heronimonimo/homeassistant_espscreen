@@ -126,7 +126,8 @@ jc8012p4a1v2:
   name: Guition
   model: JC8012P4A1 V2
   status: experimental
-<<<<<<< HEAD
+  choices:
+    GRID_ROWS: ["5", "6", "7", "8"]
 
 tab5:
   file: tab5.yaml
@@ -136,7 +137,3 @@ tab5:
   choices:
     # Three columns of three, or four with smaller tiles and more on a page.
     GRID_ROWS: ["3", "4"]
-=======
-  choices:
-    GRID_ROWS: ["5", "6", "7", "8"]
->>>>>>> upstream/main

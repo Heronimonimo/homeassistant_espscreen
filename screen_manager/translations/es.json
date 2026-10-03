@@ -2077,11 +2077,7 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "La mayoría de estas placas llevan el primero. Elige el otro si la pantalla muestra ruido o una imagen distorsionada.",
-<<<<<<< HEAD
-        "GRID_ROWS": "Cuatro filas caben más mosaicos pequeños en una página. Tres filas mantienen los mosaicos más grandes y fáciles de leer."
-=======
         "GRID_ROWS": "Más filas permiten mostrar más mosaicos en una página; menos filas mantienen los mosaicos más grandes y fáciles de leer."
->>>>>>> upstream/main
       },
       "choice_usual": "la mayoría",
       "orientation": "¿Cómo la vas a colgar?",

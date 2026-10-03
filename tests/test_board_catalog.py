@@ -123,7 +123,6 @@ class Choices(unittest.TestCase):
         reported = {'width': 480, 'height': 480, 'columns': 2, 'rows': 3, 'dpi': 170, 'look': 'standard'}
         self.assertEqual(core.grid_of({'board': 'guition', 'grid_rows': 4, 'shape': reported}), core.Grid(2, 3))
 
-<<<<<<< HEAD
     def test_tab5_defaults_to_three_rows_and_offers_four(self):
         text = core.installation_yaml({'board': 'tab5', 'name': 'hall', 'friendly_name': 'Hall'})
         self.assertNotIn('GRID_ROWS', re.search(r'(?ms)^substitutions:\n(.*?)\n\n', text)[1])
@@ -148,7 +147,7 @@ class Choices(unittest.TestCase):
                                      grid=grid)
         import generate_cells
         self.assertIn(12, generate_cells.counts())
-=======
+
     def test_the_ten_inch_guitions_offer_more_rows_and_their_cells(self):
         rows_options = ['5', '6', '7', '8']
         for board in ('jc8012p4a1', 'jc8012p4a1v2', 'jc8012p4a1v3'):
@@ -170,7 +169,6 @@ class Choices(unittest.TestCase):
                 })
                 substitutions = re.search(r'(?ms)^substitutions:\n(.*?)\n\n', profile)[1]
                 self.assertIn('  GRID_ROWS: "8"', substitutions.split('\n'))
->>>>>>> upstream/main
 
     def test_a_choice_the_board_does_not_offer_is_refused(self):
         for choices in ({'DISPLAY_MODEL': 'GC9A01'}, {'DISPLAY_DATA_RATE': '20MHz'}, ['DISPLAY_MODEL'], 'ST7789V'):

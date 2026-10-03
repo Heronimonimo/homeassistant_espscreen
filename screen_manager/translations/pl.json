@@ -2077,11 +2077,7 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "Większość tych płytek ma pierwszy. Wybierz drugi, gdy ekran pokazuje szum lub zniekształcony obraz.",
-<<<<<<< HEAD
-        "GRID_ROWS": "Cztery rzędy mieszczą więcej mniejszych kafelków na stronie. Trzy rzędy zostawiają kafelki większe i czytelniejsze."
-=======
         "GRID_ROWS": "Więcej rzędów pozwala wyświetlić więcej kafelków na stronie; mniej rzędów pozostawia kafelki większe i czytelniejsze."
->>>>>>> upstream/main
       },
       "choice_usual": "większość",
       "orientation": "Jak będzie wisiał?",

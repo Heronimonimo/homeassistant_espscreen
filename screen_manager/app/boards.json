@@ -988,7 +988,7 @@
   "columns": 3,
   "dimmable": true,
   "dpi": 294,
-  "firmware": "0.33.0",
+  "firmware": "0.34.0",
   "fonts": {
    "headline": 47,
    "icon_home": 59,
@@ -1001,6 +1001,9 @@
   "height": 720,
   "hotspot": true,
   "look": "standard",
+  "max_bar_items": 6,
+  "max_pages": 8,
+  "max_tiles": 64,
   "orientations": {
    "landscape": {
     "camera": {
@@ -3326,7 +3329,7 @@
   "columns": 3,
   "dimmable": true,
   "dpi": 294,
-  "firmware": "0.33.0",
+  "firmware": "0.34.0",
   "fonts": {
    "headline": 47,
    "icon_home": 59,
@@ -3339,6 +3342,9 @@
   "height": 720,
   "hotspot": true,
   "look": "standard",
+  "max_bar_items": 6,
+  "max_pages": 8,
+  "max_tiles": 64,
   "orientations": {
    "landscape": {
     "camera": {
@@ -3942,7 +3948,7 @@
   "columns": 3,
   "dimmable": true,
   "dpi": 294,
-  "firmware": "0.33.0",
+  "firmware": "0.34.0",
   "fonts": {
    "headline": 47,
    "icon_home": 59,
@@ -3955,6 +3961,9 @@
   "height": 720,
   "hotspot": true,
   "look": "standard",
+  "max_bar_items": 6,
+  "max_pages": 8,
+  "max_tiles": 64,
   "orientations": {
    "landscape": {
     "camera": {
