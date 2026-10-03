@@ -34,7 +34,7 @@
    compiles the boards the change reaches with placeholder secrets from a temporary folder (never the real
    `secrets.yaml`) and applies the flash budget below. A change that reaches one board or a few builds only those
    (docs/BOARD_RELEASES.md); one that reaches every board builds the sample of four boards in `tools/profiles.py`
-   `SAMPLE` (the CYD and the Guition always, and two that differ in chip, flash layout or glass): with the list of
+   `SAMPLE` (the CYD and the Guition always, plus boards that differ in chip, flash layout, glass or hardware): with the list of
    boards growing, a full build of every board is kept for when a change needs it (`--firmware` alone, or
    `--affected --every-board`). `--sample` builds the sample directly. `tools/check.sh --render` builds every board as a program for
    this computer (tools/render/run.py, needs SDL2; `--render --sample` only the three of `RENDER_SAMPLE`): its self test must pass lying down and standing up, and it saves
@@ -167,4 +167,3 @@ A temporary development server supports `SCREEN_DEV=1`, `HA_API` (ending in
 `/api`), `HA_TOKEN_FILE`, and `SCREEN_DATA`. It only binds on localhost. Never put a
 token in source code, URLs, or Git. Production uses Supervisor and only accepts
 the Ingress proxy address; there is no additional public port.
-

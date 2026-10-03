@@ -41,13 +41,6 @@ esphome:
   # M5STACK-TAB5-ST7121 and the st7123 touch driver are available from ESPHome 2026.7.0.
   min_version: 2026.7.0
 
-text_sensor:
-  - platform: template
-    name: "M5Stack screen type"
-    entity_category: diagnostic
-    update_interval: never
-    lambda: 'return {"m5stack"};'
-
 # The factory firmware identifies this variant as ST7121. ESPHome currently exposes the compatible touch protocol
 # through its st7123 platform; on this board the reset is driven by the I/O expander.
 touchscreen:
