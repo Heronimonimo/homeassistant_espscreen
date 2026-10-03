@@ -13,6 +13,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT / 'screen_manager' / 'app'))
@@ -63,6 +65,23 @@ class Catalog(unittest.TestCase):
             self.assertIn(catalog['status'], ('stable', 'new', 'experimental'), board)
             for key, options in catalog['choices'].items():
                 self.assertEqual(options[0], values[key].strip('"'), f'{board} {key}: the board file\'s own value first')
+
+    def test_tab5_exposes_its_battery_level_from_the_ina226(self):
+        class IncludeLoader(yaml.SafeLoader):
+            pass
+
+        IncludeLoader.add_constructor('!include', lambda loader, node: loader.construct_scalar(node))
+        hardware = yaml.load((ROOT / 'packages/hardware/m5stack-tab5.yaml').read_text(), Loader=IncludeLoader)
+        ina226 = next(sensor for sensor in hardware['sensor'] if sensor.get('platform') == 'ina226')
+        level = next(sensor for sensor in hardware['sensor'] if sensor.get('name') == 'Battery Level')
+
+        self.assertEqual((ina226['address'], ina226['i2c_id']), (0x41, 'tab5_bus'))
+        self.assertEqual(ina226['bus_voltage']['name'], 'Battery Voltage')
+        self.assertEqual(ina226['bus_voltage']['entity_category'], 'diagnostic')
+        self.assertEqual((level['device_class'], level['state_class'], level['unit_of_measurement']),
+                         ('battery', 'measurement', '%'))
+        self.assertEqual(level['filters'][1]['calibrate_linear']['datapoints'][0], '6.00 -> 0')
+        self.assertEqual(level['filters'][1]['calibrate_linear']['datapoints'][-1], '8.40 -> 100')
 
 
 class Choices(unittest.TestCase):

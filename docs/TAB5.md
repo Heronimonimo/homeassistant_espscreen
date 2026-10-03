@@ -25,6 +25,10 @@ to be checked on glass.
 The landscape grid defaults to three rows of tiles. In **New screen**, choose four rows to fit more, smaller tiles on a
 page. The portrait grid remains one column by five rows.
 
+The INA226 battery monitor exposes **Battery Voltage** as a diagnostic sensor and **Battery Level** as a percentage
+sensor in Home Assistant. The percentage is an estimate from the 2-cell lithium-ion pack voltage, using a piecewise
+voltage curve from 6.0 V (empty) to 8.4 V (full); voltage changes under load or while charging can affect the estimate.
+
 After flashing, confirm that the screen boots, has a stable picture with correct colors, responds at the four corners
 and across the surface, changes pages, pairs with Home Assistant, and remains working after a restart and a cold start.
 Check the USB log and report the firmware and board variant with the results.

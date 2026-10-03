@@ -53,6 +53,48 @@ pi4ioe5v6408:
   - id: tab5_ioe
     address: 0x43
 
+sensor:
+  - platform: ina226
+    address: 0x41
+    i2c_id: tab5_bus
+    adc_averaging: 16
+    max_current: 8.192A
+    shunt_resistance: 0.005ohm
+    update_interval: 10s
+    bus_voltage:
+      id: tab5_battery_voltage
+      name: "Battery Voltage"
+      entity_category: diagnostic
+
+  - platform: template
+    name: "Battery Level"
+    device_class: battery
+    state_class: measurement
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: return id(tab5_battery_voltage).state;
+    filters:
+      - sliding_window_moving_average:
+          window_size: 6
+          send_every: 3
+      - calibrate_linear:
+          method: exact
+          datapoints:
+            - 6.00 -> 0
+            - 6.60 -> 5
+            - 7.00 -> 15
+            - 7.20 -> 30
+            - 7.40 -> 45
+            - 7.60 -> 60
+            - 7.80 -> 72
+            - 8.00 -> 85
+            - 8.20 -> 97
+            - 8.40 -> 100
+      - clamp:
+          min_value: 0
+          max_value: 100
+
 output:
   - platform: ledc
     pin: GPIO22
