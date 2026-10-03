@@ -358,13 +358,8 @@ that screen and says where it is set.
 | `DISPLAY_MODEL` | CYD, Hosyond | ESPHome's `mipi_spi` model of the display controller (`ILI9341`, `ST7789V`, ...) |
 | `DISPLAY_DATA_RATE` | CYD, Hosyond | the display's SPI clock (`40MHz`; some boards want `20MHz`) |
 | `DISPLAY_INVERT_COLORS` | CYD, Hosyond | `true` for a panel that shows its colours inverted |
-<<<<<<< HEAD
-| `GRID_ROWS` | 4-inch Guition, M5Stack Tab5 | `4` for four rows of smaller tiles on a page instead of three (New screen asks) |
-| `BACKLIGHT_FREQUENCY` | CYD, 4-inch Guition, 3.5-inch Guition, Waveshare 4B, Waveshare 3.5, Hosyond | the backlight's PWM frequency (the 4-inch Guition runs `150Hz` since firmware 0.3.5, the CYD `20000Hz`) |
-=======
-| `GRID_ROWS` | 4-inch Guition | `4` for two columns of four smaller tiles a page instead of three (firmware 0.18.1; New screen asks) |
+| `GRID_ROWS` | 4-inch Guition, M5Stack Tab5 | `4` for four rows of smaller tiles on a page instead of three (firmware 0.18.1; New screen asks) |
 | `BACKLIGHT_FREQUENCY` | CYD, 4-inch Guition, 3.5-inch Guition, Waveshare 4B, Waveshare 3.5, Hosyond | the backlight's PWM frequency (the 4-inch Guition runs `150Hz` since firmware 0.3.5, the CYD and the Hosyond `1000Hz` since firmware 0.29.0) |
->>>>>>> upstream/main
 
 The parts an override names stay the same on every board and in every update:
 `my_display` (the display), `ts_touch` (the touch panel), `gpio_backlight_pwm`
