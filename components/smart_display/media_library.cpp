@@ -572,7 +572,7 @@ static void choose(size_t index) {
   const bool change = groups ? !(flags & SPEAKER_ON) : (name != t->extra().media_source || t->state == "idle");
   ESP_LOGI("library", "Speaker %s for %s", name.c_str(), id.c_str());
   if (favorite >= 0) {
-    if (favorite < 64) rt::favorite_started_at[favorite] = std::max<uint32_t>(1, clock_ms());
+    if (static_cast<size_t>(favorite) < rt::TILES_MAX) rt::favorite_started_at[favorite] = std::max<uint32_t>(1, clock_ms());
     rt::library_event("esphome.screen_play", {{"entity", id}, {"tile", std::to_string(favorite)}, {"source", name}});
     rt::refresh_tile(static_cast<size_t>(favorite));
   } else if (then) {

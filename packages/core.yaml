@@ -16,7 +16,7 @@
 # fonts/materialdesignicons-webfont.ttf (Apache 2.0, github.com/Templarian/MaterialDesign-Webfont).
 ############################################################
 substitutions:
-  SCREEN_FIRMWARE_VERSION: "0.33.0"
+  SCREEN_FIRMWARE_VERSION: "0.34.0"
   DASHBOARD_INBOX_INTERNAL: "false"
   CALIBRATION_ON_BOOT: "false"                     # a bench build: start on the touch test page
   ROOM_NAME: ""                                    # top left until ESP Screens sends the screen name
@@ -43,6 +43,12 @@ substitutions:
   TOUCH_MIRROR_Y: "false"
   GRID_COLS_PORTRAIT: "${GRID_COLS}"               # the cells of a page standing up: the same as lying down on
   GRID_ROWS_PORTRAIT: "${GRID_ROWS}"               # square glass, a board of another shape states its own
+  # The most tiles and pages one screen holds (firmware 0.34.0+), over all its pages whatever its grid. A board with
+  # PSRAM states more; the memory the tiles need decides how many of them a layout really takes (tile_memory.h).
+  SCREEN_MAX_TILES: "64"
+  SCREEN_MAX_PAGES: "8"
+  # The most items one page's top bar holds (firmware 0.34.0+); the glass's width decides how many of them show.
+  SCREEN_MAX_BAR_ITEMS: "6"
   BACKLIGHT_DIMMABLE: "true"                       # false: the backlight is lit or dark, a switch instead of a percentage
   CAN_STANDBY: "true"                              # false: the screen never goes dark (features/backlight-always-on.yaml)
   # The touch test page (CALIBRATION_ON_BOOT); its sizes are the look's.
@@ -95,6 +101,10 @@ esphome:
       # screen picks one at boot from its canvas, so one firmware serves a board either way round.
       - -DGRID_COLS_PORTRAIT=${GRID_COLS_PORTRAIT}
       - -DGRID_ROWS_PORTRAIT=${GRID_ROWS_PORTRAIT}
+      # The ceilings of one screen (firmware 0.34.0+): page_protocol.h sizes every per-tile and per-page table from them.
+      - -DSCREEN_MAX_TILES=${SCREEN_MAX_TILES}
+      - -DSCREEN_MAX_PAGES=${SCREEN_MAX_PAGES}
+      - -DSCREEN_MAX_BAR_ITEMS=${SCREEN_MAX_BAR_ITEMS}
   includes:
     - <esphome/components/smart_display/screen_input.h>
     - <esphome/components/smart_display/light_controls.h>
@@ -571,8 +581,30 @@ api:
                     root["tile_keys"] = 1;
                     // One entity on several tiles (firmware 0.16.0+, app 0.4.26+).
                     root["tile_repeats"] = 1;
-                    // Eight pages on every grid, at most 64 tiles over all of them (firmware 0.18.0+, app 0.4.30+).
+                    // Every page on every grid, whatever its cells (firmware 0.18.0+, app 0.4.30+): at most 64 tiles over
+                    // eight pages then, or what this board states (below).
                     root["free_pages"] = 1;
+                    // This screen's own ceilings (firmware 0.34.0+, app 0.4.57+): the most tiles and pages its grid and its
+                    // board take (page_protocol.h). An app that knows nothing of them keeps to 64 and eight.
+                    root["max_tiles"] = runtime_tiles::grid.max_tiles();
+                    root["max_pages"] = runtime_tiles::grid.pages();
+                    root["max_bar_items"] = header_bar::MAX_ITEMS;
+                    // The memory its tiles may take, what they take now, and what the tile catalogue's prices need from
+                    // this board to price a tile (tile_memory.h): whether it has PSRAM, the size of a tile and of its block
+                    // of extras. In the reply to a hello or a ping: the app shows how full the screen is and refuses a
+                    // layout that would not fit.
+                    if (runtime_tiles::reply_memory) {
+                      const uint32_t now = esphome::millis();
+                      const auto board = runtime_tiles::memory_board();
+                      auto memory = root["memory"].to<JsonObject>();
+                      memory["room"] = runtime_tiles::memory_room(now);
+                      memory["used"] = runtime_tiles::layout_cost();
+                      memory["psram"] = board.psram;
+                      memory["tile"] = board.tile_bytes;
+                      memory["extra"] = board.extra_bytes;
+                      memory["page"] = board.page_bytes;
+                      if (runtime_tiles::memory_short(now)) memory["short"] = 1;
+                    }
                     // What this firmware takes beyond the flags above, as a list (firmware 0.19.0+, app 0.4.32+): a newer
                     // option adds its name here. climate_range: a thermostat's range on its -/+, with the chip for its end.
                     auto features = root["features"].to<JsonArray>();
@@ -1302,6 +1334,10 @@ sensor:
         - lambda: |-
             ESP_LOGI("health", "free_heap=%.0f", x);
             #ifdef USE_ESP32
+            // The part of it a byte-wise malloc can use (firmware 0.34.0+): on the classic ESP32 the figure above also
+            // counts IRAM that takes 32-bit words only. The tile budget and LVGL's own buffers live on this one.
+            ESP_LOGI("health", "free_8bit=%u room=%u", (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                     (unsigned) runtime_tiles::memory_room(esphome::millis()));
             // The least stack the loop task (LVGL, the tiles, the API) ever had left since boot: a layout replacement
             // runs deepest. loop_task_stack_size in hardware/esp-idf.yaml is sized from this line (firmware 0.3.1+).
             ESP_LOGI("health", "loop_stack_min_free=%u", (unsigned) uxTaskGetStackHighWaterMark(nullptr));

@@ -34,6 +34,7 @@
 #include "history_view.h"
 #include "camera_view.h"
 #include "kept_pages.h"
+#include "tile_memory.h"
 #include "wifi_status.h"
 #include "picture_store.h"
 #include "media_card.h"
@@ -507,6 +508,9 @@ inline bool ha_connected() { return esphome::api_is_connected(); }
 // loop slack and the sending itself are tolerated before the feed counts as gone.
 inline bool feed_alive() { return esphome::millis() - last_received < keepalive_seconds * 2000 + 60000; }
 inline bool fresh() { return protocol_problem == ProtocolProblem::none && transfer.active && transfer.begun && model.ready() && ha_connected() && feed_alive(); }
+// The number a tile's own tap is known by to the bounce guard: far above the numbers of the buttons on a card or a
+// control (300+, 400+, 2000+ ...), so a screen of hundreds of tiles never shares one with them (firmware 0.34.0+).
+constexpr int TILE_TOUCH = 100000;
 // A dropped tap is logged with its reason, so a missed touch can be read from the ESPHome log
 // instead of guessed: moved too far, too short, already used by this contact, or bounce.
 inline bool allowed(uint32_t now, int tile, const std::string &what) {
@@ -519,14 +523,18 @@ inline float number(JsonVariant value, float fallback = NAN) {
   float n = value.as<float>();
   return std::isfinite(n) ? n : fallback;
 }
+// A text of a message, at most `maximum` bytes and never half a character. Made at its own length (firmware 0.34.0+):
+// shortening a copy of the whole value kept the whole value's room, so a 300-byte attribute cut to 48 still held 300.
 inline std::string string(JsonVariant value, size_t maximum = 160) {
   if (!value.is<const char *>()) return {};
-  std::string s = value.as<std::string>();
-  if (s.size() > maximum) {
-    while (maximum > 0 && (static_cast<unsigned char>(s[maximum]) & 0xC0) == 0x80) --maximum;
-    s.resize(maximum);
+  const char *text = value.as<const char *>();
+  size_t size = 0;
+  while (size <= maximum && text[size]) ++size;
+  if (size > maximum) {
+    size = maximum;
+    while (size > 0 && (static_cast<unsigned char>(text[size]) & 0xC0) == 0x80) --size;
   }
-  return s;
+  return std::string(text, size);
 }
 inline std::string list(JsonVariant value) {
   if (!value.is<JsonArray>()) return {};
@@ -4284,21 +4292,21 @@ inline void event(lv_event_t *event) {
     if (card.is_page()) {
       // A navigation tile goes to its page on a short tap, with the link down too; holding does nothing.
       if (code != LV_EVENT_SHORT_CLICKED || card.tap == "none" || card.page_target() < 1) return;
-      if (allowed(esphome::millis(), 100 + w.index, card.entity)) go_to_page(card.page_target() - 1);
+      if (allowed(esphome::millis(), TILE_TOUCH + static_cast<int>(w.index), card.entity)) go_to_page(card.page_target() - 1);
       return;
     }
     // The map tile opens full screen as any map does (firmware 0.21.0+).
     if (card.is_map()) {
-      if (code == LV_EVENT_SHORT_CLICKED && card.tap != "none" && camera_supported() && allowed(esphome::millis(), 100 + w.index, card.entity))
+      if (code == LV_EVENT_SHORT_CLICKED && card.tap != "none" && camera_supported() && allowed(esphome::millis(), TILE_TOUCH + static_cast<int>(w.index), card.entity))
         camera_open(card.entity, card.name, (int)w.index);  // its name comes with its state ("Map")
       return;
     }
     if (!card.is_settings() || card.tap == "none" || (settings_screen::may_open && !settings_screen::may_open())) return;
-    if (allowed(esphome::millis(), 100 + w.index, card.entity)) settings_screen::open();
+    if (allowed(esphome::millis(), TILE_TOUCH + static_cast<int>(w.index), card.entity)) settings_screen::open();
     return;
   }
   if (!fresh()) return;
-  if (!allowed(esphome::millis(), 100 + w.index, model.tiles[w.index].entity)) return;
+  if (!allowed(esphome::millis(), TILE_TOUCH + static_cast<int>(w.index), model.tiles[w.index].entity)) return;
   auto &tile = model.tiles[w.index];
   auto d = tile.domain();
   // Scenes/scripts often have timestamps or 'off'; unavailable devices never act.
@@ -6137,10 +6145,10 @@ inline const lv_font_t *heading_icon(const Widgets &w,int &circle,int max_side,i
 // bottom and a round
 // key at the bottom right; elsewhere it is an ordinary tile whose whole card is the key. What plays now has a ring of
 // the accent. The app knows what each favourite plays; the screen only asks to play its tile.
-inline uint32_t favorite_started_at[64]{};  // by the tile's index: a tap that is starting it, until the player plays
+inline uint32_t favorite_started_at[TILES_MAX]{};  // by the tile's index: a tap that is starting it, until the player plays
 constexpr uint32_t FAVORITE_STARTING_MS = 12000;
 inline bool favorite_starting(size_t index,const Tile &t){
-  if(index>=64||!favorite_started_at[index])return false;
+  if(index>=TILES_MAX||!favorite_started_at[index])return false;
   if(t.extra().fav_playing||esphome::millis()-favorite_started_at[index]>=FAVORITE_STARTING_MS){favorite_started_at[index]=0;return false;}
   return true;
 }
@@ -6166,7 +6174,7 @@ inline void favorite_tap(size_t index){
     media_library::speakers(t.entity,0,static_cast<int>(index));
     return;
   }
-  if(index<64)favorite_started_at[index]=std::max<uint32_t>(1,esphome::millis());
+  if(index<TILES_MAX)favorite_started_at[index]=std::max<uint32_t>(1,esphome::millis());
   library_event("esphome.screen_play",{{"entity",t.entity},{"tile",std::to_string(index)}});
   ESP_LOGI("library","Play favourite %u of %s",(unsigned)index,t.entity.c_str());
   refresh_tile(index);
@@ -6176,7 +6184,7 @@ inline void favorite_key_event(lv_event_t *e){
   if(slot>=widgets.size()||!enabled||!fresh())return;
   auto &w=widgets[slot];
   if(w.index>=model.count||w.extra_mode!="favorite"||!model.tiles[w.index].available())return;
-  if(!allowed(esphome::millis(),100+w.index,model.tiles[w.index].entity))return;
+  if(!allowed(esphome::millis(),TILE_TOUCH+static_cast<int>(w.index),model.tiles[w.index].entity))return;
   favorite_tap(w.index);
 }
 // The card with its picture, or while its picture is on its way the same card with the spinner every picture card
@@ -6988,7 +6996,7 @@ inline void render_slot(size_t slot) {
 // What the next render() draws besides the name and the top bar: the cards of the tiles a state
 // message or a tick named, or every card. A refresh that names nothing (the board's own triggers,
 // such as the minute tick and time sync) draws every card.
-inline uint64_t dirty_tiles=0;
+inline TileSet dirty_tiles;
 inline bool dirty_all=false, dirty_header=false;
 // The minute turned or a display setting changed (packages/core.yaml says so before its refresh): every card on the
 // glass is drawn, as for a refresh that names nothing, and on a kept page the cards that show the time (firmware 0.3.2+).
@@ -7011,7 +7019,7 @@ inline void mark_time() {
 // has to know which page it is drawing.
 inline int applied_page=-1;
 inline void mark_all() { dirty_all=true; changes.mark_all(); }
-inline void mark_tile(size_t index) { changes.mark_tile(index); if(uint64_t bit=tile_bit(index))dirty_tiles|=bit; else dirty_all=true; }
+inline void mark_tile(size_t index) { changes.mark_tile(index); if(index<dirty_tiles.size())dirty_tiles.set(index); else dirty_all=true; }
 inline void refresh_tile(size_t index) { mark_tile(index); if(refresh)refresh(); }
 inline void refresh_header_only() { dirty_header=true; if(refresh)refresh(); }
 inline void refresh_all() { mark_all(); if(refresh)refresh(); }
@@ -7191,15 +7199,15 @@ inline void render(lv_obj_t *room) {
   lap(swipe_profile::HEADER);
   // A refresh that names nothing draws every card (and counts as a change of everything); the minute tick says it is
   // only the time (dirty_time).
-  if(!dirty_all && !dirty_tiles && !dirty_header && !dirty_time)mark_all();
+  if(!dirty_all && dirty_tiles.none() && !dirty_header && !dirty_time)mark_all();
   const bool all=dirty_all || dirty_time;
   const uint32_t upto=changes.last;  // every change asked for so far is drawn below, for the cards on the glass
-  uint64_t tiles=dirty_tiles;
-  dirty_all=dirty_header=dirty_time=false;dirty_tiles=0;
+  const TileSet tiles=dirty_tiles;
+  dirty_all=dirty_header=dirty_time=false;dirty_tiles.reset();
   for (size_t slot = 0; slot < grid.slots(); ++slot) {
     const auto &w=widgets[slot];
     if(w.index>=model.count)continue;
-    if(all || (tiles & tile_bit(w.index)))render_slot(slot);
+    if(all || tiles.test(w.index))render_slot(slot);
   }
   // Kept pages learn nothing here: what they lack follows from the change numbers when they come back (kept_pages.h).
   glass_synced=upto;
@@ -7672,6 +7680,88 @@ inline size_t psram_free() {
   return SIZE_MAX;
 #endif
 }
+// ---- The memory the tiles take (tile_memory.h, firmware 0.34.0+) ----
+// Whether this board has PSRAM: the sum of its regions, which walks no heap (rgb-heap-walk-glitch: never walk the PSRAM
+// heap while an RGB panel is lit).
+inline bool has_psram() {
+#ifdef USE_ESP32
+  return heap_caps_get_total_size(MALLOC_CAP_SPIRAM) > 0;
+#else
+  return false;
+#endif
+}
+// This board as tile_memory prices a tile: whether it has PSRAM, and the size of a tile and of its block of extras, which
+// a board without PSRAM keeps inside the chip.
+inline tile_memory::Board memory_board() { return {has_psram(), sizeof(Tile), sizeof(Extra), sizeof(page_protocol::Page)}; }
+// What the tiles of the layout on the screen cost inside the chip, by the tile catalogue's prices (tile_memory.h).
+inline size_t layout_cost() {
+  const auto board = memory_board();
+  size_t sum = 0;
+  for (size_t i = 0; i < model.count && i < model.tiles.size(); ++i) {
+    const auto &t = model.tiles[i];
+    sum += tile_memory::cost(tile_memory::domain_of(t.entity), tile_memory::own_action(t.tap), tile_memory::own_line(t.subtitle), board);
+  }
+  // And its pages: a page's title, and each item of its top bar that shows an entity (a text or a moment).
+  for (const auto &page : model.page_data.records) {
+    unsigned entities = 0;
+    for (size_t i = 0; i < page.bar.count && i < page.bar.items.size(); ++i)
+      entities += page.bar.items[i].kind == header_bar::Kind::text || page.bar.items[i].kind == header_bar::Kind::ago;
+    sum += tile_memory::page_cost(entities, board);
+  }
+  return sum;
+}
+// The tile list and the page records keep the room of the most they held (layout_memory: a smaller layout reuses it), so
+// after a big layout that room is out of the free heap without being in use. Where they live inside the chip (no PSRAM)
+// it counts as room for tiles: the next layout takes it without asking the heap.
+inline size_t spare_tiles() {
+  if (has_psram()) return 0;
+  const size_t tiles = model.tiles.capacity() > model.count ? model.tiles.capacity() - model.count : 0;
+  const auto &pages = model.page_data.records;
+  return tiles * sizeof(Tile) + (pages.capacity() > pages.size() ? pages.capacity() - pages.size() : 0) * sizeof(page_protocol::Page);
+}
+inline tile_memory::Window memory_window;
+inline uint32_t memory_sampled_at = 0;
+// When a tile last went without its extras for want of memory (page_receiver.cpp), 0 for never.
+inline uint32_t memory_short_at = 0;
+// One sample a minute, and only with a whole layout in place: halfway through a transfer the heap says nothing.
+inline void sample_memory(uint32_t now) {
+  if (!heap_room || (memory_window.count && now - memory_sampled_at < 60000)) return;
+  if (transfer.begun && !transfer.active) return;
+  memory_sampled_at = now;
+  memory_window.add(tile_memory::room(heap_room() + spare_tiles(), layout_cost()));
+}
+inline size_t memory_room(uint32_t now) { sample_memory(now); return memory_window.least(); }
+// Short of memory in the last ten minutes: the app says so beside the screen in the editor.
+inline bool memory_short(uint32_t now) { return memory_short_at && now - memory_short_at < 600000; }
+// Short of memory with a layout in place (page_receiver.cpp): the tiles off the glass give up their extras, which their
+// next state brings back (the app sends every tile again at its keepalive), so the Wi-Fi link and the API keep room to
+// breathe. Once a minute at most: a screen that stays short should not spend its loop on it.
+inline uint32_t shed_at = 0;
+inline void shed_extras() {
+  const uint32_t now = esphome::millis();
+  if (shed_at && now - shed_at < 60000) return;
+  shed_at = std::max<uint32_t>(1, now);
+  TileSet shown;
+  for (const auto &w : widgets) if (w.tile && w.index < shown.size()) shown.set(w.index);
+  size_t freed = 0;
+  for (size_t i = 0; i < model.count && i < model.tiles.size(); ++i)
+    if (!shown.test(i) && model.tiles[i].extra_ptr()) { model.tiles[i].set_extra(Extra()); ++freed; }
+  ESP_LOGW("memory", "short of memory: %u tiles off the glass let go of their extras, %u B free", (unsigned) freed,
+           (unsigned) (heap_room ? heap_room() : 0));
+}
+// A transfer that ran out of memory halfway (page_receiver.cpp): the tiles taken so far go, so the memory comes back and
+// the screen says it has no layout instead of a half one, and the next hello starts afresh.
+inline void abandon_layout() {
+  ESP_LOGW("memory", "layout refused halfway: %u B free inside the chip", (unsigned) (heap_room ? heap_room() : 0));
+  cancel_layout_input();
+  model.begin(0, 1, "");
+  transfer.begun = false;
+  memory_short_at = std::max<uint32_t>(1, esphome::millis());
+  refresh_all();
+}
+// The reply to a hello or a ping carries the memory figures (packages/core.yaml); a tile's state does not need them.
+inline bool reply_memory = false;
+
 // PSRAM another kept page may never take: the pictures (picture_store.h), a camera full screen and an alert's picture
 // live there too. Measured on the 4-inch Guition (2026-09-26): about 5.6 MB of its 8 MB are free with a layout loaded.
 constexpr size_t KEEP_RESERVE = 2u << 20;
@@ -8063,7 +8153,7 @@ inline void tick() {
       if(t.domain()=="alarm_control_panel"){if(alarm_left(t))card(w.index);alarm_tile_look(slot,&t);}
       if(t.domain()=="lock")alarm_tile_look(slot,&t);
       // A favourite whose start never came stops saying it starts (firmware 0.24.0+).
-      if(t.favorite()&&w.index<64&&favorite_started_at[w.index]&&!favorite_starting(w.index,t))card(w.index);
+      if(t.favorite()&&w.index<TILES_MAX&&favorite_started_at[w.index]&&!favorite_starting(w.index,t))card(w.index);
       // A media tile over the whole page: its bar runs on while the track plays (firmware 0.2.64+).
       if(w.extra_mode=="media" && w.extra && !lv_obj_has_flag(w.extra,LV_OBJ_FLAG_HIDDEN) && w.parts[5] && !lv_obj_has_flag(w.parts[5],LV_OBJ_FLAG_HIDDEN))media_progress(t,w.parts[5],w.parts[6],w.media_bar_w);
       // The second hand moves on its own: only its line is redrawn, and it hides during standby. Only while the

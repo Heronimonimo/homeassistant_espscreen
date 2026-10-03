@@ -81,7 +81,7 @@ class Snapshot(unittest.TestCase):
         attributes = {'friendly_name': 'Living room screen tiles', 'icon': 'mdi:view-dashboard-outline', **snapshot}
         size = len(json.dumps(attributes, ensure_ascii=False, separators=(',', ':')).encode())
         self.assertLess(size, RECORDER_ATTRIBUTES, size)
-        self.assertEqual(set(snapshot), {'screen', 'node', 'title', 'columns', 'rows', 'max_pages', 'pages', 'tiles'})
+        self.assertEqual(set(snapshot), {'screen', 'node', 'title', 'columns', 'rows', 'max_pages', 'max_tiles', 'pages', 'tiles'})
         documented = {'entity', 'name', 'page', 'row', 'column', 'slot', 'size', 'controls', 'display', 'tap', 'action', 'to_page'}
         for item in snapshot['tiles']:
             self.assertLessEqual(set(item), documented)

@@ -41,6 +41,7 @@ static bool parse_bar(JsonVariant items, header_bar::Bar &out) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdangling-reference"
 std::string receive(const std::string &payload) {
+  reply_memory = false;
   if (!enabled) return "Use the Easy Setup profile";
   if (payload.size() > 4096) return "Error: message too large";
   std::string result = "Error: invalid message";
@@ -56,6 +57,7 @@ std::string receive(const std::string &payload) {
       return false;
     }
     auto op = string(root["op"]);
+    reply_memory = op == "hello" || op == "ping";
 #ifdef SWIPE_PROFILE
     // Diagnostic builds only, and outside the add-on's session so a bench script can send them (docs/SWIPE_PROFILE.md).
     if (op == "swipe_test") {
@@ -161,24 +163,24 @@ std::string receive(const std::string &payload) {
           root["title"].as<std::string>().size() > 96 || !root["pages"].is<JsonArray>() || !root["tiles"].is<JsonArray>()) return false;
       const auto pages = root["pages"].as<JsonArray>(), tiles = root["tiles"].as<JsonArray>();
       if (pages.size() > page_protocol::MAX_PAGES || tiles.size() > page_protocol::MAX_TILES) return false;
-      uint64_t seen_tiles = 0;
-      unsigned seen_pages = 0;
+      TileSet seen_tiles;
+      uint32_t seen_pages = 0;
       // Validate the complete bounded edit before touching the sole live model.
       // The JSON document is the staging area, not a second set of tile records.
       for (JsonVariant item : pages) {
         if (!item.is<JsonObject>() || !item["p"].is<unsigned>() || !item["title"].is<const char *>()) return false;
         const unsigned page = item["p"].as<unsigned>();
-        if (page >= model.page_data.records.size() || (seen_pages & (1u << page)) ||
+        if (page >= model.page_data.records.size() || (seen_pages & (uint32_t{1} << page)) ||
             item["title"].as<std::string>().size() > 96) return false;
-        seen_pages |= 1u << page;
+        seen_pages |= uint32_t{1} << page;
       }
       for (JsonVariant item : tiles) {
         if (!item.is<JsonObject>() || !item["i"].is<unsigned>() || !item["name"].is<const char *>() ||
             !item["background"].is<const char *>()) return false;
         const unsigned index = item["i"].as<unsigned>();
-        if (index >= model.count || (seen_tiles & (uint64_t{1} << index)) ||
+        if (index >= model.count || seen_tiles.test(index) ||
             item["name"].as<std::string>().size() > 80 || item["background"].as<std::string>().size() > 16) return false;
-        seen_tiles |= uint64_t{1} << index;
+        seen_tiles.set(index);
       }
       const std::string title = string(root["title"], 96);
       model.title = title;
@@ -216,21 +218,25 @@ std::string receive(const std::string &payload) {
       if (targets.size() == 0 || targets.size() > page_protocol::MAX_PAGES * header_bar::MAX_ITEMS) return false;
       header_bar::Item item;
       if (!parse_bar_item(root["item"], item)) return false;
-      uint64_t seen = 0;
+      // A target is page * stride + index: six, or what the app says it numbered by (`w`, app 0.4.57+, to a screen whose
+      // hello said it takes more items), so an app and a screen of different ages still mean the same slot.
+      const unsigned stride = root["w"].is<unsigned>() ? root["w"].as<unsigned>() : header_bar::WIRE_ITEMS;
+      if (stride < 1 || stride > header_bar::MAX_ITEMS) return false;
+      std::bitset<page_protocol::MAX_PAGES * header_bar::MAX_ITEMS> seen;
       // Validate every destination before changing any page. No staging copy
       // of the page bars or additional persistent firmware storage is needed.
       for (JsonVariant value : targets) {
         if (!value.is<unsigned>()) return false;
         const unsigned target = value.as<unsigned>();
-        const unsigned page = target / header_bar::MAX_ITEMS, index = target % header_bar::MAX_ITEMS;
+        const unsigned page = target / stride, index = target % stride;
         if (page >= model.page_data.records.size() || index >= model.page_data.records[page].bar.count ||
-            (seen & (uint64_t{1} << target))) return false;
-        seen |= uint64_t{1} << target;
+            target >= seen.size() || seen.test(target)) return false;
+        seen.set(target);
       }
       bool visible_changed = false;
       for (JsonVariant value : targets) {
         const unsigned target = value.as<unsigned>();
-        const unsigned page = target / header_bar::MAX_ITEMS, index = target % header_bar::MAX_ITEMS;
+        const unsigned page = target / stride, index = target % stride;
         auto &current = model.page_data.records[page].bar.items[index];
         if (!(current == item)) {
           current = item;
@@ -245,7 +251,7 @@ std::string receive(const std::string &payload) {
     if (op == "page" || op == "bar") {
       if (!root["p"].is<unsigned>() || root["p"].as<unsigned>() >= model.page_data.records.size()) return false;
       const unsigned index = root["p"].as<unsigned>();
-      if ((op == "page" && (transfer.active || (transfer.pages & (1u << index)))) ||
+      if ((op == "page" && (transfer.active || transfer.received_page(index))) ||
           (op == "bar" && !transfer.active)) return false;
       page_protocol::Page next;
       if (!parse_bar(root["items"], next.bar)) return false;
@@ -254,7 +260,7 @@ std::string receive(const std::string &payload) {
             !root["excluded"].is<bool>() || !root["title"].is<const char *>() ||
             root["title"].as<std::string>().size() > 96) return false;
         for (size_t i = 0; i < model.page_data.records.size(); ++i)
-          if ((transfer.pages & (1u << i)) && model.page_data.records[i].id == next.id) return false;
+          if (transfer.received_page(i) && model.page_data.records[i].id == next.id) return false;
         next.title = string(root["title"], 96);
         next.home_control = root["home_control"].as<bool>();
         next.excluded = root["excluded"].as<bool>();
@@ -516,6 +522,15 @@ std::string receive(const std::string &payload) {
       // A key of a bedside clock (firmware 0.8.0+) names its clock ("in") and its place under it ("k") instead of a
       // slot. It is a tile in every other way: its state, its tap, its hold and its card are a tile's.
       const bool key = root["in"].is<unsigned>();
+      // A layout past this screen's memory (firmware 0.34.0+): an app that does not ask the screen's budget can send more
+      // than it holds, and a screen that runs out halfway loses its Wi-Fi link while it runs on, out of reach until
+      // someone resets it (bench 2026-10-03). Below the floor the transfer stops here: the screen lets go of the tiles it
+      // took, refuses the layout and stays reachable.
+      if (!transfer.active && heap_room && heap_room() < tile_memory::LOW_WATER) {
+        abandon_layout();
+        result = "Error: insufficient layout memory";
+        return false;
+      }
       if (transfer.active || index >= model.count || model.tiles[index].received || !valid_entity(entity) ||
           !(key ? root["k"].is<unsigned>() : root["slot"].is<unsigned>()) || !root["o"].is<JsonObject>()) return false;
       const std::string size = string(root["o"]["size"]);
@@ -533,7 +548,7 @@ std::string receive(const std::string &payload) {
         const bool spanned = page_protocol::span_of(size, span_columns, span_rows);
         if (!model.valid_placement(index, root["slot"].as<unsigned>(), size == "full", spanned ? span_columns > 1 : size == "wide" || size == "square",
                                    spanned ? span_rows : (size == "tall" || size == "square") ? 2 : 1, spanned ? span_columns : 0)) return false;
-        if (page_entity(entity) && static_cast<unsigned>(entity[12] - '0') > model.pages) return false;
+        if (page_entity(entity) && page_number(entity) > model.pages) return false;
         model.slots[index] = root["slot"].as<unsigned>();
       }
       // Any entity may stand on several tiles (firmware 0.16.0+), each its own index; the bedside clock stays one, as
@@ -599,7 +614,15 @@ std::string receive(const std::string &payload) {
     }
     // Pre-computed extras: the manager converts time zones and fetches forecasts. What only some tiles
     // carry is collected in `next` and replaces the tile's Extra at the end (see Tile::set_extra).
-    auto extra = root["x"];
+    // Short of memory inside the chip (tile_memory.h, firmware 0.34.0+): the state and its attributes still arrive, but
+    // what only some tiles carry waits, and a tile without a block of extras gets none, so a layout past what the screen
+    // holds makes tiles plainer instead of restarting the screen.
+    const bool lean = heap_room && heap_room() < tile_memory::LOW_WATER;
+    if (lean) {
+      memory_short_at = std::max<uint32_t>(1, esphome::millis());
+      shed_extras();
+    }
+    JsonVariant extra = lean ? JsonVariant() : root["x"].as<JsonVariant>();
     Extra next;
     // A tap's own Home Assistant action (app 0.2.67+): {"s": action, "d": [[key, text]], "t": [[key, template]]}.
     auto act = root["o"]["act"];
@@ -844,7 +867,9 @@ std::string receive(const std::string &payload) {
       next.code_saved = extra["dc"].is<int>() && extra["dc"].as<int>() == 1;
       next.assumed = a["assumed_state"].is<bool>() && a["assumed_state"].as<bool>();
     }
-    tile.set_extra(std::move(next));
+    const bool wanted = !next.empty();
+    tile.set_extra(std::move(next), !lean);
+    if (wanted && !tile.extra_ptr()) memory_short_at = std::max<uint32_t>(1, esphome::millis());
     // Home Assistant reports the edited value: the -/+ pill follows its state again.
     if(tile_controls::climate_range(tile)){
       // A range: each end follows Home Assistant again once it reports what was sent.

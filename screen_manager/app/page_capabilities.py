@@ -11,6 +11,9 @@ import os
 from pathlib import Path
 import tempfile
 
+from core import STORE_MAX_BAR_ITEMS, STORE_MAX_PAGES, STORE_MAX_TILES
+from page_delivery import ceiling_of, memory_of
+
 LOG = logging.getLogger('screen_manager')
 SIZES = {'single', 'wide', 'full', 'tall', 'square'}
 # A span such as "3x2" (firmware 0.19.0, app 0.4.32): the sizes a screen's grid takes besides the names.
@@ -44,11 +47,20 @@ class CapabilityCache:
         if type(protocol) is not int or protocol not in (1, 2) or not isinstance(sizes, list): return
         if not all(known_size(size) for size in sizes): return
         sender.last_protocol, sender.last_tile_sizes = protocol, set(sizes)
+        # Its own ceilings and memory (firmware 0.34.0+), for editing while it is offline; an older record has none.
+        sender.last_max_tiles = ceiling_of(record.get('tiles'), STORE_MAX_TILES)
+        sender.last_max_pages = ceiling_of(record.get('pages'), STORE_MAX_PAGES)
+        sender.last_max_bar_items = ceiling_of(record.get('bar_items'), STORE_MAX_BAR_ITEMS)
+        sender.last_memory = memory_of({'memory': record.get('memory')})
 
     def remember(self, inbox, screen, sender):
         marker = identity(screen)
         if not marker.get('device_id') or sender.protocol not in (1, 2): return
         record = {'identity': marker, 'protocol': sender.protocol, 'sizes': sorted(size for size in sender.tile_sizes if known_size(size))}
+        if sender.max_tiles: record['tiles'] = sender.max_tiles
+        if sender.max_pages: record['pages'] = sender.max_pages
+        if sender.max_bar_items: record['bar_items'] = sender.max_bar_items
+        if sender.memory: record['memory'] = {key: value for key, value in sender.memory.items() if key != 'short'}
         if self.records.get(inbox) == record: return
         self.records[inbox] = record
         self._save()

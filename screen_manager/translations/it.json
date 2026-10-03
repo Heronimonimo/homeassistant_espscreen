@@ -533,6 +533,7 @@
         "page_title": "Dai a una pagina un titolo di al massimo 96 byte.",
         "page_titles": "Uno schermo ha al massimo 1 pagina. | Uno schermo ha al massimo {n} pagine.",
         "tiles_max": "Scegli al massimo 1 riquadro. | Scegli al massimo {n} riquadri.",
+        "memory_full": "Questi riquadri richiedono {need} KB della memoria dello schermo, che ne ha {room} KB per i riquadri. Togline alcuni o scegline di più leggeri: una previsione o un lettore multimediale occupa più di una luce.",
         "unsupported": "Questa entità non è supportata.",
         "once": "L'orologio da comodino può stare una sola volta su uno schermo.",
         "tile_name": "Il nome di un riquadro può contenere al massimo 80 byte.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Stato",
-          "last_changed": "Ultima modifica"
+          "last_changed": "Ultima modifica",
+          "icon": "Solo icona"
         },
         "shows": {
           "always": "Sempre",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filtra per tipo",
       "no_room": "Senza stanza"
     },
+    "memory": {
+      "label": "Memoria per i riquadri",
+      "share": "{n} %",
+      "title": "Questi riquadri occupano {need} dei {room} KB che questo schermo ha per i riquadri. Una previsione, un termostato o un lettore multimediale occupa più di una luce o di un interruttore.",
+      "over": "È più di quanto lo schermo possa contenere: togli qualche riquadro prima di salvare.",
+      "short": "Alcuni riquadri ora mostrano meno: lo schermo è rimasto a corto di memoria.",
+      "last_known": "Come l’ha indicato lo schermo l’ultima volta che era online.",
+      "full_tile": "Questo riquadro non entra più nella memoria dello schermo. Uno più leggero forse sì.",
+      "full_library": "La memoria dello schermo è quasi piena: alcuni riquadri non entrano più, quelli più leggeri forse sì."
+    },
     "domains": {
       "light": "Luce",
       "climate": "Clima",
@@ -2058,6 +2070,7 @@
         "no_dimming": "Retroilluminazione sempre accesa",
         "standby": "Standby e notte",
         "no_standby": "Niente standby",
+        "tiles": "Fino a {n} riquadri su {pages} pagine",
         "calibration": "Calibrazione del touch al primo avvio"
       },
       "choice": {

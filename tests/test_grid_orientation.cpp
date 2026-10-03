@@ -88,7 +88,11 @@ static void explicit_placements_use_the_live_grid() {
 static void a_navigation_tile_may_only_name_a_page_that_exists() {
   // screen.page_<n> is checked against the pages this grid holds, and the grid comes from the canvas.
   grid_select(320, 240);
-  assert(valid_entity("screen.page_8") && !valid_entity("screen.page_9"));
+  assert(valid_entity("screen.page_8") && !valid_entity("screen.page_9") && !valid_entity("screen.page_10"));
+  // Two digits only past nine and without a leading zero; nothing that merely sorts after '8' (firmware 0.34.0+).
+  assert(page_number("screen.page_8") == 8 && page_number("screen.page_12") == 12 && page_number("screen.page_24") == 24);
+  assert(!page_number("screen.page_0") && !page_number("screen.page_01") && !page_number("screen.page_100"));
+  assert(!page_number("screen.page_:") && !page_number("screen.page_1a") && !page_number("screen.page_") && !page_number("screen.pages"));
   grid_select(240, 320);
   assert(valid_entity("screen.page_8"));
 }

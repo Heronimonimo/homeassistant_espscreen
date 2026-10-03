@@ -9,8 +9,9 @@ ESP Screens turns ESP32 touch screens into Home Assistant control panels. Four p
 - **Editor**: `web/` (Vue 3 + Vite, TypeScript), which shows a screen while you build its pages.
 
 A screen gets its tiles from the add-on while it runs: every card works in every cell of every page (one tile per
-cell, at most eight pages and 64 tiles), the board's grid decides how many fit (docs/RESPONSIVE.md), and no Home
-Assistant entity belongs in a board file. docs/README.md lists every doc and says which ones are recipes.
+cell, at most eight pages and 64 tiles, or what a board with PSRAM states, with the screen's memory budget deciding how
+many a layout takes: docs/TILE_MEMORY.md), the board's grid decides how many fit on a page (docs/RESPONSIVE.md), and no
+Home Assistant entity belongs in a board file. docs/README.md lists every doc and says which ones are recipes.
 
 ## Where to start for a change
 

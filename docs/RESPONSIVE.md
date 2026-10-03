@@ -93,8 +93,9 @@ will get without building.
   and the Guition the scale is exactly 100.
 - `ui::large()`: the class of cards and pages is the look's, never a cell's momentary height. (A class
   that flipped when the rows grew reused a clock's numeral labels as tick lines: the lab's crash.)
-- `GRID_COLS`/`GRID_ROWS` reach the C++ as build flags; `SLOTS_PER_PAGE` follows. Every grid has eight pages
-  (firmware 0.18.0+) and a screen never holds more than 64 tiles over them (one dirty bit each), so a page need not
+- `GRID_COLS`/`GRID_ROWS` reach the C++ as build flags; `SLOTS_PER_PAGE` follows. Every grid has all of a
+  screen's pages (firmware 0.18.0+): eight and 64 tiles over them, or what a board with PSRAM states as
+  `SCREEN_MAX_PAGES` and `SCREEN_MAX_TILES` (firmware 0.34.0+, [TILE_MEMORY.md](TILE_MEMORY.md)), so a page need not
   be full; before, the pages were capped at as many as 64 tiles fill (seven of nine, four of sixteen), and a grid
   that grew lost the pages of a saved layout. `runtime_tiles::widgets` holds exactly one entry per cell. The add-on (`core.Grid`) and
   the editor (`createLayout` in `web/src/model/layout.ts`) count with the same rule, so a page, a slot and a tile limit mean the same in

@@ -36,7 +36,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, WSMsgType, web
 from core import alarm_extras, lock_extras, ALERT_EVENT, board_of, BROADCAST_EVENTS, BROADCAST_SHOW, BUILTIN, CAMERA_DOMAINS, entity_id, SETTINGS_BESIDE_BLOCK, TILE_EVENTS, TILE_RESULT_EVENT, layout_snapshot, match_screen, HEADER_MIN_FIRMWARE, NAME_TILE_SETTINGS, TRANSPORT_MIN_FIRMWARE, alert_action, alert_camera, alert_choice, alert_data, choice_service, ALERT_CHOICE_ACTION, ALERT_CHOICE_MIN_FIRMWARE, parse_firmware, alert_reference, alert_screen_choice, alert_screen_names, alert_service, alert_targets, backgrounds, builtin_name, controls_catalogue, device_prefixes, discover, discover_screens, encode, entity_slug, extras, media_cover, media_extras, forecast_kinds, header_items, inbox_prefix, message_action, min_firmware, name_clash, packets, revision, screen_items, state_message, validate_header, validate_layout, validate_settings
 from core import MAP_TILE_MIN_FIRMWARE, calibrate_entity, can_standby, dimmable, SETTING_ENTITIES, SETTING_RULES, STANDBY_KEYS, setting_action, setting_entities, setting_from_state, state_word
 from core import BOARD_KEYS, is_key, drawn_controls, FAVORITE_KINDS, SCREENSAVER_MIN_FIRMWARE, short
-from core import (Grid, page_target, PAGE_TILE_REPEAT_MIN_FIRMWARE, ENTITY_REPEAT_MIN_FIRMWARE, ROTATION_MIN_FIRMWARE, SHAPES, firmware_features, grid_of, orientation_at,
+from core import (FIRMWARE_MAX_BAR_ITEMS, FIRMWARE_MAX_PAGES, FIRMWARE_MAX_TILES, Grid, page_target, PAGE_TILE_REPEAT_MIN_FIRMWARE, ENTITY_REPEAT_MIN_FIRMWARE, ROTATION_MIN_FIRMWARE, SHAPES, firmware_features, grid_of, orientation_at,
                   packed_slots, run_tile_event, screen_firmware, shape_of, turns_of, version_text)
 import header_bar
 import history_card
@@ -44,7 +44,7 @@ import i18n
 from i18n import REQUEST_LANGUAGE, TRANSLATIONS, Region, english, screen_t, shown, t
 from zoneinfo import ZoneInfo
 from layout_store import LayoutStore, Conflict
-from page_layout import (FORMAT as PAGE_FORMAT, LayoutError, compile_tiles, grid_of_record,
+from page_layout import (FORMAT as PAGE_FORMAT, LayoutError, compile_tiles, grid_of_record, screen_grid_of_record,
                          legacy_projection, legacy_edit, validate_document, bar_items, replace_tiles, CompiledLayouts, fingerprint)
 from layout_migrations import migrate_legacy
 import page_delivery
@@ -928,7 +928,24 @@ class Manager:
             return self.grid_of(screen)
         if board_of(screen) in SHAPES:
             return self.grid_of(screen)
-        return Grid(2, 3)
+        return Grid(2, 3).with_ceilings(*self.ceilings(inbox))
+
+    def ceilings(self, inbox):
+        """The most pages, tiles and top-bar items a page this screen takes: what its hello said (firmware 0.34.0+,
+        page_delivery.Sender), or the last it said while it is offline (page_capabilities), else the eight pages, 64 tiles
+        and six items of any screen."""
+        sender = self.page_senders.get(inbox) if inbox else None
+        said = lambda name: getattr(sender, name, None) or getattr(sender, 'last_' + name, None)
+        return (said('max_pages') or FIRMWARE_MAX_PAGES, said('max_tiles') or FIRMWARE_MAX_TILES,
+                said('max_bar_items') or FIRMWARE_MAX_BAR_ITEMS)
+
+    def memory(self, inbox):
+        """The memory this screen has for its tiles and what each tile costs (firmware 0.34.0+, tile_memory.h): the
+        figures of its last hello or ping, `live` while it is connected; None when it never said."""
+        sender = self.page_senders.get(inbox)
+        live = getattr(sender, 'memory', None)
+        memory = live or getattr(sender, 'last_memory', None)
+        return {**memory, 'live': live is not None} if memory else None
 
     def _discovered(self, inbox):
         """The screen as discovery sees it now, or None while it is not in Home Assistant's registry."""
@@ -947,7 +964,7 @@ class Manager:
         verified_grid takes this one first; only this one may move a saved layout to a new grid on its own."""
         shape = (self._discovered(inbox) or {}).get('shape')
         if isinstance(shape, dict) and all(type(shape.get(k)) is int and shape[k] > 0 for k in ('columns', 'rows')):
-            return Grid(shape['columns'], shape['rows'])
+            return Grid(shape['columns'], shape['rows'], *self.ceilings(inbox))
         return None
 
     def refresh_page_records(self):
@@ -1273,7 +1290,7 @@ class Manager:
             screen = {**screen, 'package': screen.get('package') or self.package_of(screen, profiles),
                       'orientation': screen.get('orientation') or self.orientation_of(screen, profiles),
                       'grid_rows': screen.get('grid_rows', self.built_as(screen, profiles).get('grid_rows'))}
-        return grid_of(screen)
+        return grid_of(screen).with_ceilings(*self.ceilings(screen.get('id') if isinstance(screen, dict) else None))
 
     def turns(self, screen):
         """The angles this screen may be turned to (core.turns_of): none on firmware that cannot turn (before 0.2.80,
@@ -1399,7 +1416,7 @@ class Manager:
         stays, so the next ping still matches."""
         base = self.layouts.get(inbox) or {'title': (screen or {}).get('name') or screen_t('screen.status.home'), 'tiles': []}
         previous = self.store.get(inbox)
-        grid = self.verified_grid(inbox) or (grid_of_record(previous) if previous and previous['format'] == PAGE_FORMAT else None)
+        grid = self.verified_grid(inbox) or (screen_grid_of_record(previous) if previous and previous['format'] == PAGE_FORMAT else None)
         layout = validate_layout({**base, 'settings': settings}, grid=grid)
         if not previous:
             if grid is None: raise LayoutError(t('addon.errors.pages.source_grid'))
@@ -3414,6 +3431,10 @@ def create_app(manager, development=False):
             version = manager.firmware_version(screen['id'], screen)
             screen['firmware_known'] = version_text(version)
             screen.update(firmware_features(version, manager.grid_of(screen)))
+            # The memory it has for its tiles and what each costs (firmware 0.34.0+): the editor shows how full it is.
+            screen['memory'] = manager.memory(screen['id'])
+            # The items a page's top bar takes (firmware 0.34.0+ says more on a board with room): the editor's limit.
+            screen['bar_limit'] = manager.grid_of(screen).bar_items
             # Does it work as you expect (app 0.3.10): only for a board the website knows, and never the key.
             board, device = (screen['board'] if screen['board'] in BOARD_KEYS else None), screen.get('device_id')
             if board and device and not manager.feedback.readonly:

@@ -48,6 +48,11 @@ substitutions:
   # keeps its page, its row and its column (page_layout.grown in the app).
   GRID_COLS: "5"
   GRID_ROWS: "5"
+  # More tiles and pages than the 64 and eight of a board without PSRAM (firmware 0.34.0+): an ESP32-P4 has the PSRAM and
+  # the memory inside the chip for them, and the memory budget (tile_memory.h) says how many a layout really takes.
+  SCREEN_MAX_TILES: "256"
+  SCREEN_MAX_PAGES: "16"
+  SCREEN_MAX_BAR_ITEMS: "12"                   # a wider top bar where the glass has the width for it
   # Standing up (firmware 0.2.92+) the page keeps the same five by five, the default, so it holds the same 25 cells
   # either way. The 10.1-inch glass is 136 x 218 mm standing up, columns of about 27 mm: a long name ends in dots
   # sooner than lying down.

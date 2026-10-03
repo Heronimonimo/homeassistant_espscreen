@@ -25,7 +25,15 @@ export type ChildTile = {
 // (`in`, that tile's entity) and its place there (`key`, from 0), and its slot is -1.
 export type Tile = { id?: string; entity: string; name: string; slot: number; options?: TileOptions; in?: string; key?: number };
 export type HeaderItem = { id?: string; type: string; entity?: string; content?: string; icon?: string; show?: string };
-export type PageGrid = Readonly<{ columns: number; rows: number }>;
+// `pages`: the most pages the screen takes, when the grid is the screen's (model/pages.ts pageLimit).
+// What a screen says about the memory inside its chip (firmware 0.34.0+, components/smart_display/tile_memory.h), in
+// bytes: the room it has for tiles and what the tiles on it take now, and what the tile catalogue's prices need from the
+// board (whether it has PSRAM, the size of a tile and of its block of extras: model/memory.ts). `short`: a tile went
+// without its extras for want of memory lately; `live`: said by the screen as it is now, rather than the last thing it
+// said before it went offline.
+export type ScreenMemory = { room: number; used: number; psram: boolean; tile: number; extra: number; page?: number; short?: boolean; live?: boolean };
+// `barItems`: the items one page's top bar takes there (model/pages.ts barLimit).
+export type PageGrid = Readonly<{ columns: number; rows: number; pages?: number; barItems?: number }>;
 export type PageTarget = { kind: "page"; pageId: string } | { kind: "home" };
 export type PageTile = {
   id: string;
@@ -106,6 +114,8 @@ export type BoardChoice = BoardCatalog & {
   chip?: string | null;
   // Whether it opens a Wi-Fi hotspot when its network is gone (app 0.4.32; 4 MB boards have no room for it).
   hotspot?: boolean;
+  // The most tiles and pages a screen of it takes (firmware 0.34.0+, its board file).
+  max_tiles?: number; max_pages?: number;
 };
 // Does this screen work as you expect (app 0.3.10): what the add-on says about the board's shared answer. The key and
 // the revision never reach the page; the add-on keeps them.
@@ -143,6 +153,10 @@ export type Screen = {
   api_key?: string | null;
   // What the add-on reads from the firmware (app 0.2.78): its X.Y.Z (null when unknown), how many tiles it holds,
   // whether it draws full-page tiles, and whether it takes several tiles that go to the same page.
+  // The memory this screen has for its tiles and what each costs, from its hello (firmware 0.34.0+, model/memory.ts).
+  memory?: ScreenMemory | null;
+  // The items one page's top bar takes: six, or more on a board with room for them (firmware 0.34.0+).
+  bar_limit?: number;
   firmware_known?: string | null; tile_limit?: number; page_limit?: number; full_page?: boolean; page_tiles_repeat?: boolean; entity_tiles_repeat?: boolean; no_title?: boolean; climate_range?: boolean;
   // The language its firmware was built in (app 0.2.90); null for older firmware, which is English.
   language?: string | null;
