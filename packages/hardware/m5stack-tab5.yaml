@@ -1,0 +1,59 @@
+# ESP Screens - M5Stack Tab5 hardware: early ESP32-P4 with ESP32-C6 Wi-Fi, I/O expander, DSI power and touch bus.
+packages:
+  build: !include esp-idf.yaml
+
+esp32:
+  board: esp32-p4-evboard
+  variant: esp32p4
+  flash_size: 16MB
+  cpu_frequency: 360MHz
+  engineering_sample: true
+  framework:
+    advanced:
+      execute_from_psram: true
+    sdkconfig_options:
+      CONFIG_ESP_HOSTED_USE_MEMPOOL: "n"
+      CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM: "y"
+      CONFIG_FREERTOS_THREAD_LOCAL_STORAGE_POINTERS: "1"
+
+psram:
+  mode: hex
+  speed: 200MHz
+
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+    adjustable: true
+
+esp32_hosted:
+  variant: esp32c6
+  active_high: true
+  clk_pin: GPIO12
+  cmd_pin: GPIO13
+  d0_pin: GPIO11
+  d1_pin: GPIO10
+  d2_pin: GPIO9
+  d3_pin: GPIO8
+  reset_pin: GPIO15
+  slot: 1
+  sdio_frequency: 20MHz
+  use_psram: true
+
+logger:
+  tx_buffer_size: 2048
+  hardware_uart: USB_SERIAL_JTAG
+
+i2c:
+  id: tab5_bus
+  sda: GPIO31
+  scl: GPIO32
+  frequency: 400kHz
+
+pi4ioe5v6408:
+  - id: tab5_ioe
+    address: 0x43
+
+output:
+  - platform: ledc
+    pin: GPIO22
+    id: gpio_backlight_pwm

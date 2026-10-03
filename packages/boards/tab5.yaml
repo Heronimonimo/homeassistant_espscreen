@@ -1,9 +1,8 @@
-# ESP Screens - tab5: a 5.0-inch 1280 x 720 panel. Written by tools/new_board.py from the jc8012p4a1
-# board: its packages and its hardware sections are the template's until they are replaced by this board's
-# (docs/ADDING_A_BOARD.md). docs/PROFILES.md says how the files of a screen fit together.
+# ESP Screens - M5Stack Tab5 ST7121: 5-inch 1280 x 720 panel, ESP32-P4 and ESP32-C6.
+# This profile targets only the confirmed ST7121 display and touch-controller variant (issue #79).
+# docs/TAB5.md records the evidence and what still needs checking on the glass.
 packages:
-  # The ESP32-P4, its memory, the ESP32-C6 for Wi-Fi and the touch bus, shared with the 7-inch JC1060P470.
-  hardware: !include ../hardware/guition-esp32p4.yaml
+  hardware: !include ../hardware/m5stack-tab5.yaml
   # The cards of this board's grid, one per cell (tools/generate_cells.py writes them; docs/RESPONSIVE.md).
   cells: !include ../cells/6.yaml
   look: !include ../looks/standard.yaml
@@ -17,7 +16,7 @@ substitutions:
   # The key of this board file; the firmware reports it so ESP Screens knows what board a screen is.
   BOARD_ID: "tab5"
   DEVICE_NAME: "tab5-new"
-  DEVICE_FRIENDLY_NAME: "My tab5"
+  DEVICE_FRIENDLY_NAME: "My M5Stack Tab5"
 
   # The glass: the panel's own pixels and its density, 1469 diagonal pixels over 5.0 inches.
   PANEL_W: "720"
@@ -25,61 +24,57 @@ substitutions:
   DISPLAY_DPI: "293.721"
   # The LVGL angle that lays this panel out lying down (1280 x 720). Standing up is a quarter further.
   ROTATION_LANDSCAPE: "90"
-  # The tile grid: columns and rows of cells lying down, and standing up.
+  # The tile grid: three columns by two rows lying down, and one column by five rows standing up.
   GRID_COLS: "3"
   GRID_ROWS: "2"
   GRID_COLS_PORTRAIT: "1"
   GRID_ROWS_PORTRAIT: "5"
   LVGL_BUFFER_SIZE: "50%"                       # LVGL's draw buffer as a share of the screen
-
-  # From the jc8012p4a1 board: its hardware values and the code it hands the shared lambdas. Replace them
-  # with this board's, as the hardware sections below.
-  # ESPHome's own preset for this panel (touchscreen: platform: gsl3670, model: GUITION-JC8012P4A1) reads the
-  # glass as the panel is built: turned a quarter against the picture. LVGL then turns picture and touch
-  # together (LVGL_ROTATION), as it does on the CYD.
-  TOUCH_SWAP_XY: "true"
-  TOUCH_MIRROR_X: "true"
+  TOUCH_CONTROLLER: "ST7121"                    # The ESPHome driver is named st7123; the glass reports ST7121.
+  TOUCH_TEST_READY_LOG: "ST7121 touch test ready; no tile actions"
 
 # ============================================================
 # No need to edit below this line.
 # ============================================================
 
 esphome:
-  # This board asks for more ESPHome than the packages' own min_version (2026.6.2, packages/core.yaml): its touch
-  # platform (gsl3670) arrived in 2026.7.0 and that platform's `model: GUITION-JC8012P4A1` in 2026.8.0, which is
-  # what this file uses. A board file's min_version wins over the core's, so the CYD, the Guition and the
-  # Waveshare keep building on an older ESPHome; only a 10.1-inch screen asks for 2026.8 or newer.
-  # docs/RELEASING.md says why the packages stay behind the add-on's ESPHome.
-  min_version: 2026.8.0
+  # M5STACK-TAB5-ST7121 and the st7123 touch driver are available from ESPHome 2026.7.0.
+  min_version: 2026.7.0
 
 text_sensor:
   - platform: template
-    name: "Guition screen type"
+    name: "M5Stack screen type"
     entity_category: diagnostic
     update_interval: never
-    lambda: 'return {"guition"};'
+    lambda: 'return {"m5stack"};'
 
-# ESPHome's own gsl3670 platform (2026.7.0+) drives the GSL3680 on this panel. `model:` brings its pins and
-# the range the panel reports; the transform is this board's, because the shared tree reads those three names.
-# The driver loads a firmware table into the touch chip at boot, which ESPHome fetches from the release the
-# model points at and keeps in its own cache, so a build needs to reach GitHub once.
+# The factory firmware identifies this variant as ST7121. ESPHome currently exposes the compatible touch protocol
+# through its st7123 platform; on this board the reset is driven by the I/O expander.
 touchscreen:
-  - platform: gsl3670
-    model: GUITION-JC8012P4A1
+  - platform: st7123
     id: ts_touch
-    i2c_id: touch_bus
+    i2c_id: tab5_bus
     display: my_display
-    update_interval: 20ms
-    reset_pin: GPIO22
-    interrupt_pin: GPIO21
+    update_interval: 100ms
+    reset_pin:
+      pi4ioe5v6408: tab5_ioe
+      number: 5
+    interrupt_pin: GPIO23
+    calibration:
+      x_min: 0
+      x_max: 720
+      y_min: 0
+      y_max: 1280
 
-# ESPHome's own mipi_dsi platform knows this panel by name: `model: JC8012P4A1` brings the JD9365's init
-# sequence, its timings and its reset pin. The panel is 800x1280; LVGL turns it a quarter (LVGL_ROTATION).
+# ESPHome's MIPI-DSI model selects the ST7121 panel sequence. The panel is 720x1280; LVGL turns it a quarter.
 display:
   - platform: mipi_dsi
     id: my_display
-    model: JC8012P4A1
+    model: M5STACK-TAB5-ST7121
     dimensions: {width: 720, height: 1280}
     lanes: 2
+    reset_pin:
+      pi4ioe5v6408: tab5_ioe
+      number: 4
     update_interval: never
     auto_clear_enabled: false
