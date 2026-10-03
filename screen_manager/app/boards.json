@@ -934,7 +934,7 @@
   "columns": 3,
   "dimmable": true,
   "dpi": 294,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 47,
    "icon_home": 59,
@@ -989,6 +989,7 @@
    "margin": 16,
    "tile_pad": 21
   },
+  "wide_slots": false,
   "width": 1280
  },
  "checkout/waveshare35.yaml": {
@@ -3151,7 +3152,7 @@
   "columns": 3,
   "dimmable": true,
   "dpi": 294,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 47,
    "icon_home": 59,
@@ -3206,6 +3207,7 @@
    "margin": 16,
    "tile_pad": 21
   },
+  "wide_slots": false,
   "width": 1280
  },
  "packages/waveshare35.yaml": {
@@ -3748,7 +3750,7 @@
   "columns": 3,
   "dimmable": true,
   "dpi": 294,
-  "firmware": "0.28.0",
+  "firmware": "0.33.0",
   "fonts": {
    "headline": 47,
    "icon_home": 59,
@@ -3803,6 +3805,7 @@
    "margin": 16,
    "tile_pad": 21
   },
+  "wide_slots": false,
   "width": 1280
  },
  "waveshare35": {
