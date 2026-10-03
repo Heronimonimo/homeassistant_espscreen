@@ -17,8 +17,9 @@ import tile_icons
 DOMAINS = catalogue.DOMAINS
 # Built-in cards without a Home Assistant entity; firmware 0.2.14+ renders them. The names in English: a screen gets them in
 # its language and the editor in its own (builtin_name, app 0.2.90).
-BUILTIN = {'screen.clock': 'Clock', 'screen.nightstand': 'Bedside clock', 'screen.settings': 'Settings', 'screen.map': 'Map', **{f'screen.page_{n}': f'Go to page {n}' for n in range(1, 9)}}
-# A navigation tile (firmware 0.2.62+): screen.page_<n> goes to page n. Firmware 0.2.65+ takes the same one on several
+BUILTIN = {'screen.clock': 'Clock', 'screen.nightstand': 'Bedside clock', 'screen.settings': 'Settings', 'screen.map': 'Map', **{f'screen.page_{n}': f'Go to page {n}' for n in range(1, 33)}}
+# A navigation tile (firmware 0.2.62+): screen.page_<n> goes to page n, up to page 32 on a board that holds that many
+# (firmware 0.34.0+); whether the screen has page n is the screen's Grid's to say. Firmware 0.2.65+ takes the same one on several
 # pages (a "Back to page 1" on every page), firmware 0.16.0+ any entity on several tiles (GitHub #83) but the bedside
 # clock, whose keys name it by its entity.
 PAGE_TILE = 'screen.page_'
@@ -98,7 +99,7 @@ REF = 'main'
 # The shared firmware of this app release: packages/core.yaml's SCREEN_FIRMWARE_VERSION, what every board builds
 # unless its own board file went ahead with a fix for that board alone (firmware_target, docs/BOARD_RELEASES.md). The
 # middle number is the core: the feature gates below name a shared X.Y.0, so a feature always ships with a new core.
-FIRMWARE_VERSION = '0.33.0'
+FIRMWARE_VERSION = '0.34.0'
 # The Auto standby switch a screen offers Home Assistant automations.
 AUTO_STANDBY_MIN_FIRMWARE = '0.2.41'
 # The settings page the screen opens itself, and the screen.settings tile that opens it.
@@ -180,28 +181,52 @@ WIDE_ONLY = tuple(sorted({item['key'] for entry in catalogue.TYPES.values() for 
 # cell (page * cells + row * columns + column); a wide tile starts in a column that has a cell to its right and
 # covers both; a full tile (firmware 0.2.62+) starts a page and covers every cell of it. Empty cells are allowed.
 #
-# The rules are the firmware's (components/smart_display/runtime_model.h): eight pages whatever the grid, and never more
-# than 64 tiles on one screen (one dirty bit each), so a page need not be full (firmware 0.18.0+). Older firmware had
-# as many pages as 64 tiles fill (legacy_pages): seven of nine cells, three of twenty. Everything that
-# counts cells, rows, pages or tiles goes through the screen's Grid (`grid_of(screen)`); DEFAULT_GRID is the two
-# by three of the first boards, which is also what every layout stored before app 0.2.94 was made on.
+# The rules are the firmware's (components/smart_display/runtime_model.h): the same pages whatever the grid, and never
+# more tiles on one screen than its board takes, so a page need not be full (firmware 0.18.0+). That is eight pages and
+# 64 tiles, or what the screen says in its hello on a board with more (firmware 0.34.0+, page_delivery.Sender: max_pages,
+# max_tiles; Manager.ceilings). Older firmware had as many pages as 64 tiles fill (legacy_pages): seven of nine cells,
+# three of twenty. Everything that counts cells, rows, pages or tiles goes through the screen's Grid
+# (`Manager.grid_of(screen)`); DEFAULT_GRID is the two by three of the first boards, which is also what every layout
+# stored before app 0.2.94 was made on.
 FIRMWARE_MAX_PAGES = 8
 FIRMWARE_MAX_TILES = 64
+# The items one page's top bar holds: six, or what the screen's hello says on a board with room for more (firmware 0.34.0+,
+# max_bar_items); the glass's width decides how many of them show (header_bar::place, the editor's topbar.ts).
+FIRMWARE_MAX_BAR_ITEMS = 6
+# The most any board may state (page_protocol.h): what a stored layout is held to when no screen is there to ask, so a
+# layout made for a board with more pages still loads whatever is connected, and a save is held to the screen's own.
+STORE_MAX_PAGES = 32
+STORE_MAX_TILES = 1024
+STORE_MAX_BAR_ITEMS = 16
 
 class Grid:
-    __slots__ = ('columns', 'rows', 'page_cap')
+    __slots__ = ('columns', 'rows', 'page_cap', 'tile_cap', 'bar_cap')
 
-    def __init__(self, columns=2, rows=3, pages=FIRMWARE_MAX_PAGES):
+    def __init__(self, columns=2, rows=3, pages=FIRMWARE_MAX_PAGES, tiles=FIRMWARE_MAX_TILES, bar_items=FIRMWARE_MAX_BAR_ITEMS):
         columns, rows = int(columns), int(rows)
         if columns < 1 or rows < 1 or columns * rows > FIRMWARE_MAX_TILES:
             raise ValueError(f'no screen holds a page of {columns} x {rows} cells')
         self.columns, self.rows = columns, rows
-        # The pages the screen's firmware takes (for_firmware); the cells alone say nothing about them any more.
-        self.page_cap = max(1, min(FIRMWARE_MAX_PAGES, int(pages)))
+        # The pages and tiles the screen takes (its hello, for_firmware); the cells alone say nothing about them any more.
+        self.page_cap = max(1, min(STORE_MAX_PAGES, int(pages)))
+        self.tile_cap = max(1, min(STORE_MAX_TILES, int(tiles)))
+        self.bar_cap = max(1, min(STORE_MAX_BAR_ITEMS, int(bar_items)))
+
+    def with_ceilings(self, pages, tiles, bar_items=FIRMWARE_MAX_BAR_ITEMS):
+        """The same cells with these ceilings (a screen's hello, Manager.ceilings)."""
+        return Grid(self.columns, self.rows, pages, tiles, bar_items)
+
+    @property
+    def bar_items(self):
+        """The items one page's top bar takes."""
+        return self.bar_cap
 
     def for_firmware(self, version):
-        """The same cells with the pages firmware `version` takes (page_limit): eight from 0.18.0, fewer before."""
-        return Grid(self.columns, self.rows, page_limit(version, Grid(self.columns, self.rows)))
+        """The same cells with the pages and tiles firmware `version` takes (page_limit): this grid's own from 0.18.0,
+        fewer pages and 64 tiles before."""
+        new = (version or (0, 0, 0)) >= FREE_PAGES_MIN_FIRMWARE
+        return Grid(self.columns, self.rows, page_limit(version, self), self.tile_cap if new else FIRMWARE_MAX_TILES,
+                    self.bar_cap if new else FIRMWARE_MAX_BAR_ITEMS)
 
     def __eq__(self, other):
         return isinstance(other, Grid) and (self.columns, self.rows) == (other.columns, other.rows)
@@ -232,7 +257,7 @@ class Grid:
 
     @property
     def max_tiles(self):
-        return min(FIRMWARE_MAX_TILES, self.max_slots)
+        return min(self.tile_cap, self.max_slots)
 
     @property
     def wide_span(self):
@@ -674,18 +699,47 @@ def version_text(version):
     return '.'.join(str(part) for part in version) if version else None
 
 def page_limit(version, grid=DEFAULT_GRID):
-    """How many pages firmware `version` (a tuple, or None when unknown) takes on a screen with this grid: eight from
-    firmware 0.18.0, as many as 64 tiles fill before."""
+    """How many pages firmware `version` (a tuple, or None when unknown) takes on a screen with this grid: the grid's
+    own from firmware 0.18.0 (eight, or what the screen's hello says), as many as 64 tiles fill before."""
     return grid.pages if (version or (0, 0, 0)) >= FREE_PAGES_MIN_FIRMWARE else grid.legacy_pages
 
 def tile_limit(version, grid=DEFAULT_GRID):
-    """How many tiles firmware `version` (a tuple, or None when unknown) takes on a screen with this grid: 64 over its
-    pages (firmware 0.18.0+), one per cell of its pages (0.2.62+), twenty from 0.2.7, ten before."""
+    """How many tiles firmware `version` (a tuple, or None when unknown) takes on a screen with this grid: the grid's
+    ceiling over its pages (firmware 0.18.0+: 64, or what the screen's hello says), one per cell of its pages (0.2.62+),
+    twenty from 0.2.7, ten before."""
     version = version or (0, 0, 0)
     if version >= FREE_PAGES_MIN_FIRMWARE: return grid.max_tiles
     return grid.legacy_pages * grid.slots if version >= FULL_PAGE_MIN_FIRMWARE else LEGACY_MAX_TILES if version >= TWENTY_TILES_MIN_FIRMWARE else FIRST_MAX_TILES
 
 CLIMATE_RANGE_MIN_FIRMWARE = (0, 19, 0)
+
+def tile_cost(tile, memory):
+    """What one tile takes inside a screen's chip (firmware 0.34.0+, docs/TILE_MEMORY.md), by the tile catalogue's
+    price for its type (catalogue `memory`), what its own choices add (a tap that runs its own action, a second line set to
+    one of its values), and on a board without PSRAM the tile itself and, where it keeps one, its block of extras, whose
+    sizes the screen gave in its hello (page_delivery.memory_of). The screen counts the same way (tile_memory::cost), and
+    so does the editor (web/src/model/memory.ts): tests/fixtures/memory-conformance.json holds the cases."""
+    entry = catalogue.MEMORY.get(str(tile.get('entity', '')).split('.', 1)[0], catalogue.DEAREST)
+    options = tile.get('options') or {}
+    action = options.get('tap') == 'action'
+    line = isinstance(options.get('sub'), str) and options['sub'].startswith('attr:')
+    cost = entry['bytes'] + (catalogue.CHOICE_MEMORY['action'] if action else 0) + (catalogue.CHOICE_MEMORY['line'] if line else 0)
+    if not memory['psram']:
+        cost += memory['tile'] + (memory['extra'] if entry['extras'] or action or line else 0)
+    return cost
+
+def page_cost(page, memory):
+    """What one page of a pages-v2 document takes inside the screen's chip: the catalogue's price of a page (its title)
+    and of each item of its top bar that shows an entity (its text), and on a board without PSRAM the page's own record,
+    whose size the screen gave (`page`). The screen counts its text and moment items, which are the entity items."""
+    entities = sum(1 for item in page.get('topbar', {}).get('trailing', []) if isinstance(item, dict) and item.get('type') == 'entity')
+    return (catalogue.CHOICE_MEMORY['page'] + entities * catalogue.CHOICE_MEMORY['bar_text']
+            + (0 if memory['psram'] else memory.get('page', 0)))
+
+def layout_cost(tiles, memory, pages=()):
+    """What `tiles` (a flat layout's, the keys of a bedside clock included) and the document's `pages` take together
+    inside the screen's chip."""
+    return sum(tile_cost(tile, memory) for tile in tiles) + sum(page_cost(page, memory) for page in pages)
 
 def firmware_features(version, grid=DEFAULT_GRID):
     """What the editor may offer a screen with firmware `version` (a tuple, or None): the tile limit, full-page and
@@ -918,13 +972,15 @@ HEADER_MIN_FIRMWARE = (0, 2, 32)
 # chunks in the text inbox and a full repeat every keepalive.
 TRANSPORT_MIN_FIRMWARE = (0, 2, 33)
 MESSAGE_ACTION = 'screen_message'
-HEADER_MAX_ITEMS = 6
+HEADER_MAX_ITEMS = FIRMWARE_MAX_BAR_ITEMS
 # Items the screen draws on its own clock, without Home Assistant; their labels are in the translations (header_bar.catalogue,
 # app 0.2.90).
 HEADER_BUILTIN = ('clock', 'analog', 'date')
 # Only shown, never controlled: the top bar takes these besides every tile domain.
 HEADER_ONLY_DOMAINS = frozenset('device_tracker zone counter event input_datetime input_text water_heater humidifier'.split())
-HEADER_CONTENTS = ('state', 'last_changed')
+# What an entity item shows: its status, when it last changed, or its icon alone (GitHub #144, any firmware with a top bar:
+# the screen draws an item without text as its icon).
+HEADER_CONTENTS = ('state', 'last_changed', 'icon')
 HEADER_SHOWS = ('always', 'active')
 
 def header_entity(value):
@@ -937,11 +993,12 @@ def header_items(layout):
         return layout['header']['items']
     return [{'type': 'clock'}] if layout.get('settings', {}).get('show_clock', True) else []
 
-def validate_header(data):
+def validate_header(data, most=HEADER_MAX_ITEMS):
+    """A top bar: at most `most` items, six unless the screen takes more (Grid.bar_items, firmware 0.34.0+)."""
     if not isinstance(data, dict) or set(data) - {'items'} or not isinstance(data.get('items'), list):
         raise ValueError(t('addon.errors.top_bar.invalid'))
-    if len(data['items']) > HEADER_MAX_ITEMS:
-        raise ValueError(t('addon.errors.top_bar.full', n=HEADER_MAX_ITEMS))
+    if len(data['items']) > most:
+        raise ValueError(t('addon.errors.top_bar.full', n=most))
     items, seen = [], set()
     for item in data['items']:
         kind = item.get('type') if isinstance(item, dict) else None
@@ -959,6 +1016,9 @@ def validate_header(data):
             if clean['content'] not in HEADER_CONTENTS or clean['show'] not in HEADER_SHOWS:
                 raise ValueError(t('addon.errors.top_bar.invalid_setting'))
             if not (clean['icon'] in ('auto', 'none') or isinstance(clean['icon'], str) and clean['icon'] in tile_icons.ICONS):
+                raise ValueError(t('addon.errors.choose_icon'))
+            # An item that shows its icon alone needs one.
+            if clean['content'] == 'icon' and clean['icon'] == 'none':
                 raise ValueError(t('addon.errors.choose_icon'))
         else:
             raise ValueError(t('addon.errors.top_bar.unknown_item'))
@@ -1350,7 +1410,7 @@ def run_placed_event(layout, action, data, repeat_pages=False, grid=DEFAULT_GRID
         found.pop('slot', None)
         place_tile(found, tiles, page, slot, grid)
     else:
-        if not entity_id(entity) and entity not in BUILTIN:
+        if (not entity_id(entity) and entity not in BUILTIN) or page_target(entity) > grid.pages:
             raise ValueError(t('addon.errors.events.not_for_a_screen', entity=entity))
         # Add is add (firmware 0.16.0+): a new tile, whatever is there already; the bedside clock alone stays one.
         # Before that a navigation tile the firmware takes more than once changes the copy on the named spot or page,
@@ -1425,9 +1485,22 @@ def layout_snapshot(screen, layout, grid=None):
                       'display': options.get('display', 'standard'), 'tap': options.get('tap', 'auto'),
                       **({'action': options['action']} if options.get('tap') == 'action' and 'action' in options else {}),
                       **({'to_page': page_target(tile['entity'])} if page_target(tile['entity']) else {})})
-    return {'screen': screen.get('name', ''), 'node': screen.get('node') or '', 'title': layout.get('title', ''),
-            'columns': grid.columns, 'rows': grid.rows, 'max_pages': grid.pages,
-            'pages': max([tile['page'] for tile in tiles], default=1), 'tiles': tiles}
+    snapshot = {'screen': screen.get('name', ''), 'node': screen.get('node') or '', 'title': layout.get('title', ''),
+                'columns': grid.columns, 'rows': grid.rows, 'max_pages': grid.pages, 'max_tiles': grid.max_tiles,
+                'pages': max([tile['page'] for tile in tiles], default=1), 'tiles': tiles}
+    # A screen of more than 64 tiles (firmware 0.34.0+) can pass the 16 KB Home Assistant's recorder keeps of a state's
+    # attributes: then a tile leaves out what it has by default (single, no controls, the standard display, the automatic
+    # tap), which a reader takes as said. A layout that fits keeps every field, as it always did.
+    if len(json.dumps(snapshot, ensure_ascii=False, separators=(',', ':')).encode()) > SNAPSHOT_MOST:
+        for tile in tiles:
+            for key, default in SNAPSHOT_DEFAULTS.items():
+                if tile.get(key) == default: tile.pop(key)
+    return snapshot
+
+# The most a layout sensor's attributes take before its tiles leave out their defaults: under the 16384 bytes Home
+# Assistant's recorder keeps, with room for the friendly name and the icon publish_layouts adds.
+SNAPSHOT_MOST = 15 * 1024
+SNAPSHOT_DEFAULTS = {'size': 'single', 'controls': '', 'display': 'standard', 'tap': 'auto'}
 
 # A tap's own action (app 0.2.67): Home Assistant's `domain.action` with data for its fields. It always acts on the tile's
 # entity, so the keys that name a target stay out of the data. Text travels as data and every other value as a template
@@ -1518,6 +1591,9 @@ def validate_layout(data, stored=False, grid=DEFAULT_GRID):
     clean, seen = [], set()
     for tile in tiles:
         if not isinstance(tile, dict) or not entity_id(tile.get('entity')):
+            raise ValueError(t('addon.errors.layout.unsupported'))
+        # A navigation tile goes to a page the screen has: eight, or what its board takes (firmware 0.34.0+).
+        if page_target(tile['entity']) > (grid.pages if grid else FIRMWARE_MAX_PAGES):
             raise ValueError(t('addon.errors.layout.unsupported'))
         # Any entity may stand on several tiles (min_firmware asks 0.2.65 for a navigation tile, 0.16.0 for the rest);
         # the bedside clock appears once, as its keys name it.

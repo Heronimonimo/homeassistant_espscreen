@@ -9,7 +9,15 @@ namespace header_bar {
 // The top bar right of the screen name (firmware 0.2.32+). ESP Screen Manager decides what shows
 // and writes an entity's text; the screen draws it, ticks its clocks and counts "5 min ago"
 // itself. Everything here is free of LVGL, so tests/test_header_bar.cpp covers it on a PC.
-constexpr size_t MAX_ITEMS = 6;
+// The items one page's bar holds (firmware 0.34.0+): six, or what a board with room for more states as the build flag
+// SCREEN_MAX_BAR_ITEMS (packages/core.yaml, its board file). The glass's width still decides how many show (place()).
+#ifndef SCREEN_MAX_BAR_ITEMS
+#define SCREEN_MAX_BAR_ITEMS 6
+#endif
+constexpr size_t MAX_ITEMS = SCREEN_MAX_BAR_ITEMS;
+static_assert(MAX_ITEMS >= 6 && MAX_ITEMS <= 16, "a page's bar holds 6 to 16 items");
+// The items the app numbered a bar_value's targets by when it says nothing (page * 6 + index): every app before 0.4.57.
+constexpr size_t WIRE_ITEMS = 6;
 constexpr size_t TEXT_BYTES = 48;
 enum class Kind : uint8_t { none, clock, analog, date, text, ago };
 

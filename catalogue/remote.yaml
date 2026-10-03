@@ -4,6 +4,7 @@
 # Home Assistant offers no list of the commands a remote knows, so a key for one is a tile set to Perform action with
 # remote.send_command, a command typed by hand (GitHub #117).
 domain: remote
+memory: {bytes: 928, extras: true}
 firmware: 0.22.0   # the first firmware that draws this type
 displays:
   standard: {}

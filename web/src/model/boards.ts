@@ -22,4 +22,7 @@ export const boardAbilities = (board: BoardChoice) => [
   { key: "dimming", on: board.dimmable, text: t(board.dimmable ? "editor.installer.abilities.dimming" : "editor.installer.abilities.no_dimming") },
   { key: "standby", on: board.can_standby, text: t(board.can_standby ? "editor.installer.abilities.standby" : "editor.installer.abilities.no_standby") },
   ...(board.calibrate ? [{ key: "calibration", on: true, text: t("editor.installer.abilities.calibration") }] : []),
+  // How many tiles it holds (firmware 0.34.0+): more on a board with PSRAM; the screen's memory says how many of them a
+  // layout really takes, which the editor shows beside its tiles.
+  ...(board.max_tiles ? [{ key: "tiles", on: true, text: t("editor.installer.abilities.tiles", { n: board.max_tiles, pages: board.max_pages ?? 8 }) }] : []),
 ];

@@ -7,10 +7,10 @@ it does not import the server or keep another copy of a page document.
 import time
 import camera_feed
 import page_delivery
-from core import BUILTIN, CAMERA_DOMAINS, FREE_PAGES_MIN_FIRMWARE, board_of, firmware_features, page_target, state_message, version_text
+from core import BUILTIN, CAMERA_DOMAINS, FREE_PAGES_MIN_FIRMWARE, board_of, firmware_features, layout_cost, page_target, state_message, version_text
 from i18n import t, shown, english
 from page_layout import (FORMAT as PAGE_FORMAT, LayoutError, bar_items, compile_tiles,
-                         grid_of_record, grown, legacy_projection, validate_document)
+                         grid_of_record, grown, legacy_projection, screen_grid_of_record, validate_document)
 
 
 def preflight_update(manager, inbox):
@@ -53,7 +53,7 @@ def save_pages(manager, inbox, data):
     screen = manager.screen(inbox)
     if screen is None: raise LayoutError(t('addon.errors.not_paired'))
     previous = manager.store.get(inbox)
-    grid = manager.verified_grid(inbox) or (grid_of_record(previous) if previous and previous['format'] == PAGE_FORMAT else None)
+    grid = manager.verified_grid(inbox) or (screen_grid_of_record(previous) if previous and previous['format'] == PAGE_FORMAT else None)
     if grid is None: raise LayoutError(t('addon.errors.pages.source_grid'))
     adaptation = data.get('adaptation')
     if adaptation is not None:
@@ -85,6 +85,14 @@ def save_pages(manager, inbox, data):
     features = firmware_features(manager.firmware_version(inbox, screen), grid)
     if len(flat['tiles']) > features['tile_limit']:
         raise LayoutError(t('addon.errors.layout.tiles_max', n=features['tile_limit']))
+    # The memory the screen has for its tiles (firmware 0.34.0+, its hello): a layout that would not fit is refused here
+    # with the figures, before a screen turns its tiles plain or stops answering. A save that takes no more than the tiles
+    # on the screen now always goes through, and a screen that never said is not asked.
+    memory = manager.memory(inbox)
+    if memory:
+        cost = layout_cost(flat['tiles'], memory, document['pages'])
+        if cost > memory['room'] and cost > memory['used']:
+            raise LayoutError(t('addon.errors.layout.memory_full', need=-(-cost // 1024), room=memory['room'] // 1024))
     # More pages than 64 tiles fill needs firmware 0.18.0, and a screen that said so in its hello has it.
     if len(document['pages']) > features['page_limit'] and not (sender and sender.free_pages):
         raise LayoutError(t('addon.errors.layout.firmware_first', version=version_text(FREE_PAGES_MIN_FIRMWARE)))
@@ -169,7 +177,10 @@ async def sync_pages(manager, inbox, record, screen, dirty=None, force=False, co
         saved = manager.store.get(inbox)
         return saved is not None and saved.get('revision') == expected
     before = sender.confirmed
-    if before != page_delivery.configuration(record, manager.page_region()):
+    wanted = page_delivery.configuration(record, manager.page_region())
+    # A layout this screen already refused is refused again without a word to it (Sender.failed_revision): the status keeps
+    # the reason, instead of saying Applying on every pass and pushing the editor each time.
+    if before != wanted and sender.failed_revision != wanted:
         manager.status[inbox] = 'Applying'
         manager.notify()
     try:

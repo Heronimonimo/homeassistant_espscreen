@@ -196,7 +196,7 @@ The screen preview shows their placement on the screen's own grid, lying down: t
 the Waveshare 4B or the Hosyond 4-inch, two by two on the Waveshare 3.5-inch and the 3.5-inch Guition, three by three on the Waveshare 4.3-inch,
 four by four on the [experimental Waveshare 7-inch](WAVESHARE7.md), the [experimental Waveshare 7B](WAVESHARE7B.md), the [experimental Sunton 7-inch](SUNTON8048S070.md) and the 7-inch Guition, and five by five on the
 10.1-inch Guition, either way up (firmware 0.18.0; five by four before, and a saved layout moves on by itself); up to
-eight pages and 64 tiles. Every tile has a fixed slot that only changes if
+eight pages and 64 tiles, or more on a board with PSRAM ([TILE_MEMORY.md](TILE_MEMORY.md)). Every tile has a fixed slot that only changes if
 you drag it; empty slots stay empty, wherever you leave them. Drag a tile
 onto an empty slot and it stays there; drag it onto another tile and the two
 swap (the other tile takes the freed-up slot, or otherwise the nearest free
@@ -273,7 +273,9 @@ Click **Save & send** to send your changes.
 From firmware 0.2.62, one tile fits in every cell of up to eight pages, 64 tiles at most (48 on a CYD or a 4-inch
 Guition). From firmware 0.18.0 every screen has all eight pages and a page need not be full; before, a bigger grid had
 as many pages as 64 tiles fill (seven on the Waveshare 4.3-inch, four on the 7-inch boards, three on the 10.1-inch
-Guition). Firmware 0.2.7 to
+Guition). From firmware 0.34.0 a board with PSRAM holds more: up to 128 tiles on 24 pages on an ESP32-S3 board and 256
+on 16 pages on an ESP32-P4 board, as many as the screen's memory takes. The editor shows that memory beside the tile
+count, and a tile that no longer fits can't be added ([TILE_MEMORY.md](TILE_MEMORY.md)). Firmware 0.2.7 to
 0.2.61 keeps the limit of twenty (four pages) and older firmware ten, until you
 update. In the **Screen settings** tab, **Swipe between pages** turns on swiping.
 On a board with capacitive touch (every board but the CYD and the Hosyond, firmware 0.2.24+), you then swipe inward from the left or right

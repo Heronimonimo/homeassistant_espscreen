@@ -16,6 +16,7 @@ import Library from "./Library.vue";
 import PageMap from "./PageMap.vue";
 import NavigationPreview from './NavigationPreview.vue';
 import GridReview from './GridReview.vue';
+import MemoryMeter from './MemoryMeter.vue';
 import Icon from './ui/Icon.vue';
 import type { IconName } from '../model/ui-icons';
 import { dismissMigrationNote, resolveLayoutConflict, startFreshLayout } from '../store';
@@ -97,6 +98,7 @@ function onCanvasClick(e: MouseEvent) {
       <button type="button" id="toolbar-add-page" class="btn quiet" :disabled="!canAdd" :title="canAdd ? '' : t('editor.layout.max_pages', grid.pages)" @click="state.pageWizardOpen = true"><Icon name="plus" />{{ t('editor.layout.add_page') }}</button>
       <span class="spacer"></span>
       <span id="count" class="toolbar-count">{{ t("editor.layout.count", { tiles: layout.tiles.length, limit: tileLimit }, pages) }}</span>
+      <MemoryMeter />
       <PopoverRoot>
         <PopoverTrigger as-child>
           <button type="button" id="layout-help" class="icon-btn" :aria-label="t('editor.layout.help.title')" :title="t('editor.layout.help.title')"><Icon name="help-circle-outline" /></button>

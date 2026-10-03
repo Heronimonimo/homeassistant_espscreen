@@ -533,6 +533,7 @@
         "page_title": "Nazwa strony może mieć najwyżej 96 bajtów.",
         "page_titles": "Ekran ma najwyżej 1 stronę. | Ekran ma najwyżej {n} strony. | Ekran ma najwyżej {n} stron.",
         "tiles_max": "Wybierz najwyżej 1 kafelek. | Wybierz najwyżej {n} kafelki. | Wybierz najwyżej {n} kafelków.",
+        "memory_full": "Te kafelki potrzebują {need} KB pamięci ekranu, a ma on {room} KB na kafelki. Usuń kilka albo wybierz lżejsze: prognoza lub odtwarzacz zajmuje więcej niż światło.",
         "unsupported": "Ta encja nie jest obsługiwana.",
         "once": "Zegar przy łóżku może być na ekranie tylko raz.",
         "tile_name": "Nazwa kafelka może mieć najwyżej 80 bajtów.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Stan",
-          "last_changed": "Ostatnia zmiana"
+          "last_changed": "Ostatnia zmiana",
+          "icon": "Tylko ikona"
         },
         "shows": {
           "always": "Zawsze",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filtruj według typu",
       "no_room": "Bez pomieszczenia"
     },
+    "memory": {
+      "label": "Pamięć na kafelki",
+      "share": "{n} %",
+      "title": "Te kafelki zajmują {need} z {room} KB, które ten ekran ma na kafelki. Prognoza, termostat lub odtwarzacz zajmuje więcej niż światło lub przełącznik.",
+      "over": "To więcej, niż mieści ekran: przed zapisaniem usuń kilka kafelków.",
+      "short": "Niektóre kafelki pokazują teraz mniej: ekranowi zabrakło pamięci.",
+      "last_known": "Tak, jak ekran podał, gdy ostatnio był online.",
+      "full_tile": "Ten kafelek nie mieści się już w pamięci ekranu. Lżejszy może jeszcze się zmieści.",
+      "full_library": "Pamięć ekranu jest prawie pełna: niektóre kafelki już się nie mieszczą, lżejsze może jeszcze tak."
+    },
     "domains": {
       "light": "Światło",
       "climate": "Klimat",
@@ -2058,6 +2070,7 @@
         "no_dimming": "Podświetlenie zawsze włączone",
         "standby": "Czuwanie i tryb nocny",
         "no_standby": "Bez czuwania",
+        "tiles": "Do {n} kafelków na {pages} stronach",
         "calibration": "Kalibracja dotyku przy pierwszym uruchomieniu"
       },
       "choice": {

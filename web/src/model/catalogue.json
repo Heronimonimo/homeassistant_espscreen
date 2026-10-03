@@ -20,11 +20,21 @@
    1,
    6,
    24
-  ]
+  ],
+  "memory": {
+   "action": 256,
+   "line": 96,
+   "page": 48,
+   "bar_text": 48
+  }
  },
  "domains": {
   "alarm_control_panel": {
    "firmware": "0.3.3",
+   "memory": {
+    "bytes": 160,
+    "extras": true
+   },
    "key": true,
    "features": {
     "ARM_AWAY": 2,
@@ -86,6 +96,10 @@
   },
   "automation": {
    "firmware": "0.7.0",
+   "memory": {
+    "bytes": 112,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -136,6 +150,10 @@
   },
   "binary_sensor": {
    "firmware": null,
+   "memory": {
+    "bytes": 112,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {},
@@ -158,6 +176,10 @@
   },
   "button": {
    "firmware": null,
+   "memory": {
+    "bytes": 144,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -193,6 +215,10 @@
   },
   "camera": {
    "firmware": "0.2.57",
+   "memory": {
+    "bytes": 96,
+    "extras": false
+   },
    "key": false,
    "features": {
     "ON_OFF": 1,
@@ -245,6 +271,10 @@
   },
   "climate": {
    "firmware": null,
+   "memory": {
+    "bytes": 304,
+    "extras": true
+   },
    "key": true,
    "features": {
     "FAN_MODE": 8,
@@ -385,6 +415,10 @@
   },
   "cover": {
    "firmware": null,
+   "memory": {
+    "bytes": 96,
+    "extras": true
+   },
    "key": true,
    "features": {
     "CLOSE": 2,
@@ -554,6 +588,10 @@
   },
   "fan": {
    "firmware": null,
+   "memory": {
+    "bytes": 96,
+    "extras": false
+   },
    "key": true,
    "features": {
     "DIRECTION": 4,
@@ -665,6 +703,10 @@
   },
   "image": {
    "firmware": "0.2.57",
+   "memory": {
+    "bytes": 144,
+    "extras": false
+   },
    "key": false,
    "features": {},
    "actions": {
@@ -708,6 +750,10 @@
   },
   "input_boolean": {
    "firmware": null,
+   "memory": {
+    "bytes": 112,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -745,6 +791,10 @@
   },
   "input_button": {
    "firmware": null,
+   "memory": {
+    "bytes": 144,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -780,6 +830,10 @@
   },
   "input_number": {
    "firmware": null,
+   "memory": {
+    "bytes": 112,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -836,6 +890,10 @@
   },
   "input_select": {
    "firmware": null,
+   "memory": {
+    "bytes": 1104,
+    "extras": true
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -876,6 +934,10 @@
   },
   "light": {
    "firmware": null,
+   "memory": {
+    "bytes": 160,
+    "extras": true
+   },
    "key": true,
    "features": {
     "EFFECT": 4,
@@ -938,6 +1000,10 @@
   },
   "lock": {
    "firmware": "0.5.0",
+   "memory": {
+    "bytes": 160,
+    "extras": true
+   },
    "key": true,
    "features": {
     "OPEN": 1
@@ -973,6 +1039,10 @@
   },
   "media_player": {
    "firmware": null,
+   "memory": {
+    "bytes": 1312,
+    "extras": true
+   },
    "key": true,
    "features": {
     "BROWSE_MEDIA": 131072,
@@ -1227,6 +1297,10 @@
   },
   "number": {
    "firmware": null,
+   "memory": {
+    "bytes": 96,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -1281,6 +1355,10 @@
   },
   "person": {
    "firmware": "0.2.14",
+   "memory": {
+    "bytes": 128,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {},
@@ -1357,6 +1435,10 @@
   },
   "remote": {
    "firmware": "0.22.0",
+   "memory": {
+    "bytes": 928,
+    "extras": true
+   },
    "key": true,
    "features": {
     "ACTIVITY": 4,
@@ -1548,6 +1630,10 @@
   },
   "scene": {
    "firmware": null,
+   "memory": {
+    "bytes": 144,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -1583,6 +1669,10 @@
   },
   "screen": {
    "firmware": "0.2.14",
+   "memory": {
+    "bytes": 32,
+    "extras": false
+   },
    "key": false,
    "features": {},
    "actions": {},
@@ -1619,6 +1709,10 @@
   },
   "script": {
    "firmware": null,
+   "memory": {
+    "bytes": 96,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -1657,6 +1751,10 @@
   },
   "select": {
    "firmware": null,
+   "memory": {
+    "bytes": 1104,
+    "extras": true
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -1696,6 +1794,10 @@
   },
   "sensor": {
    "firmware": null,
+   "memory": {
+    "bytes": 192,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {},
@@ -1724,6 +1826,10 @@
   },
   "sun": {
    "firmware": "0.2.14",
+   "memory": {
+    "bytes": 32,
+    "extras": true
+   },
    "key": true,
    "features": {},
    "actions": {},
@@ -1750,6 +1856,10 @@
   },
   "switch": {
    "firmware": null,
+   "memory": {
+    "bytes": 96,
+    "extras": false
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -1787,6 +1897,10 @@
   },
   "timer": {
    "firmware": "0.2.14",
+   "memory": {
+    "bytes": 96,
+    "extras": true
+   },
    "key": true,
    "features": {},
    "actions": {
@@ -1829,6 +1943,10 @@
   },
   "vacuum": {
    "firmware": null,
+   "memory": {
+    "bytes": 1088,
+    "extras": true
+   },
    "key": true,
    "features": {
     "CLEAN_AREA": 16384,
@@ -1927,6 +2045,10 @@
   },
   "weather": {
    "firmware": null,
+   "memory": {
+    "bytes": 1152,
+    "extras": true
+   },
    "key": true,
    "features": {
     "FORECAST_DAILY": 1,

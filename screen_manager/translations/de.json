@@ -533,6 +533,7 @@
         "page_title": "Gib einer Seite einen Titel mit höchstens 96 Bytes.",
         "page_titles": "Ein Bildschirm hat höchstens 1 Seite. | Ein Bildschirm hat höchstens {n} Seiten.",
         "tiles_max": "Wähle höchstens 1 Kachel. | Wähle höchstens {n} Kacheln.",
+        "memory_full": "Diese Kacheln brauchen {need} KB vom Speicher des Bildschirms, und er hat {room} KB für Kacheln. Entferne ein paar oder wähle leichtere: Eine Vorhersage oder ein Mediaplayer braucht mehr als ein Licht.",
         "unsupported": "Diese Entität wird nicht unterstützt.",
         "once": "Die Nachttischuhr kann nur einmal auf einem Bildschirm sein.",
         "tile_name": "Ein Kachelname darf höchstens 80 Bytes lang sein.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Status",
-          "last_changed": "Zuletzt geändert"
+          "last_changed": "Zuletzt geändert",
+          "icon": "Nur Symbol"
         },
         "shows": {
           "always": "Immer",
@@ -1482,6 +1484,16 @@
       "filter_label": "Nach Art filtern",
       "no_room": "Ohne Raum"
     },
+    "memory": {
+      "label": "Speicher für Kacheln",
+      "share": "{n} %",
+      "title": "Diese Kacheln belegen {need} der {room} KB, die dieser Bildschirm für Kacheln hat. Eine Vorhersage, ein Thermostat oder ein Mediaplayer braucht mehr als ein Licht oder ein Schalter.",
+      "over": "Das ist mehr, als der Bildschirm fasst: Entferne vor dem Speichern ein paar Kacheln.",
+      "short": "Einige Kacheln zeigen gerade weniger: Dem Bildschirm wurde der Speicher knapp.",
+      "last_known": "So, wie es der Bildschirm zuletzt online gemeldet hat.",
+      "full_tile": "Diese Kachel passt nicht mehr in den Speicher des Bildschirms. Eine leichtere passt vielleicht noch.",
+      "full_library": "Der Speicher des Bildschirms ist fast voll: Manche Kacheln passen nicht mehr, leichtere vielleicht schon."
+    },
     "domains": {
       "light": "Leuchte",
       "climate": "Klima",
@@ -2058,6 +2070,7 @@
         "no_dimming": "Beleuchtung immer an",
         "standby": "Standby und Nacht",
         "no_standby": "Kein Standby",
+        "tiles": "Bis zu {n} Kacheln auf {pages} Seiten",
         "calibration": "Touch-Kalibrierung beim ersten Start"
       },
       "choice": {

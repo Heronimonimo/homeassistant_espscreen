@@ -12,12 +12,17 @@ import { NAMED_SIZES, isSize, isWideSize, spanOf, type Size } from "./sizes";
 import { resolveControls } from "./catalogue";
 import type { Inventory, Layout, Tile, PageGrid } from "../types";
 
-// The firmware's own caps (components/smart_display/runtime_model.h): eight pages whatever the grid, and never more than
-// 64 tiles on one screen (one dirty bit each), so a page need not be full (firmware 0.18.0+). Older firmware had as many
-// pages as 64 tiles fill (legacyPages). The add-on counts the same way (core.Grid) and tells the editor the tile and
-// page limit per screen (tile_limit, page_limit).
+// The firmware's own caps (components/smart_display/page_protocol.h): the same pages whatever the grid, and never more
+// tiles on one screen than its board takes, so a page need not be full (firmware 0.18.0+). That is eight pages and 64
+// tiles, or more on a board that says so in its hello (firmware 0.34.0+). Older firmware had as many pages as 64 tiles
+// fill (legacyPages). The add-on counts the same way (core.Grid) and tells the editor the tile and page limit per screen
+// (tile_limit, page_limit); STORE_MAX_PAGES is the most any board may state (core.STORE_MAX_PAGES).
 export const FIRMWARE_MAX_PAGES = 8;
 export const FIRMWARE_MAX_TILES = 64;
+export const STORE_MAX_PAGES = 32;
+// The items one page's top bar takes: six, or what the screen says (firmware 0.34.0+); the most any board states.
+export const FIRMWARE_MAX_BAR_ITEMS = 6;
+export const STORE_MAX_BAR_ITEMS = 16;
 export const DEFAULT_GRID = { columns: 2, rows: 3 };
 /** The pages firmware before 0.18.0 takes on a grid: as many as 64 tiles fill, eight at most. */
 export const legacyPages = (grid: PageGrid) => Math.min(FIRMWARE_MAX_PAGES, Math.floor(FIRMWARE_MAX_TILES / (grid.columns * grid.rows)));
@@ -29,8 +34,9 @@ export const SIZES: Size[] = [...NAMED_SIZES];
 type SizeLike = Size | boolean;
 const asSize = (size: SizeLike): Size => (size === true ? "wide" : size === false ? "single" : size);
 
-// A navigation tile (screen.page_<n>, firmware 0.2.62+) and the page it opens; 0 for any other entity.
-export const pageTarget = (id: string) => (/^screen\.page_[1-8]$/.test(id) ? Number(id.slice(-1)) : 0);
+// A navigation tile (screen.page_<n>, firmware 0.2.62+) and the page it opens; 0 for any other entity. Two digits past
+// nine, without a leading zero, on a screen with more pages (firmware 0.34.0+).
+export const pageTarget = (id: string) => Number(/^screen\.page_([1-9][0-9]?)$/.exec(id)?.[1] ?? 0);
 export const sizeOf = (tile: Tile): Size => (isSize(tile.options?.size) ? (tile.options!.size as Size) : "single");
 export const isWide = (tile: Tile) => isWideSize(sizeOf(tile));
 export const isFull = (tile: Tile) => sizeOf(tile) === "full";
@@ -72,7 +78,7 @@ export function reorderTitles(titles: string[] | undefined, order: number[]) {
 export function retargetedPage(id: string, to: (page: number) => number) {
   const target = pageTarget(id);
   const moved = target ? to(target) : 0;
-  return moved !== target && moved >= 1 && moved <= FIRMWARE_MAX_PAGES ? `screen.page_${moved}` : id;
+  return moved !== target && moved >= 1 && moved <= STORE_MAX_PAGES ? `screen.page_${moved}` : id;
 }
 // A key of a bedside clock has no cell; its clock's card draws it.
 export const isKey = (tile: Tile) => tile.in !== undefined;
@@ -87,7 +93,7 @@ export function createLayout(shape: () => PageGrid, pageLimit: () => number | un
     get columns() { return shape().columns; },
     get rows() { return shape().rows; },
     get slots() { return this.columns * this.rows; },
-    get pages() { return Math.min(FIRMWARE_MAX_PAGES, pageLimit() ?? FIRMWARE_MAX_PAGES); },
+    get pages() { return Math.min(STORE_MAX_PAGES, pageLimit() ?? FIRMWARE_MAX_PAGES); },
     get maxSlots() { return this.pages * this.slots; },
   };
   const tileDimensions = (size: SizeLike) => dimensions(size, grid);

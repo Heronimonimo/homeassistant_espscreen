@@ -45,16 +45,16 @@ namespace runtime_tiles {
 #ifndef GRID_ROWS_PORTRAIT
 #define GRID_ROWS_PORTRAIT GRID_ROWS
 #endif
-// One bit per tile for the cards the next render draws again (firmware 0.2.65+). Firmware 0.2.62-0.2.64 kept 32 bits
-// while a screen holds 48 tiles, so a state for tile 33 to 48 redrew the whole page. 0 beyond them: draw everything.
-// This is the ceiling on a screen whatever its grid, so it sizes the arrays that hold one entry per tile.
-constexpr size_t TILES_MAX = 64;
+// The most tiles one screen holds, whatever its grid (page_protocol.h, a board's SCREEN_MAX_TILES): it sizes the arrays
+// that hold one entry per tile, and the cards the next render draws again are one bit each of a TileSet that size.
+constexpr size_t TILES_MAX = page_protocol::MAX_TILES;
 // The keys under a bedside clock's time (firmware 0.8.0+).
 constexpr unsigned BEDSIDE_KEYS = 3;
-// Explicit grid positions (0.2.26+) address at most eight pages. Every grid has all eight (firmware 0.18.0+): a page
-// need not be full, so the pages no longer follow from the cells, only the tiles of the whole screen (TILES_MAX) do.
-// Before, a grid had 64 / cells pages, three on a 5 x 4 grid, and a grid that grew lost the pages of a saved layout.
-constexpr size_t PAGES_MAX = 8;
+// Explicit grid positions (0.2.26+) address at most PAGES_MAX pages: eight, or what the board states (firmware 0.34.0+,
+// page_protocol.h). Every grid has all of them (firmware 0.18.0+): a page need not be full, so the pages no longer
+// follow from the cells, only the tiles of the whole screen (TILES_MAX) do. Before, a grid had 64 / cells pages, three
+// on a 5 x 4 grid, and a grid that grew lost the pages of a saved layout.
+constexpr size_t PAGES_MAX = page_protocol::MAX_PAGES;
 // The bigger of the two grids: what the cards, the page's own arrays and the grid descriptors are sized for. A
 // CYD carries six cards and shows four of them standing up; nothing is allocated twice.
 constexpr size_t CELLS_MAX = (GRID_COLS * GRID_ROWS) > (GRID_COLS_PORTRAIT * GRID_ROWS_PORTRAIT)
@@ -73,6 +73,7 @@ static_assert(CELLS_MAX <= TILES_MAX, "a page holds at most as many cells as a s
 // A slot (page * cells + cell) is kept in 16 bits (Model::slots): eight pages of a big grid pass 256, 512 on the
 // preview's eight by eight. Within its page (Placement) a cell still fits a byte.
 static_assert(PAGES_MAX * CELLS_MAX <= 65536, "every slot of every page fits in Model::slots");
+static_assert(PAGES_MAX < 255, "a Placement keeps its page in a byte and 0xFF for a tile without a place");
 
 // The cells of one page, and everything that follows from them. ESP Screens counts with the same object
 // (screen_manager/app/core.py, class Grid), method for method, so a slot number means the same thing on both
@@ -103,9 +104,17 @@ inline void grid_select(int canvas_width, int canvas_height) {
   grid = upright ? Grid{GRID_COLS_PORTRAIT, GRID_ROWS_PORTRAIT} : Grid{GRID_COLS, GRID_ROWS};
 #endif
 }
-constexpr uint64_t tile_bit(size_t index) { return index < 64 ? uint64_t{1} << index : 0; }
-// A navigation tile (screen.page_<n>, firmware 0.2.62+).
-inline bool page_entity(const std::string &entity) { return entity.size() == 13 && entity.compare(0, 12, "screen.page_") == 0; }
+using page_protocol::TileSet;
+// A navigation tile (screen.page_<n>, firmware 0.2.62+) and the page it goes to, counted from one: one digit, or two
+// without a leading zero on a screen with more than nine pages (firmware 0.34.0+). 0 for anything else.
+inline unsigned page_number(const std::string &entity) {
+  if (entity.size() < 13 || entity.size() > 14 || entity.compare(0, 12, "screen.page_") != 0 || entity[12] < '1' || entity[12] > '9')
+    return 0;
+  if (entity.size() == 13) return static_cast<unsigned>(entity[12] - '0');
+  if (entity[13] < '0' || entity[13] > '9') return 0;
+  return static_cast<unsigned>(entity[12] - '0') * 10 + static_cast<unsigned>(entity[13] - '0');
+}
+inline bool page_entity(const std::string &entity) { return page_number(entity) > 0; }
 inline bool valid_entity(const std::string &entity) {
   if (entity.size() > 120) return false;
   auto dot = entity.find('.');
@@ -119,7 +128,7 @@ inline bool valid_entity(const std::string &entity) {
   if (domain == "screen") {
     // screen.map (firmware 0.21.0+): the map of the screen's own cards, a picture the app draws.
     if (entity == "screen.clock" || entity == "screen.settings" || entity == "screen.nightstand" || entity == "screen.map") return true;
-    return page_entity(entity) && entity[12] >= '1' && entity[12] <= static_cast<char>('0' + grid.pages());
+    return page_entity(entity) && page_number(entity) <= grid.pages();
   }
   // The types the tile catalogue has (catalogue/*.yaml, tile_catalogue.h): the same list the add-on and the editor take.
   for (const auto *allowed : tile_catalogue::DOMAINS)
@@ -339,12 +348,40 @@ inline int minutes_of(const std::string &clock) {
   unsigned v[2] = {0, 0};
   return clock_parts(clock, v, 2) == 2 && v[0] < 24 && v[1] < 60 ? int(v[0] * 60 + v[1]) : -1;
 }
-// The Extra of a tile on the heap, copied along with the tile like an ordinary member.
+// The Extra of a tile on the heap, copied along with the tile like an ordinary member. Its block comes from ESPHome's
+// RAMAllocator (firmware 0.34.0+), which takes PSRAM first on a board that has it, as the tile list itself does: a kilobyte
+// a tile that the memory inside the chip no longer pays (bench 2026-10-03: 1.4 KB inside per tile of weather, media or
+// climate, most of it this block). Its strings and lists still come from the ordinary allocator. A block that cannot be
+// had is no block: the tile then shows what a tile without extras shows, where `new` would have restarted the screen.
+inline Extra *extra_block() {
+#ifdef USE_ESP32
+  return esphome::RAMAllocator<Extra>().allocate(1);
+#else
+  if (layout_memory::allocation_allowed && !layout_memory::allocation_allowed(sizeof(Extra))) return nullptr;  // host fault injection
+  return static_cast<Extra *>(::operator new(sizeof(Extra), std::nothrow));
+#endif
+}
+struct ExtraRelease {
+  void operator()(Extra *extra) const {
+    if (!extra) return;
+    extra->~Extra();
+#ifdef USE_ESP32
+    esphome::RAMAllocator<Extra>().deallocate(extra, 1);
+#else
+    ::operator delete(extra);
+#endif
+  }
+};
+using ExtraPtr = std::unique_ptr<Extra, ExtraRelease>;
+template<class From> inline ExtraPtr make_extra(From &&from) {
+  Extra *block = extra_block();
+  return ExtraPtr(block ? new (block) Extra(std::forward<From>(from)) : nullptr);
+}
 struct ExtraBox {
-  std::unique_ptr<Extra> ptr;
+  ExtraPtr ptr;
   ExtraBox() = default;
-  ExtraBox(const ExtraBox &other) : ptr(other.ptr ? new Extra(*other.ptr) : nullptr) {}
-  ExtraBox &operator=(const ExtraBox &other) { if (this != &other) ptr.reset(other.ptr ? new Extra(*other.ptr) : nullptr); return *this; }
+  ExtraBox(const ExtraBox &other) : ptr(other.ptr ? make_extra(*other.ptr) : nullptr) {}
+  ExtraBox &operator=(const ExtraBox &other) { if (this != &other) ptr = other.ptr ? make_extra(*other.ptr) : nullptr; return *this; }
   ExtraBox(ExtraBox &&) noexcept = default;
   ExtraBox &operator=(ExtraBox &&) noexcept = default;
 };
@@ -441,13 +478,21 @@ struct Tile {
   ExtraBox extra_box;
   const Extra &extra() const { static const Extra none; return extra_box.ptr ? *extra_box.ptr : none; }
   Extra *extra_ptr() { return extra_box.ptr.get(); }
-  Extra &edit_extra() { if (!extra_box.ptr) extra_box.ptr.reset(new Extra()); return *extra_box.ptr; }
+  // The block to change, made when the tile has none; without memory for one, a scratch block nobody reads, so the
+  // change is lost instead of the screen.
+  Extra &edit_extra() {
+    if (!extra_box.ptr) extra_box.ptr = make_extra(Extra());
+    if (extra_box.ptr) return *extra_box.ptr;
+    static Extra scratch;
+    scratch = Extra();
+    return scratch;
+  }
   // A state message's extras replace the block: it stays allocated while the tile needs one and is freed
-  // when a state brings none.
-  void set_extra(Extra &&next) {
+  // when a state brings none. `room` false (memory short, tile_memory.h): a tile without a block gets none.
+  void set_extra(Extra &&next, bool room = true) {
     if (next.empty()) extra_box.ptr.reset();
     else if (extra_box.ptr) *extra_box.ptr = std::move(next);
-    else extra_box.ptr.reset(new Extra(std::move(next)));
+    else if (room) extra_box.ptr = make_extra(std::move(next));
   }
   Choice *choice(char kind) { return extra_box.ptr ? extra_box.ptr->choice(kind) : nullptr; }
   const Choice *choice(char kind) const { for (auto &c : extra().choices) if (c.kind == kind) return &c; return nullptr; }
@@ -526,7 +571,7 @@ struct Tile {
   bool is_bedside() const { return entity == "screen.nightstand"; }
   // A navigation tile (screen.page_<n>, firmware 0.2.62+) and the page it goes to, counted from one.
   bool is_page() const { return page_entity(entity); }
-  int page_target() const { return is_page() ? entity[12] - '0' : 0; }
+  int page_target() const { return static_cast<int>(page_number(entity)); }
   // Slots a tile takes: one, a row of two, or the six of a page.
   unsigned column_span() const { return full ? grid.columns : span ? span : wide ? grid.wide_span() : 1u; }
   unsigned row_span() const { return full ? grid.rows : height; }
@@ -586,7 +631,9 @@ inline size_t (*tile_room)() = largest_tile_block;
 // can catch: it aborts, which a user sees as the screen restarting. Anything that grows with what Home
 // Assistant sends asks this first. Boards differ by a lot: an 800x480 RGB panel keeps two bounce buffers of
 // ten lines in there, where a board with an SPI panel keeps none.
-inline size_t internal_free() { return heap_caps_get_free_size(MALLOC_CAP_INTERNAL); }
+// Only memory a byte-wise malloc can use (firmware 0.34.0+): on the classic ESP32 the internal heap also counts IRAM that
+// takes 32-bit words only, free to the debug sensors but never to a string.
+inline size_t internal_free() { return heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT); }
 inline size_t (*heap_room)() = internal_free;
 #else
 inline size_t (*tile_room)() = nullptr;
