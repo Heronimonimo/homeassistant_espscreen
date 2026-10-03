@@ -906,7 +906,12 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "3",
+     "4"
+    ]
+   },
    "inch": 5.0,
    "model": "Tab5 ST7121",
    "name": "M5Stack Tab5",
@@ -946,7 +951,7 @@
     "columns": 3,
     "height": 720,
     "rotation": 90,
-    "rows": 2,
+    "rows": 3,
     "width": 1280
    },
    "portrait": {
@@ -967,7 +972,7 @@
     "width": 720
    }
   },
-  "rows": 2,
+  "rows": 3,
   "spacing": {
    "gap": 12,
    "margin": 16,
@@ -3092,7 +3097,12 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "3",
+     "4"
+    ]
+   },
    "inch": 5.0,
    "model": "Tab5 ST7121",
    "name": "M5Stack Tab5",
@@ -3132,7 +3142,7 @@
     "columns": 3,
     "height": 720,
     "rotation": 90,
-    "rows": 2,
+    "rows": 3,
     "width": 1280
    },
    "portrait": {
@@ -3153,7 +3163,7 @@
     "width": 720
    }
   },
-  "rows": 2,
+  "rows": 3,
   "spacing": {
    "gap": 12,
    "margin": 16,
@@ -3678,7 +3688,12 @@
   "can_standby": true,
   "catalog": {
    "calibrate": false,
-   "choices": {},
+   "choices": {
+    "GRID_ROWS": [
+     "3",
+     "4"
+    ]
+   },
    "inch": 5.0,
    "model": "Tab5 ST7121",
    "name": "M5Stack Tab5",
@@ -3718,7 +3733,7 @@
     "columns": 3,
     "height": 720,
     "rotation": 90,
-    "rows": 2,
+    "rows": 3,
     "width": 1280
    },
    "portrait": {
@@ -3739,7 +3754,7 @@
     "width": 720
    }
   },
-  "rows": 2,
+  "rows": 3,
   "spacing": {
    "gap": 12,
    "margin": 16,
