@@ -1518,6 +1518,7 @@
       "standard": "normál",
       "watch": "nagy érték",
       "forecast": "időjárás-előrejelzés",
+      "price_forecast": "holnapi energiaár-előrejelzés",
       "graph": "grafikon",
       "digital": "digitális óra",
       "analog": "analóg óra",

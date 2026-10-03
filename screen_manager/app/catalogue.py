@@ -111,6 +111,8 @@ def holds(domain, needs, entity_id, state, actions=None, services=None, fields=N
         return False
     if any(attributes.get(name) is None for name in needs.get('attributes', [])):
         return False
+    if needs.get('attributes_any') and not any(attributes.get(name) is not None for name in needs['attributes_any']):
+        return False
     if needs.get('history') and history is not None and history(entity_id, state) != needs['history']:
         return False
     if 'unless' in needs and holds_strictly(domain, needs['unless'], attributes):
@@ -135,7 +137,8 @@ def holds_strictly(domain, needs, attributes):
     bits = TYPES[domain]['features']
     if needs.get('features') and not (isinstance(flags, int) and all(flags & bits[name] for name in needs['features'])):
         return False
-    return all(attributes.get(name) is not None for name in needs.get('attributes', []))
+    return (all(attributes.get(name) is not None for name in needs.get('attributes', [])) and
+            (not needs.get('attributes_any') or any(attributes.get(name) is not None for name in needs['attributes_any'])))
 
 
 def offers(entity_id, state, actions, services=None, fields=None, history=None):

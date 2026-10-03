@@ -35,7 +35,7 @@ TOP = {'domain', 'firmware', 'displays', 'controls', 'inline', 'toggle', 'taps',
 # The keys of a remote's card (keypad): up, down, left, right and OK always, the rest where the remote has them.
 KEYPAD_KEYS = ('up', 'down', 'left', 'right', 'ok', 'back', 'home', 'play', 'volume_up', 'volume_down', 'mute')
 OPTION = {'needs', 'screen', 'sizes', 'wide', 'rows', 'of', 'one_row', 'fallback', 'range'}
-NEEDS = {'actions', 'features', 'history', 'attributes', 'unless'}
+NEEDS = {'actions', 'features', 'history', 'attributes', 'attributes_any', 'unless'}
 SCREEN = {'firmware', 'feature', 'pictures', 'else'}
 
 
@@ -140,6 +140,11 @@ def normalise(tile, types, translations, facts, commands=None):
                 if key == 'features' and set(value[key]) - set(ha[domain]['features']):
                     fail(where, f'{", ".join(sorted(set(value[key]) - set(ha[domain]["features"])))} is no feature of {domain}')
                 out[key] = list(value[key])
+        if 'attributes_any' in value:
+            if not isinstance(value['attributes_any'], list) or not value['attributes_any'] or \
+                    not all(isinstance(name, str) and name for name in value['attributes_any']):
+                fail(where, 'attributes_any must be a non-empty list of attribute names')
+            out['attributes_any'] = list(value['attributes_any'])
         if 'history' in value:
             if value['history'] != 'line':
                 fail(where, 'history is line')

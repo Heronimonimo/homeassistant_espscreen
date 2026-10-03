@@ -107,7 +107,8 @@
     "sensor": [
       "standard",
       "watch",
-      "graph"
+      "graph",
+      "price_forecast"
     ],
     "sun": [
       "standard",

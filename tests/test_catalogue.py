@@ -75,6 +75,10 @@ class Generated(unittest.TestCase):
         types['switch']['controls']['toggle']['colour'] = 'red'
         with self.assertRaisesRegex(generate_catalogue.CatalogueError, 'unknown colour'):
             self.normalise(types)
+        types = copy.deepcopy(self.types)
+        types['sensor']['displays']['price_forecast']['needs']['attributes_any'] = []
+        with self.assertRaisesRegex(generate_catalogue.CatalogueError, 'attributes_any must be a non-empty list'):
+            self.normalise(types)
 
 
 class Offers(unittest.TestCase):
@@ -104,6 +108,12 @@ class Offers(unittest.TestCase):
         line = catalogue.offers('sensor.t', state(), [], history=lambda entity, st: 'line')['displays']
         text = catalogue.offers('sensor.s', state(), [], history=lambda entity, st: 'state')['displays']
         self.assertEqual((line, text), (['standard', 'watch', 'graph'], ['standard', 'watch']))
+        forecast = catalogue.offers('sensor.price', state(), [])['displays']
+        nordpool = catalogue.offers('sensor.price', state(raw_tomorrow=[]), [])['displays']
+        entsoe = catalogue.offers('sensor.price', state(prices_tomorrow=[]), [])['displays']
+        self.assertEqual(forecast, ['standard', 'watch', 'graph'])
+        self.assertIn('price_forecast', nordpool)
+        self.assertIn('price_forecast', entsoe)
 
 
 class Cards(unittest.TestCase):

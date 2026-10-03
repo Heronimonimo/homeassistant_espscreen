@@ -8,3 +8,6 @@ displays:
   # A line of its history, for a sensor whose history is numbers (history_card.kind): a status sensor has none.
   graph:
     needs: {history: line}
+  price_forecast:
+    needs: {attributes_any: [raw_tomorrow, prices_tomorrow]}
+    screen: {firmware: 0.34.0}

@@ -6,7 +6,7 @@
 import data from "./catalogue.json";
 import { spanOf } from "./sizes";
 
-type Needs = { actions?: { action: string; field?: string }[]; features?: string[]; attributes?: string[]; history?: string; unless?: Needs };
+type Needs = { actions?: { action: string; field?: string }[]; features?: string[]; attributes?: string[]; attributes_any?: string[]; history?: string; unless?: Needs };
 type Screen = { firmware?: string; feature?: string; pictures?: boolean; else?: string };
 type Option = { key: string; needs?: Needs; screen?: Screen; sizes?: { full: boolean }; wide?: boolean; rows?: number; of?: string[];
   one_row?: string; fallback?: string; range?: { when?: Needs; screen?: Screen } };
@@ -38,13 +38,15 @@ export function featuresHold(domain: string, names: string[] | undefined, attrib
 function holdsStrictly(domain: string, needs: Needs, attributes: Attributes) {
   const flags = attributes.supported_features, features = TYPES[domain]?.features ?? {};
   if (needs.features?.length && !(typeof flags === "number" && needs.features.every((name) => flags & (features[name] ?? 0)))) return false;
-  return (needs.attributes ?? []).every((name) => attributes[name] != null);
+  return (needs.attributes ?? []).every((name) => attributes[name] != null) &&
+    (!needs.attributes_any?.length || needs.attributes_any.some((name) => attributes[name] != null));
 }
 /** A variant's `when`: its features reported, its attributes present, and not its `unless`. */
 export function condition(domain: string, when: Needs | undefined, attributes: Attributes) {
   if (!when) return true;
   if (!featuresHold(domain, when.features, attributes, true)) return false;
   if ((when.attributes ?? []).some((name) => attributes[name] == null)) return false;
+  if (when.attributes_any?.length && !when.attributes_any.some((name) => attributes[name] != null)) return false;
   return !(when.unless && holdsStrictly(domain, when.unless, attributes));
 }
 /** Whether a screen meets `screen`; what is not known (null) is not held against it. */

@@ -1711,6 +1711,18 @@
      "needs": {
       "history": "line"
      }
+    },
+    {
+     "key": "price_forecast",
+     "needs": {
+      "attributes_any": [
+       "raw_tomorrow",
+       "prices_tomorrow"
+      ]
+     },
+     "screen": {
+      "firmware": "0.34.0"
+     }
     }
    ],
    "controls": [],

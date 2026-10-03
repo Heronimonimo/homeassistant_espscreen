@@ -1518,6 +1518,7 @@
       "standard": "standardowy",
       "watch": "duża wartość",
       "forecast": "prognoza pogody",
+      "price_forecast": "prognoza cen na jutro",
       "graph": "wykres",
       "digital": "zegar cyfrowy",
       "analog": "zegar analogowy",

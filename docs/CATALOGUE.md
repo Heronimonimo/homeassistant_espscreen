@@ -98,6 +98,7 @@ one `catalogue/_remote_commands.json` lists for that integration.
 - `features`: any one of these flags, checked where Home Assistant reports the entity's features. An entity that
   reports none (one that is unavailable) keeps what it may have.
 - `attributes`: attributes that must be present.
+- `attributes_any`: at least one listed attribute must be present.
 - `history: line`: a history of numbers (a status sensor has none).
 - `unless`: holds when this does not.
 

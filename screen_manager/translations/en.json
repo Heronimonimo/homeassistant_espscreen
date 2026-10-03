@@ -1518,6 +1518,7 @@
       "standard": "standard",
       "watch": "large value",
       "forecast": "weather forecast",
+      "price_forecast": "day-ahead price forecast",
       "graph": "graph",
       "digital": "digital clock",
       "analog": "analog clock",

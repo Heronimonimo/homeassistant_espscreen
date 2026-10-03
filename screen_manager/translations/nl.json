@@ -1518,6 +1518,7 @@
       "standard": "standaard",
       "watch": "grote waarde",
       "forecast": "weersverwachting",
+      "price_forecast": "prijsverwachting voor morgen",
       "graph": "grafiek",
       "digital": "digitale klok",
       "analog": "analoge klok",
