@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT / 'screen_manager' / 'app'))
 import profiles  # noqa: E402
 import core  # noqa: E402
-import generate_cells  # noqa: E402
 import firmware as firmware_module  # noqa: E402
+import generate_cells  # noqa: E402
 
 SHAPES = json.loads((ROOT / 'screen_manager/app/boards.json').read_text())
 
