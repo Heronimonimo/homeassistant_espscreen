@@ -42,6 +42,11 @@ substitutions:
   # card needs, so it is one column of four cards of 51 x 17 mm.
   GRID_COLS_PORTRAIT: "1"
   GRID_ROWS_PORTRAIT: "4"
+  # More tiles and pages than the 64 and eight of a board without PSRAM (firmware 0.34.0+): the tile list, the cards and the
+  # extras live in PSRAM here, and the memory budget (tile_memory.h) says how many of them a layout really takes.
+  SCREEN_MAX_TILES: "128"
+  SCREEN_MAX_PAGES: "24"
+  SCREEN_MAX_BAR_ITEMS: "12"                   # a wider top bar where the glass has the width for it
   LVGL_BUFFER_SIZE: "12%"                       # LVGL's draw buffer as a share of the screen
 
   # Set by hand for the three rows of this glass (the review of app 0.2.94); the look has 12

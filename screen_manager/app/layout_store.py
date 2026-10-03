@@ -16,7 +16,7 @@ import threading
 
 from i18n import t
 from core import validate_settings
-from page_layout import FORMAT, LayoutError, fingerprint, grid_of_record, new_id, validate_document
+from page_layout import FORMAT, LayoutError, fingerprint, grid_of_record, new_id, screen_grid_of_record, validate_document
 from layout_migrations import migrate_legacy
 
 VERSION = 2
@@ -289,7 +289,7 @@ class LayoutStore:
                 raise LayoutError(t('addon.errors.pages.migration_pending'))
             if expected_revision != (previous["revision"] if previous else None):
                 raise Conflict(t('addon.errors.pages.layout_conflict'))
-            grid = self.grid_for(inbox) or (grid_of_record(previous) if previous else None)
+            grid = self.grid_for(inbox) or (screen_grid_of_record(previous) if previous else None)
             if grid is None:
                 raise LayoutError(t('addon.errors.pages.source_grid'))
             changed_grid = previous and grid != grid_of_record(previous)

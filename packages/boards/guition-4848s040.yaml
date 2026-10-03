@@ -38,6 +38,11 @@ substitutions:
   # Three rows, or four when the screen is built that way (boards.yaml `choices`, firmware 0.18.1): eight smaller
   # cells a page, about 11 mm high, for a screen of many switches. A saved layout follows to four rows by itself.
   GRID_ROWS: "3"
+  # More tiles and pages than the 64 and eight of a board without PSRAM (firmware 0.34.0+): the tile list, the cards and the
+  # extras live in PSRAM here, and the memory budget (tile_memory.h) says how many of them a layout really takes.
+  SCREEN_MAX_TILES: "128"
+  SCREEN_MAX_PAGES: "24"
+  SCREEN_MAX_BAR_ITEMS: "12"                   # a wider top bar where the glass has the width for it
   # The cells of a page, which name the cards file above; worked out, so a screen's own GRID_ROWS reaches it too.
   GRID_CELLS: "${ (GRID_COLS | int) * (GRID_ROWS | int) }"
   LVGL_BUFFER_SIZE: "25%"                       # LVGL's draw buffer as a share of the screen

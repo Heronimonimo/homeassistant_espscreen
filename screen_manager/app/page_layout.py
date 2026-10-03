@@ -12,7 +12,9 @@ import re
 import secrets
 
 from i18n import t
-from core import KEY_HOLDERS, Grid, is_key, span_of, span_offered, placed, header_items, page_target, tile_size, validate_header, validate_layout
+from core import (FIRMWARE_MAX_PAGES, FIRMWARE_MAX_TILES, HEADER_MAX_ITEMS, KEY_HOLDERS, STORE_MAX_BAR_ITEMS, STORE_MAX_PAGES,
+                  STORE_MAX_TILES, Grid, is_key, span_of,
+                  span_offered, placed, header_items, page_target, tile_size, validate_header, validate_layout)
 
 FORMAT = "pages-v2"
 PAGE_ID = re.compile(r"[0-9a-f]{16}\Z")
@@ -164,12 +166,20 @@ def _identity(value, seen, page=False):
 
 
 def grid_of_record(record):
+    """The grid a stored document was made on, with the ceilings any board may state (core.STORE_MAX_PAGES and
+    STORE_MAX_TILES): a stored layout is held to what a screen could ever take, a save to what its screen takes
+    (Manager.verified_grid, or screen_grid_of_record while the screen has never said)."""
     source = _object(record.get("sourceGrid"), {"columns", "rows"}, {"columns", "rows"})
     columns = _integer(source["columns"], 1, 64)
     rows = _integer(source["rows"], 1, 64)
     if columns * rows > 64:
         raise LayoutError(t('addon.errors.layout.position'))
-    return Grid(columns, rows)
+    return Grid(columns, rows, STORE_MAX_PAGES, STORE_MAX_TILES, STORE_MAX_BAR_ITEMS)
+
+
+def screen_grid_of_record(record):
+    """The grid of a stored document for a screen that never said what it takes: 64 tiles over eight pages."""
+    return grid_of_record(record).with_ceilings(FIRMWARE_MAX_PAGES, FIRMWARE_MAX_TILES)
 
 
 def _entity(content, page_indexes, home):
@@ -363,11 +373,12 @@ def tile_from_fields(tile, grid, page_ids, id_factory=new_id):
     }
 
 
-def bar_items(page):
-    """Resolve documented defaults at the formatter boundary, without IDs."""
+def bar_items(page, most=STORE_MAX_BAR_ITEMS):
+    """Resolve documented defaults at the formatter boundary, without IDs; at most `most` items (the screen's own when a
+    document is validated for it, the most any board takes for a stored one)."""
     items = [{key: deepcopy(value) for key, value in item.items() if key != "id"}
              for item in page["topbar"]["trailing"]]
-    return validate_header({"items": items})['items']
+    return validate_header({"items": items}, most)['items']
 
 
 def compile_tiles(layout, grid):
@@ -429,7 +440,7 @@ def validate_document(data, grid):
             if not isinstance(item, dict):
                 raise LayoutError(t('addon.errors.top_bar.invalid'))
             _identity(item.get("id"), seen)
-        bar_items(page)
+        bar_items(page, grid.bar_items)
         if not isinstance(page["tiles"], list):
             raise LayoutError(t('addon.errors.layout.invalid'))
         for tile in page["tiles"]:
@@ -448,7 +459,8 @@ def legacy_compatible(layout, grid):
     """Whether a validated page document fits the older firmware's behaviour."""
     pages = layout['pages']
     items = bar_items(pages[0])
-    return (layout['homePageId'] == pages[0]['id']
+    # Older firmware's top bar holds six items, the same on every page.
+    return (len(items) <= HEADER_MAX_ITEMS and layout['homePageId'] == pages[0]['id']
             and all(not page['navigation']['excludeFromPagination'] and page['topbar']['leading']
                     and bar_items(page) == items for page in pages)
             and all(footprint_size(tile['placement']['columns'], tile['placement']['rows'], grid, tile['appearance'].get('presentation'))

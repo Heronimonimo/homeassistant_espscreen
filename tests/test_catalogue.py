@@ -54,7 +54,17 @@ class Generated(unittest.TestCase):
         with self.assertRaisesRegex(generate_catalogue.CatalogueError, 'from which firmware'):
             self.normalise(types, facts)
         types['valve']['firmware'] = '0.20.0'
+        # And what one tile of it keeps in the screen's memory (firmware 0.34.0+, docs/TILE_MEMORY.md): no type leaves the
+        # budget guessing.
+        with self.assertRaisesRegex(generate_catalogue.CatalogueError, 'memory'):
+            self.normalise(types, facts)
+        for wrong in ({'bytes': 100}, {'bytes': -1, 'extras': False}, {'bytes': 100, 'extras': 'yes'}, {'bytes': 100, 'extras': False, 'more': 1}):
+            types['valve']['memory'] = wrong
+            with self.assertRaisesRegex(generate_catalogue.CatalogueError, 'memory'):
+                self.normalise(types, facts)
+        types['valve']['memory'] = {'bytes': 160, 'extras': False}
         self.assertEqual(self.normalise(types, facts)['domains']['valve']['firmware'], '0.20.0')
+        self.assertEqual(self.normalise(types, facts)['domains']['valve']['memory'], {'bytes': 160, 'extras': False})
 
     def test_an_action_or_feature_home_assistant_does_not_have_stops_it(self):
         types = copy.deepcopy(self.types)

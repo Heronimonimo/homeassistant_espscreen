@@ -166,7 +166,7 @@ class Endpoints(unittest.IsolatedAsyncioTestCase):
 
     async def test_firmware_preview_stream_follows_only_its_entities_and_cleans_up(self):
         import asyncio
-        from preview_events import Changes
+        from preview_events import MOST_ENTITIES, Changes
         self.ha.state_events = Changes()
         response = await self.client.get('/api/firmware-preview/events?entity=media_player.test&entity=sensor.t')
         self.assertEqual(response.status, 200)
@@ -191,7 +191,7 @@ class Endpoints(unittest.IsolatedAsyncioTestCase):
             if not self.ha.state_events.listeners: break
         self.assertFalse(self.ha.state_events.listeners)
         self.assertEqual(self.ha.calls, [])
-        for query in ('', '?entity=bad', '?' + '&'.join(['entity=light.a'] * 129)):
+        for query in ('', '?entity=bad', '?' + '&'.join(['entity=light.a'] * (MOST_ENTITIES + 1))):
             self.assertEqual((await self.client.get('/api/firmware-preview/events' + query)).status, 400)
 
     async def test_ha_changes_wake_unsaved_previews_outside_physical_screen_filter(self):

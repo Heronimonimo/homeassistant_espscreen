@@ -272,16 +272,46 @@ static void test_allocation_failure_preserves_layout() {
   }
 }
 struct RunAllocationFailure { RunAllocationFailure() { test_allocation_failure_preserves_layout(); } } run_allocation_failure;
-// One redraw bit for each of the 48 tiles (firmware 0.2.65+); 32 bits sent tiles 33-48 through a full redraw.
+// One redraw bit for each tile of the screen (firmware 0.2.65+, a TileSet as wide as TILES_MAX since 0.34.0); 32 bits
+// sent tiles 33-48 through a full redraw.
 static void test_tile_bits() {
   using namespace runtime_tiles;
-  assert(tile_bit(0) == 1 && tile_bit(31) == (uint64_t{1} << 31) && tile_bit(47) == (uint64_t{1} << 47));
-  assert(tile_bit(grid.max_tiles() - 1) && !tile_bit(64) && !tile_bit(grid.max_tiles() + 100));
-  uint64_t dirty = tile_bit(33) | tile_bit(47);
-  assert((dirty & tile_bit(33)) && (dirty & tile_bit(47)) && !(dirty & tile_bit(1)) && !(dirty & tile_bit(32)));
-  for (size_t a = 0; a < grid.max_tiles(); ++a) for (size_t b = a + 1; b < grid.max_tiles(); ++b) assert(!(tile_bit(a) & tile_bit(b)));
+  TileSet dirty;
+  assert(dirty.size() == TILES_MAX && TILES_MAX >= grid.max_tiles());
+  dirty.set(33); dirty.set(40);
+  assert(dirty.test(33) && dirty.test(40) && !dirty.test(1) && !dirty.test(32) && dirty.count() == 2);
+  dirty.set(grid.max_tiles() - 1);
+  assert(dirty.test(grid.max_tiles() - 1) && dirty.count() == 3);
 }
 struct RunTileBits { RunTileBits() { test_tile_bits(); } } run_tile_bits;
+// A block of extras that cannot be had is no block (firmware 0.34.0+): the tile shows what a tile without extras shows,
+// where `new` restarted the screen (bench 2026-10-03, an abort in Tile::set_extra); short of memory (`room` false) a
+// tile without a block gets none, one with a block keeps using it.
+static void test_extras_without_memory() {
+  using namespace runtime_tiles;
+  Tile t;
+  Extra weather;
+  weather.forecast.emplace_back();
+  layout_memory::allocation_allowed = [](size_t bytes) { return bytes != sizeof(Extra); };
+  t.set_extra(Extra(weather));
+  assert(!t.extra_ptr() && t.extra().forecast.empty());
+  t.edit_extra().fan_mode = "auto";  // lands in a scratch block nobody reads
+  assert(!t.extra_ptr() && t.extra().fan_mode.empty());
+  layout_memory::allocation_allowed = nullptr;
+  t.set_extra(Extra(weather), false);
+  assert(!t.extra_ptr());
+  t.set_extra(Extra(weather));
+  assert(t.extra_ptr() && t.extra().forecast.size() == 1);
+  Extra two = weather;
+  two.forecast.emplace_back();
+  t.set_extra(std::move(two), false);
+  assert(t.extra().forecast.size() == 2);
+  Tile copy = t;
+  assert(copy.extra_ptr() && copy.extra_ptr() != t.extra_ptr() && copy.extra().forecast.size() == 2);
+  t.set_extra(Extra());
+  assert(!t.extra_ptr());
+}
+struct RunExtrasWithoutMemory { RunExtrasWithoutMemory() { test_extras_without_memory(); } } run_extras_without_memory;
 // Clock texts without sscanf (firmware 0.2.75+): the same answers the sscanf versions gave.
 static void test_clock_texts() {
   using namespace runtime_tiles;

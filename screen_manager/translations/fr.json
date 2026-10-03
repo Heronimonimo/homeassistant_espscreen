@@ -533,6 +533,7 @@
         "page_title": "Donnez à une page un titre de 96 octets au maximum.",
         "page_titles": "Un écran a au maximum {n} page. | Un écran a au maximum {n} pages.",
         "tiles_max": "Choisissez au plus {n} tuile. | Choisissez au plus {n} tuiles.",
+        "memory_full": "Ces tuiles demandent {need} Ko de la mémoire de l’écran, et il dispose de {room} Ko pour les tuiles. Retirez-en quelques-unes ou choisissez-en de plus légères : une prévision ou un lecteur multimédia prend plus qu’une lumière.",
         "unsupported": "Cette entité n'est pas prise en charge.",
         "once": "L'horloge de chevet ne peut être qu'une seule fois sur un écran.",
         "tile_name": "Un nom de tuile peut contenir au plus 80 octets.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "État",
-          "last_changed": "Dernière modification"
+          "last_changed": "Dernière modification",
+          "icon": "Icône seule"
         },
         "shows": {
           "always": "Toujours",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filtrer par type",
       "no_room": "Sans pièce"
     },
+    "memory": {
+      "label": "Mémoire pour les tuiles",
+      "share": "{n} %",
+      "title": "Ces tuiles occupent {need} des {room} Ko dont cet écran dispose pour les tuiles. Une prévision, un thermostat ou un lecteur multimédia prend plus qu’une lumière ou un interrupteur.",
+      "over": "C’est plus que ce que l’écran peut contenir : retirez quelques tuiles avant d’enregistrer.",
+      "short": "Certaines tuiles affichent moins en ce moment : l’écran a manqué de mémoire.",
+      "last_known": "Tel que l’écran l’a indiqué la dernière fois qu’il était en ligne.",
+      "full_tile": "Cette tuile ne tient plus dans la mémoire de l’écran. Une tuile plus légère tiendra peut-être encore.",
+      "full_library": "La mémoire de l’écran est presque pleine : certaines tuiles ne tiennent plus, des plus légères peut-être encore."
+    },
     "domains": {
       "light": "Lumière",
       "climate": "Climatisation",
@@ -2056,6 +2068,7 @@
         "no_dimming": "Rétroéclairage toujours allumé",
         "standby": "Veille et nuit",
         "no_standby": "Pas de veille",
+        "tiles": "Jusqu’à {n} tuiles sur {pages} pages",
         "calibration": "Étalonnage tactile au premier démarrage"
       },
       "choice": {
@@ -2064,7 +2077,11 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "La plupart de ces cartes ont le premier. Prenez l'autre si l'écran affiche du bruit ou une image brouillée.",
+<<<<<<< HEAD
         "GRID_ROWS": "Quatre rangées placent davantage de petites tuiles sur une page. Trois rangées gardent les tuiles plus grandes et plus lisibles."
+=======
+        "GRID_ROWS": "Plus de rangées permettent d’afficher plus de tuiles par page ; moins de rangées gardent les tuiles plus grandes et plus lisibles."
+>>>>>>> upstream/main
       },
       "choice_usual": "la plupart",
       "orientation": "Dans quel sens sera-t-il accroché ?",

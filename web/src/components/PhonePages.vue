@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import { titleOf } from "../model/pages";
 import { editorLayout, movePage, state, tileLimit } from "../store";
 import PageMenu from "./PageMenu.vue";
+import MemoryMeter from "./MemoryMeter.vue";
 import Icon from "./ui/Icon.vue";
 
 const emit = defineEmits<{ add: [] }>();
@@ -49,7 +50,7 @@ const shift = (index: number) => {
   <section class="phone-sheet phone-pages" role="dialog" :aria-label="t('editor.phone.pages')">
     <span class="sheet-grab" aria-hidden="true"></span>
     <header class="sheet-head">
-      <span class="sheet-title"><b>{{ t("editor.phone.pages") }}</b><small>{{ t("editor.layout.count", { tiles, limit: tileLimit }, list.length) }}</small></span>
+      <span class="sheet-title"><b>{{ t("editor.phone.pages") }}</b><small>{{ t("editor.layout.count", { tiles, limit: tileLimit }, list.length) }} <MemoryMeter /></small></span>
       <button type="button" class="icon-btn sheet-close" :aria-label="t('editor.common.close')" @click="close"><Icon name="close" /></button>
     </header>
     <ol class="sheet-list">

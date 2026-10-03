@@ -185,9 +185,10 @@ function onKey(e: KeyboardEvent, i: number) {
       <template v-if="item.type === 'entity'">
         <div class="f">
           <span class="f-label">{{ t("editor.topbar.content.label") }}<HelpTip :text="t('editor.topbar.content.hint')" /></span>
-          <Segmented :choices="(state.inventory.header?.contents || []).map((c) => [c.key, c.label] as [string, string])" :value="item.content" @pick="(v) => update({ content: v })" />
+          <Segmented :choices="(state.inventory.header?.contents || []).map((c) => [c.key, c.label] as [string, string])" :value="item.content" @pick="(v) => update(v === 'icon' && item!.icon === 'none' ? { content: v, icon: 'auto' } : { content: v })" />
         </div>
-        <IconPicker :selected="item.icon || 'auto'" :automatic="state.topbarPreviews[itemKey(item)]?.auto_icon || automaticIcon(item.entity!)" :auto-label="t('editor.topbar.auto_icon')" allow-none @pick="(n) => update({ icon: n })" />
+        <!-- An item that shows its icon alone (GitHub #144) needs one, so it offers no "No icon". -->
+        <IconPicker :selected="item.icon || 'auto'" :automatic="state.topbarPreviews[itemKey(item)]?.auto_icon || automaticIcon(item.entity!)" :auto-label="t('editor.topbar.auto_icon')" :allow-none="item.content !== 'icon'" @pick="(n) => update({ icon: n })" />
         <div class="f">
           <span class="f-label">{{ t("editor.topbar.show.label") }}<HelpTip :text="t('editor.topbar.show.hint')" /></span>
           <Segmented :choices="(state.inventory.header?.shows || []).map((s) => [s.key, s.label] as [string, string])" :value="item.show" @pick="(v) => update({ show: v })" />

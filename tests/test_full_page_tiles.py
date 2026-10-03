@@ -88,7 +88,8 @@ class Layouts(unittest.TestCase):
     def test_navigation_tile(self):
         # One built-in entity per page it goes to, so an entity still appears once on a screen.
         self.assertEqual(BUILTIN['screen.page_3'], 'Go to page 3')
-        self.assertEqual([page_target(e) for e in ('screen.page_1', 'screen.page_8', 'screen.page_9', 'screen.page', 'light.a')], [1, 8, 0, 0, 0])
+        # Up to page 32, which a board may take (firmware 0.34.0+); whether a screen has the page is its grid's to say.
+        self.assertEqual([page_target(e) for e in ('screen.page_1', 'screen.page_8', 'screen.page_9', 'screen.page_33', 'screen.page', 'light.a')], [1, 8, 9, 0, 0, 0])
         layout = validate_layout({'title': 'Home', 'tiles': [tile('screen.page_3', 0, icon='radiator'), tile('screen.page_5', 1)]})
         self.assertEqual(layout['tiles'][0]['options'], {'icon': 'radiator'})
         self.assertEqual(min_firmware(layout), FULL_PAGE_MIN_FIRMWARE)

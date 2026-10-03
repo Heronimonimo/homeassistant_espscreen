@@ -460,24 +460,58 @@ inline Metrics metrics() {
 
 // The page dots of a pager (firmware 0.2.69+), under the tiles and on this page: one per page, centred in `row`, the
 // page on screen in ink and the others a quiet grey. The dots are made once and reused; `row` takes no touches.
+// More pages than eight dots hold (firmware 0.34.0+, a board with more pages): "3 / 12" in their place, as the media
+// library's pager says it (media_library::page_text).
+inline constexpr int MOST_DOTS = 8;
 inline void page_dots(lv_obj_t *row, int current, int total, bool large) {
   const int dot = ui::px(large ? 8 : 6), gap = ui::px(large ? 10 : 7);
-  total = std::clamp(total, 0, 8);
-  while ((int) lv_obj_get_child_count(row) < total) {
+  total = std::max(total, 0);
+  const bool words = total > MOST_DOTS;
+  lv_obj_t *label = nullptr;
+  int dots = 0;
+  for (int i = 0; i < (int) lv_obj_get_child_count(row); ++i) {
+    auto *child = lv_obj_get_child(row, i);
+    if (lv_obj_check_type(child, &lv_label_class)) label = child;
+    else ++dots;
+  }
+  const int wanted = words ? 0 : total;
+  while (dots < wanted) {
     auto *d = lv_obj_create(row);
     lv_obj_remove_style_all(d);
     lv_obj_remove_flag(d, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
     lv_obj_set_style_radius(d, LV_RADIUS_CIRCLE, 0);
+    ++dots;
   }
-  const int width = total * dot + std::max(0, total - 1) * gap;
+  if (words && !label && row_font) {
+    label = lv_label_create(row);
+    lv_obj_remove_flag(label, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+    lv_obj_set_style_text_font(label, row_font, 0);
+    lv_obj_set_style_text_color(label, theme::color(theme::MUTED), 0);
+  }
+  if (label) {
+    if (words) {
+      char b[16];
+      snprintf(b, sizeof(b), "%d / %d", current + 1, total);
+      lv_label_set_text(label, b);
+      lv_obj_set_style_text_color(label, theme::color(theme::MUTED), 0);
+      lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+      lv_obj_remove_flag(label, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+  const int width = wanted * dot + std::max(0, wanted - 1) * gap;
+  int n = 0;
   for (int i = 0; i < (int) lv_obj_get_child_count(row); ++i) {
     auto *d = lv_obj_get_child(row, i);
-    if (i >= total) { lv_obj_add_flag(d, LV_OBJ_FLAG_HIDDEN); continue; }
+    if (d == label) continue;
+    const int at = n++;
+    if (at >= wanted) { lv_obj_add_flag(d, LV_OBJ_FLAG_HIDDEN); continue; }
     lv_obj_remove_flag(d, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(d, dot, dot);
-    lv_obj_align(d, LV_ALIGN_CENTER, i * (dot + gap) + dot / 2 - width / 2, 0);
-    lv_obj_set_style_bg_color(d, theme::color(i == current ? theme::INK : theme::SUBTLE), 0);
-    lv_obj_set_style_bg_opa(d, i == current ? LV_OPA_COVER : LV_OPA_40, 0);
+    lv_obj_align(d, LV_ALIGN_CENTER, at * (dot + gap) + dot / 2 - width / 2, 0);
+    lv_obj_set_style_bg_color(d, theme::color(at == current ? theme::INK : theme::SUBTLE), 0);
+    lv_obj_set_style_bg_opa(d, at == current ? LV_OPA_COVER : LV_OPA_40, 0);
   }
 }
 

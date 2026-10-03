@@ -533,6 +533,7 @@
         "page_title": "Geef een pagina een titel van maximaal 96 bytes.",
         "page_titles": "Een scherm heeft maximaal 1 pagina. | Een scherm heeft maximaal {n} pagina's.",
         "tiles_max": "Kies maximaal 1 tegel. | Kies maximaal {n} tegels.",
+        "memory_full": "Deze tegels hebben {need} KB van het geheugen van het scherm nodig, en het heeft {room} KB voor tegels. Haal er een paar weg of kies lichtere: een verwachting of een mediaspeler neemt meer dan een lamp.",
         "unsupported": "Deze entiteit wordt niet ondersteund.",
         "once": "De nachtkastjesklok kan maar één keer op een scherm staan.",
         "tile_name": "Een tegelnaam mag maximaal 80 bytes bevatten.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Status",
-          "last_changed": "Laatst gewijzigd"
+          "last_changed": "Laatst gewijzigd",
+          "icon": "Alleen icoon"
         },
         "shows": {
           "always": "Altijd",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filter op soort",
       "no_room": "Zonder ruimte"
     },
+    "memory": {
+      "label": "Geheugen voor tegels",
+      "share": "{n} %",
+      "title": "Deze tegels nemen {need} van de {room} KB die dit scherm voor tegels heeft. Een verwachting, een thermostaat of een mediaspeler neemt meer dan een lamp of een schakelaar.",
+      "over": "Dat is meer dan het scherm aankan: haal een paar tegels weg voor je opslaat.",
+      "short": "Sommige tegels laten nu minder zien: het scherm kwam geheugen tekort.",
+      "last_known": "Zoals het scherm het zei toen het voor het laatst online was.",
+      "full_tile": "Deze tegel past niet meer in het geheugen van het scherm. Een lichtere past misschien nog.",
+      "full_library": "Het geheugen van het scherm is bijna vol: sommige tegels passen niet meer, lichtere misschien nog wel."
+    },
     "domains": {
       "light": "Licht",
       "climate": "Klimaat",
@@ -2056,6 +2068,7 @@
         "no_dimming": "Verlichting altijd aan",
         "standby": "Standby en nacht",
         "no_standby": "Geen standby",
+        "tiles": "Tot {n} tegels op {pages} pagina’s",
         "calibration": "Touch-kalibratie bij de eerste start"
       },
       "choice": {
@@ -2064,7 +2077,11 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "De meeste van deze borden hebben de eerste. Kies de andere als het scherm ruis of een verminkt beeld laat zien.",
+<<<<<<< HEAD
         "GRID_ROWS": "Vier rijen passen meer kleinere tegels op een pagina. Drie rijen houden de tegels groter en beter leesbaar."
+=======
+        "GRID_ROWS": "Meer rijen tonen meer tegels op een pagina; minder rijen houden de tegels groter en beter leesbaar."
+>>>>>>> upstream/main
       },
       "choice_usual": "de meeste",
       "orientation": "Hoe komt hij te hangen?",

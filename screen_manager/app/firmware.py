@@ -77,7 +77,9 @@ def _board_choice(shape):
             'camera': bool(shape.get('camera')), 'dimmable': shape.get('dimmable', True),
             'can_standby': shape.get('can_standby', True), 'chip': shape.get('chip'),
             # Whether it opens a Wi-Fi hotspot when it cannot reach its network (app 0.4.32): New screen says what to do.
-            'hotspot': shape.get('hotspot', True), **shape.get('catalog', {})}
+            'hotspot': shape.get('hotspot', True),
+            # How many tiles and pages a screen of it takes (firmware 0.34.0+, boards.json): New screen says so.
+            'max_tiles': shape.get('max_tiles', 64), 'max_pages': shape.get('max_pages', 8), **shape.get('catalog', {})}
 
 BOARD_CHOICES = {board: _board_choice(SHAPES[board]) for board in BOARD_KEYS}
 

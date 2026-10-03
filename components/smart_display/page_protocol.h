@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -10,8 +11,24 @@
 // A page has one bar. There is no inherited/global bar and no legacy decoder.
 namespace page_protocol {
 constexpr unsigned VERSION = 2;
-constexpr unsigned MAX_PAGES = 8;
-constexpr unsigned MAX_TILES = 64;
+// The most pages and tiles one screen holds (firmware 0.34.0+). A board states its own as the build flags
+// SCREEN_MAX_PAGES and SCREEN_MAX_TILES (packages/core.yaml, its board file); a build without them, the host tests
+// included, keeps the eight pages and 64 tiles every screen had before. Every table with one entry per tile or per
+// page is sized from these two, so nothing else in the firmware says 64 or 8.
+#ifndef SCREEN_MAX_PAGES
+#define SCREEN_MAX_PAGES 8
+#endif
+#ifndef SCREEN_MAX_TILES
+#define SCREEN_MAX_TILES 64
+#endif
+constexpr unsigned MAX_PAGES = SCREEN_MAX_PAGES;
+constexpr unsigned MAX_TILES = SCREEN_MAX_TILES;
+// Eight pages and 64 tiles are what the app may always send (older apps know nothing else); a page is one bit of a
+// 32-bit set below and a page number at most two digits (screen.page_<n>).
+static_assert(MAX_PAGES >= 8 && MAX_PAGES <= 32, "a screen holds 8 to 32 pages");
+static_assert(MAX_TILES >= 64 && MAX_TILES <= 1024, "a screen holds 64 to 1024 tiles");
+// One bit per tile of the screen.
+using TileSet = std::bitset<MAX_TILES>;
 struct TileSize {
   const char *name;
   uint8_t minimum_columns, minimum_rows;
@@ -146,9 +163,10 @@ enum class Begin : uint8_t { reject, unchanged, replace };
 // The caller only advances the sequence after validating and applying a packet.
 struct Transfer {
   uint64_t lease = 0, hello_id = 0, revision = 0;
-  uint64_t tiles = 0;
+  TileSet tiles;
   uint32_t sequence = 0, digest = 0;
-  uint8_t pages = 0, expected_pages = 0, expected_tiles = 0;
+  uint32_t pages = 0;
+  uint16_t expected_pages = 0, expected_tiles = 0;
   bool granted = false, begun = false, active = false;
 
   uint64_t grant(uint64_t request, uint64_t random_token) {
@@ -175,27 +193,29 @@ struct Transfer {
       return Begin::unchanged;
     active = false;
     revision = rev;
-    expected_pages = static_cast<uint8_t>(page_count);
-    expected_tiles = static_cast<uint8_t>(tile_count);
+    expected_pages = static_cast<uint16_t>(page_count);
+    expected_tiles = static_cast<uint16_t>(tile_count);
     pages = 0;
-    tiles = 0;
+    tiles.reset();
     return Begin::replace;
   }
   bool matches(uint64_t rev) const { return begun && revision == rev; }
   bool page(unsigned index) {
-    if (!begun || active || index >= expected_pages || (pages & (1u << index))) return false;
-    pages |= static_cast<uint8_t>(1u << index);
+    if (!begun || active || index >= expected_pages || (pages & (uint32_t{1} << index))) return false;
+    pages |= uint32_t{1} << index;
     return true;
   }
   bool tile(unsigned index) {
-    if (!begun || active || index >= expected_tiles || (tiles & (uint64_t{1} << index))) return false;
-    tiles |= uint64_t{1} << index;
+    if (!begun || active || index >= expected_tiles || tiles.test(index)) return false;
+    tiles.set(index);
     return true;
   }
+  // Every page and every tile of the session arrived once (tile() and page() take only indexes below the expected).
   bool complete() const {
-    const uint64_t wanted = expected_tiles == 64 ? UINT64_MAX : (uint64_t{1} << expected_tiles) - 1;
-    return begun && expected_pages && pages == (1u << expected_pages) - 1 && tiles == wanted;
+    const uint32_t pages_wanted = expected_pages >= 32 ? UINT32_MAX : (uint32_t{1} << expected_pages) - 1;
+    return begun && expected_pages && pages == pages_wanted && tiles.count() == expected_tiles;
   }
+  bool received_page(unsigned index) const { return index < 32 && (pages & (uint32_t{1} << index)); }
   bool commit() {
     if (!complete()) return false;
     active = true;

@@ -8,16 +8,18 @@ import { t } from "../i18n";
 import type { ChildTile, HeaderItem, Layout, Page, PageGrid, PageLayout, PageTarget, PageTile, Tile, TileOptions } from "../types";
 import { spanOf, spanOffered } from "./sizes";
 
-import { dimensions, type Size } from "./layout";
+import { STORE_MAX_BAR_ITEMS, STORE_MAX_PAGES, dimensions, type Size } from "./layout";
 import { isSize } from "./sizes";
 import { validateCardOptions, validatePageShape } from './page-validation';
 import rules from './page-rules.json';
 
 export const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 export const instanceId = () => [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, "0")).join("");
-// Eight pages on every grid (firmware 0.18.0+); a screen with older firmware has a lower limit, which the store checks
-// against the screen's own page_limit.
-export const pageLimit = (_grid: PageGrid) => 8;
+// The pages a grid takes: what its screen takes when the grid says (the store passes the screen's page_limit), else the
+// most any board may state, which is what a stored document is held to (the add-on's page_layout.grid_of_record).
+export const pageLimit = (grid: PageGrid) => grid.pages ?? STORE_MAX_PAGES;
+// The items one page's top bar takes, the same way: the screen's when the grid says, else the most any board takes.
+export const barLimit = (grid: PageGrid) => grid.barItems ?? STORE_MAX_BAR_ITEMS;
 export const sameGrid = (a: PageGrid, b: PageGrid) => a.columns === b.columns && a.rows === b.rows;
 const byteLength = (value: string) => new TextEncoder().encode(value).length;
 
@@ -224,7 +226,7 @@ export function validatePages(layout: PageLayout, grid: PageGrid): PageLayout {
   for (const page of layout.pages) {
     const bar = page.topbar;
     if (typeof page.navigation.excludeFromPagination !== "boolean") throw new Error(t("addon.errors.pages.navigation"));
-    if (bar.leading.length > 1 || bar.trailing.length > 6) throw new Error(t("addon.errors.top_bar.full", { n: 6 }));
+    if (bar.leading.length > 1 || bar.trailing.length > barLimit(grid)) throw new Error(t("addon.errors.top_bar.full", barLimit(grid)));
     if (bar.title.source !== "screen" && (bar.title.source !== "text" || !bar.title.text.trim() || byteLength(bar.title.text) > 96))
       throw new Error(t("addon.errors.layout.page_title"));
     for (const item of bar.leading) {
@@ -334,7 +336,7 @@ export function arrangeTiles(layout: PageLayout, grid: PageGrid, entries: { tile
       if (!Number.isInteger(slot) || slot < 0) throw new Error(t("addon.errors.layout.position"));
       const old = tile.id ? existing.get(tile.id) : undefined, options = tile.options || {};
       if (tile.id && !old) throw new Error(t("addon.errors.pages.tile_missing"));
-      const target = /^screen\.page_([1-8])$/.exec(tile.entity);
+      const target = /^screen\.page_([1-9][0-9]?)$/.exec(tile.entity);
       let content: PageTile["content"];
       if (target) {
         const page = draft.pages[Number(target[1]) - 1];

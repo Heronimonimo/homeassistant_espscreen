@@ -25,9 +25,6 @@ packages:
 substitutions:
   # The key of this board file; the firmware reports it so ESP Screens knows what board a screen is.
   BOARD_ID: "hosyond40"
-  # This board's own firmware revision (docs/BOARD_RELEASES.md): the wide partition table of a board with 4 MB of flash
-  # (docs/FLASH_LAYOUT.md). The next shared release takes this line out again.
-  SCREEN_FIRMWARE_VERSION: "0.33.1"
   DEVICE_NAME: "hosyond40-new"
   DEVICE_FRIENDLY_NAME: "My Hosyond"
 

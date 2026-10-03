@@ -44,7 +44,7 @@ export function validatePageShape(layout: PageLayout) {
         if (['content', 'show', 'icon'].some(key => key in item && typeof (item as any)[key] !== 'string')) fail();
         if (item.type !== 'entity' || !entity(item.entity, rules.headerDomains) ||
             !rules.headerContents.includes(item.content ?? 'state') || !rules.headerShows.includes(item.show ?? 'always') ||
-            !icon(item.icon ?? 'auto', true)) fail();
+            !icon(item.icon ?? 'auto', true) || (item.content === 'icon' && item.icon === 'none')) fail();
         key = JSON.stringify([item.type, item.entity, item.content ?? 'state', item.icon ?? 'auto', item.show ?? 'always']);
       }
       if (seen.has(key)) throw new Error(t('addon.errors.top_bar.twice'));

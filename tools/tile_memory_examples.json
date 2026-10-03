@@ -1,0 +1,652 @@
+{
+ "alarm_control_panel": {
+  "entity": "alarm_control_panel.living_room_floor_lamp_left",
+  "state": "armed_away",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "code_format": "number",
+   "changed_by": "Alarm keypad in the hallway by the front door",
+   "code_arm_required": true,
+   "supported_features": 63
+  }
+ },
+ "automation": {
+  "entity": "automation.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "last_triggered": "2026-10-03T08:49:14.886345+00:00",
+   "mode": "single",
+   "current": 0,
+   "id": "1700000000000"
+  }
+ },
+ "binary_sensor": {
+  "entity": "binary_sensor.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "device_class": "motion"
+  }
+ },
+ "button": {
+  "entity": "button.living_room_floor_lamp_left",
+  "state": "2026-10-03T06:49:14.886345+00:00",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side"
+  }
+ },
+ "camera": {
+  "entity": "camera.living_room_floor_lamp_left",
+  "state": "idle",
+  "attributes": {
+   "access_token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+   "file_path": "/config/www/bench-cams/cam_a.jpg",
+   "entity_picture": "/api/camera_proxy/camera.living_room_floor_lamp_left?token=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "supported_features": 0
+  }
+ },
+ "climate": {
+  "entity": "climate.living_room_floor_lamp_left",
+  "state": "heat_cool",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "hvac_modes": [
+    "off",
+    "heat",
+    "cool",
+    "heat_cool",
+    "auto",
+    "dry",
+    "fan_only"
+   ],
+   "fan_modes": [
+    "auto",
+    "low",
+    "medium",
+    "high",
+    "top",
+    "middle",
+    "focus",
+    "diffuse"
+   ],
+   "swing_modes": [
+    "off",
+    "vertical",
+    "horizontal",
+    "both",
+    "swing_on",
+    "swing_off"
+   ],
+   "preset_modes": [
+    "eco",
+    "away",
+    "boost",
+    "comfort",
+    "home",
+    "sleep",
+    "activity"
+   ],
+   "hvac_action": "heating",
+   "current_temperature": 20.5,
+   "temperature": null,
+   "target_temp_low": 19.5,
+   "target_temp_high": 23.5,
+   "current_humidity": 47,
+   "humidity": 50,
+   "fan_mode": "medium",
+   "swing_mode": "vertical",
+   "preset_mode": "comfort",
+   "min_temp": 7,
+   "max_temp": 35,
+   "target_temp_step": 0.5,
+   "supported_features": 511
+  }
+ },
+ "cover": {
+  "entity": "cover.living_room_floor_lamp_left",
+  "state": "open",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "current_position": 64,
+   "current_tilt_position": 40,
+   "device_class": "blind",
+   "supported_features": 255
+  }
+ },
+ "fan": {
+  "entity": "fan.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "percentage": 66,
+   "percentage_step": 33.33,
+   "preset_mode": "Natural breeze",
+   "preset_modes": [
+    "Natural breeze",
+    "Sleep quietly",
+    "Turbo boost"
+   ],
+   "oscillating": true,
+   "direction": "forward",
+   "supported_features": 63
+  }
+ },
+ "image": {
+  "entity": "image.living_room_floor_lamp_left",
+  "state": "2026-10-03T09:00:00+00:00",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "access_token": "0123456789abcdef",
+   "entity_picture": "/api/image_proxy/image.living_room_floor_lamp_left?token=0123456789abcdef"
+  }
+ },
+ "input_boolean": {
+  "entity": "input_boolean.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side"
+  }
+ },
+ "input_button": {
+  "entity": "input_button.living_room_floor_lamp_left",
+  "state": "2026-10-03T06:49:14.886345+00:00",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side"
+  }
+ },
+ "input_number": {
+  "entity": "input_number.living_room_floor_lamp_left",
+  "state": "42.5",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "min": 0,
+   "max": 100,
+   "step": 0.5,
+   "mode": "slider",
+   "unit_of_measurement": "%"
+  }
+ },
+ "input_select": {
+  "entity": "input_select.living_room_floor_lamp_left",
+  "state": "Morning wake up scene 1",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "options": [
+    "Morning wake up scene 1",
+    "Movie night dim scene 1",
+    "Dinner party warm scene 1",
+    "Reading corner bright scene 1",
+    "Away from home eco scene 1",
+    "Morning wake up scene 2",
+    "Movie night dim scene 2",
+    "Dinner party warm scene 2",
+    "Reading corner bright scene 2",
+    "Away from home eco scene 2",
+    "Morning wake up scene 3",
+    "Movie night dim scene 3",
+    "Dinner party warm scene 3",
+    "Reading corner bright scene 3",
+    "Away from home eco scene 3",
+    "Morning wake up scene 4",
+    "Movie night dim scene 4",
+    "Dinner party warm scene 4",
+    "Reading corner bright scene 4",
+    "Away from home eco scene 4",
+    "Morning wake up scene 5",
+    "Movie night dim scene 5",
+    "Dinner party warm scene 5",
+    "Reading corner bright scene 5",
+    "Away from home eco scene 5"
+   ]
+  }
+ },
+ "light": {
+  "entity": "light.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "brightness": 180,
+   "color_mode": "hs",
+   "hs_color": [
+    30.5,
+    70.2
+   ],
+   "supported_color_modes": [
+    "hs",
+    "color_temp"
+   ],
+   "min_color_temp_kelvin": 2000,
+   "max_color_temp_kelvin": 6500,
+   "color_temp_kelvin": null,
+   "effect": "Rainbow running with sparkles",
+   "effect_list": [
+    "Effect number 0 with a long name",
+    "Effect number 1 with a long name",
+    "Effect number 2 with a long name",
+    "Effect number 3 with a long name",
+    "Effect number 4 with a long name",
+    "Effect number 5 with a long name",
+    "Effect number 6 with a long name",
+    "Effect number 7 with a long name",
+    "Effect number 8 with a long name",
+    "Effect number 9 with a long name",
+    "Effect number 10 with a long name",
+    "Effect number 11 with a long name",
+    "Effect number 12 with a long name",
+    "Effect number 13 with a long name",
+    "Effect number 14 with a long name",
+    "Effect number 15 with a long name",
+    "Effect number 16 with a long name",
+    "Effect number 17 with a long name",
+    "Effect number 18 with a long name",
+    "Effect number 19 with a long name",
+    "Effect number 20 with a long name",
+    "Effect number 21 with a long name",
+    "Effect number 22 with a long name",
+    "Effect number 23 with a long name",
+    "Effect number 24 with a long name",
+    "Effect number 25 with a long name",
+    "Effect number 26 with a long name",
+    "Effect number 27 with a long name",
+    "Effect number 28 with a long name",
+    "Effect number 29 with a long name",
+    "Effect number 30 with a long name",
+    "Effect number 31 with a long name",
+    "Effect number 32 with a long name",
+    "Effect number 33 with a long name",
+    "Effect number 34 with a long name",
+    "Effect number 35 with a long name",
+    "Effect number 36 with a long name",
+    "Effect number 37 with a long name",
+    "Effect number 38 with a long name",
+    "Effect number 39 with a long name",
+    "Effect number 40 with a long name",
+    "Effect number 41 with a long name",
+    "Effect number 42 with a long name",
+    "Effect number 43 with a long name",
+    "Effect number 44 with a long name",
+    "Effect number 45 with a long name",
+    "Effect number 46 with a long name",
+    "Effect number 47 with a long name",
+    "Effect number 48 with a long name",
+    "Effect number 49 with a long name",
+    "Effect number 50 with a long name",
+    "Effect number 51 with a long name",
+    "Effect number 52 with a long name",
+    "Effect number 53 with a long name",
+    "Effect number 54 with a long name",
+    "Effect number 55 with a long name",
+    "Effect number 56 with a long name",
+    "Effect number 57 with a long name",
+    "Effect number 58 with a long name",
+    "Effect number 59 with a long name"
+   ],
+   "supported_features": 44
+  }
+ },
+ "lock": {
+  "entity": "lock.living_room_floor_lamp_left",
+  "state": "locked",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "code_format": "^\\d{4,8}$",
+   "changed_by": "Sam via the Nuki app on his phone at the front door",
+   "supported_features": 1
+  }
+ },
+ "media_player": {
+  "entity": "media_player.living_room_floor_lamp_left",
+  "state": "playing",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "media_title": "Bohemian Rhapsody - Remastered 2011 (Live at Wembley Stadium, July 1986)",
+   "media_artist": "Queen featuring Freddie Mercury and the Wembley Stadium Choir",
+   "media_album_name": "Live at Wembley Stadium (Deluxe Remastered Anniversary Edition)",
+   "media_content_type": "music",
+   "media_duration": 354,
+   "media_position": 120,
+   "media_position_updated_at": "2026-10-03T09:49:14.886345+00:00",
+   "entity_picture": "/api/media_player_proxy/media_player.living_room_floor_lamp_left?token=3f1a9c2b7d8e4f60a1b2c3d4e5f60718&cache=9d8c7b6a",
+   "source": "Kitchen Sonos Era 300",
+   "source_list": [
+    "Radio 538 Non-Stop Hits",
+    "NPO Radio 2 Top 2000 Live",
+    "Spotify Discover Weekly",
+    "Kitchen Sonos Era 300",
+    "Living Room Sonos Arc Ultra",
+    "Bedroom Sonos One SL",
+    "Qmusic Foute Uur Classics",
+    "BBC Radio 6 Music",
+    "Chill Lofi Study Beats",
+    "Jazz Classics Collection",
+    "Office Sonos Five Stereo",
+    "Garden Sonos Move 2",
+    "Bathroom Sonos Roam 2",
+    "Kids Room Sonos One",
+    "Dinner With Friends Mix",
+    "Deep Focus Instrumental"
+   ],
+   "volume_level": 0.35,
+   "is_volume_muted": false,
+   "shuffle": true,
+   "repeat": "all",
+   "sound_mode": "Movie",
+   "sound_mode_list": [
+    "Music",
+    "Movie",
+    "Night",
+    "Speech Enhancement"
+   ],
+   "group_members": [
+    "media_player.living_room_floor_lamp_left",
+    "media_player.kitchen_island_pendant_lights",
+    "media_player.master_bedroom_ceiling_spots"
+   ],
+   "supported_features": 4194303
+  }
+ },
+ "number": {
+  "entity": "number.living_room_floor_lamp_left",
+  "state": "42.5",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "min": 0,
+   "max": 100,
+   "step": 0.5,
+   "mode": "slider",
+   "unit_of_measurement": "%"
+  }
+ },
+ "person": {
+  "entity": "person.living_room_floor_lamp_left",
+  "state": "Office at the Science Park",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "latitude": 52.356,
+   "longitude": 4.955,
+   "gps_accuracy": 12,
+   "source": "device_tracker.phone_of_someone"
+  }
+ },
+ "remote": {
+  "entity": "remote.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "activity_list": [
+    "Watch Apple TV 4K",
+    "Watch Netflix on Shield",
+    "Play PlayStation 5",
+    "Listen to Spotify",
+    "Watch Ziggo Live TV",
+    "Listen to Vinyl Records",
+    "Karaoke Night Party",
+    "Watch Blu-ray Movies",
+    "Video Call on Big Screen",
+    "Watch YouTube Kids",
+    "Sports Mode Surround",
+    "Power Off All"
+   ],
+   "current_activity": "Watch Netflix on Shield",
+   "supported_features": 7
+  }
+ },
+ "scene": {
+  "entity": "scene.living_room_floor_lamp_left",
+  "state": "2026-10-03T06:49:14.886345+00:00",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side"
+  }
+ },
+ "screen": {
+  "entity": "screen.clock",
+  "state": "ok",
+  "attributes": {}
+ },
+ "script": {
+  "entity": "script.living_room_floor_lamp_left",
+  "state": "off",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "last_triggered": "2026-10-03T07:49:14.886345+00:00",
+   "mode": "single",
+   "current": 0
+  }
+ },
+ "select": {
+  "entity": "select.living_room_floor_lamp_left",
+  "state": "Morning wake up scene 1",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "options": [
+    "Morning wake up scene 1",
+    "Movie night dim scene 1",
+    "Dinner party warm scene 1",
+    "Reading corner bright scene 1",
+    "Away from home eco scene 1",
+    "Morning wake up scene 2",
+    "Movie night dim scene 2",
+    "Dinner party warm scene 2",
+    "Reading corner bright scene 2",
+    "Away from home eco scene 2",
+    "Morning wake up scene 3",
+    "Movie night dim scene 3",
+    "Dinner party warm scene 3",
+    "Reading corner bright scene 3",
+    "Away from home eco scene 3",
+    "Morning wake up scene 4",
+    "Movie night dim scene 4",
+    "Dinner party warm scene 4",
+    "Reading corner bright scene 4",
+    "Away from home eco scene 4",
+    "Morning wake up scene 5",
+    "Movie night dim scene 5",
+    "Dinner party warm scene 5",
+    "Reading corner bright scene 5",
+    "Away from home eco scene 5"
+   ]
+  }
+ },
+ "sensor": {
+  "entity": "sensor.living_room_floor_lamp_left",
+  "state": "23.47",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "unit_of_measurement": "µg/m³",
+   "device_class": "pm25",
+   "state_class": "measurement"
+  }
+ },
+ "sun": {
+  "entity": "sun.sun",
+  "state": "above_horizon",
+  "attributes": {
+   "next_dawn": "2026-10-04T05:13:50.378559+00:00",
+   "next_dusk": "2026-10-03T17:49:01.625528+00:00",
+   "next_midnight": "2026-10-03T23:30:49+00:00",
+   "next_noon": "2026-10-03T11:31:16+00:00",
+   "next_rising": "2026-10-04T05:48:05.831429+00:00",
+   "next_setting": "2026-10-03T17:14:53.313341+00:00",
+   "elevation": 29.9,
+   "azimuth": 149.88,
+   "rising": true,
+   "friendly_name": "Sun"
+  }
+ },
+ "switch": {
+  "entity": "switch.living_room_floor_lamp_left",
+  "state": "on",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side"
+  }
+ },
+ "timer": {
+  "entity": "timer.living_room_floor_lamp_left",
+  "state": "active",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "duration": "0:45:00",
+   "remaining": "0:31:12",
+   "finishes_at": "2026-10-03T10:20:14.886345+00:00",
+   "editable": true,
+   "restore": true
+  }
+ },
+ "vacuum": {
+  "entity": "vacuum.living_room_floor_lamp_left",
+  "state": "cleaning",
+  "attributes": {
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "fan_speed_list": [
+    "Silent night mode",
+    "Standard cleaning",
+    "Strong suction",
+    "Turbo max power",
+    "Gentle mopping only",
+    "Custom room settings",
+    "Carpet boost automatic",
+    "Off"
+   ],
+   "fan_speed": "Strong suction",
+   "battery_level": 76,
+   "status": "Cleaning the living room and hallway",
+   "supported_features": 16383
+  }
+ },
+ "weather": {
+  "entity": "weather.living_room_floor_lamp_left",
+  "state": "rainy",
+  "attributes": {
+   "temperature": -12,
+   "temperature_unit": "°F",
+   "humidity": 54,
+   "pressure": 987.0,
+   "pressure_unit": "inHg",
+   "wind_speed": 4.8,
+   "wind_speed_unit": "mph",
+   "visibility_unit": "mi",
+   "precipitation_unit": "in",
+   "attribution": "Powered by Home Assistant",
+   "friendly_name": "Living Room Floor Lamp Left Side",
+   "supported_features": 7
+  },
+  "forecast": [
+   {
+    "datetime": "2026-10-03T16:00:14.945598+02:00",
+    "condition": "snowy",
+    "precipitation": 2.0,
+    "temperature": -10,
+    "templow": -15,
+    "precipitation_probability": 60
+   },
+   {
+    "datetime": "2026-10-04T16:00:14.945598+02:00",
+    "condition": "partlycloudy",
+    "precipitation": 1.0,
+    "temperature": -13,
+    "templow": -14,
+    "precipitation_probability": 25
+   },
+   {
+    "datetime": "2026-10-05T16:00:14.945598+02:00",
+    "condition": "sunny",
+    "precipitation": 0.0,
+    "temperature": -18,
+    "templow": -22,
+    "precipitation_probability": 70
+   },
+   {
+    "datetime": "2026-10-06T16:00:14.945598+02:00",
+    "condition": "sunny",
+    "precipitation": 0.1,
+    "temperature": -23,
+    "templow": -23,
+    "precipitation_probability": 90
+   },
+   {
+    "datetime": "2026-10-07T16:00:14.945598+02:00",
+    "condition": "snowy",
+    "precipitation": 4.0,
+    "temperature": -19,
+    "templow": -20,
+    "precipitation_probability": 40
+   },
+   {
+    "datetime": "2026-10-08T16:00:14.945598+02:00",
+    "condition": "sunny",
+    "precipitation": 0.3,
+    "temperature": -14,
+    "templow": -19,
+    "precipitation_probability": 0
+   },
+   {
+    "datetime": "2026-10-09T16:00:14.945598+02:00",
+    "condition": "sunny",
+    "precipitation": 0.0,
+    "temperature": -9,
+    "templow": -12,
+    "precipitation_probability": 0
+   }
+  ],
+  "hourly": [
+   {
+    "datetime": "2026-10-03T16:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 2.0,
+    "temperature": -10,
+    "templow": -15,
+    "precipitation_probability": 60
+   },
+   {
+    "datetime": "2026-10-03T17:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 1.0,
+    "temperature": -13,
+    "templow": -14,
+    "precipitation_probability": 25
+   },
+   {
+    "datetime": "2026-10-03T18:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 0.0,
+    "temperature": -18,
+    "templow": -22,
+    "precipitation_probability": 70
+   },
+   {
+    "datetime": "2026-10-03T19:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 0.1,
+    "temperature": -23,
+    "templow": -23,
+    "precipitation_probability": 90
+   },
+   {
+    "datetime": "2026-10-03T20:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 4.0,
+    "temperature": -19,
+    "templow": -20,
+    "precipitation_probability": 40
+   },
+   {
+    "datetime": "2026-10-03T21:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 0.3,
+    "temperature": -14,
+    "templow": -19,
+    "precipitation_probability": 0
+   },
+   {
+    "datetime": "2026-10-03T22:00:14.948285+02:00",
+    "condition": "sunny",
+    "precipitation": 0.0,
+    "temperature": -9,
+    "templow": -12,
+    "precipitation_probability": 0
+   }
+  ]
+ }
+}

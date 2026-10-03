@@ -301,6 +301,13 @@ def entity_item(item, states, registry=None, units=None, tz=None, words=None):
         wire['i'] = auto_icon(entity, state, (registry or {}).get(entity) if isinstance(registry, dict) else None)
     elif item['icon'] != 'none':
         wire['i'] = tile_icons.ICONS[item['icon']][0]
+    if item['content'] == 'icon':
+        # Its icon alone (GitHub #144): no text, so the screen draws the icon, coloured and changing with the state.
+        wire['t'] = ''
+        color = accent(entity, state)
+        if color:
+            wire['c'] = color
+        return wire, item['show'] == 'always' or active(entity, state)
     if item['content'] == 'last_changed':
         moment = epoch((state or {}).get('last_changed'))
         text, moment = (None, moment) if moment else (UNAVAILABLE, None)

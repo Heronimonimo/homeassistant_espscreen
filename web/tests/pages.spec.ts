@@ -213,8 +213,10 @@ describe("page-owned document operations", () => {
   it("refuses overlap and preserves each board's capacity", () => {
     const layout = fixture(), view = projectLayout(layout, grid);
     expect(() => arrangeTiles(layout, grid, view.tiles.map((tile) => ({ tile, slot: 0 })))).toThrow("same spot");
-    for (const board of [grid, { columns: 3, rows: 3 }]) {
-      const full = emptyLayout("Capacity"), limit = 8;
+    // The screen's own page limit when the grid carries it (eight, or 24 on a board that states it, firmware 0.34.0+),
+    // the most any board takes (32) for a stored document whose grid says nothing.
+    for (const board of [{ ...grid, pages: 8 }, { columns: 3, rows: 3, pages: 8 }, { columns: 2, rows: 3, pages: 24 }, { columns: 2, rows: 3 }]) {
+      const full = emptyLayout("Capacity"), limit = board.pages ?? 32;
       while (full.pages.length < limit) full.pages.push(emptyPage());
       expect(validatePages(full, board)).toBe(full);
       expect(() => duplicatePage(full, board, full.homePageId, true)).toThrow("no room");

@@ -187,6 +187,13 @@ def shapes():
                  # writes `allow_partition_access` into a screen's own YAML and sends a screen that still has
                  # ESPHome's table the wide one after an update (docs/FLASH_LAYOUT.md).
                  'wide_slots': profiles.wide_slots(board),
+                 # The most tiles and pages a screen of this board takes (firmware 0.34.0+, SCREEN_MAX_TILES and
+                 # SCREEN_MAX_PAGES in its board file, page_protocol.h): what New screen and the docs say a board holds.
+                 # A screen says its own in its hello, which is what a save is held to (docs/TILE_MEMORY.md).
+                 'max_tiles': int(values['SCREEN_MAX_TILES'].strip('"')),
+                 'max_pages': int(values['SCREEN_MAX_PAGES'].strip('"')),
+                 # And the items one page's top bar takes (SCREEN_MAX_BAR_ITEMS, header_bar.h); the width decides what shows.
+                 'max_bar_items': int(values['SCREEN_MAX_BAR_ITEMS'].strip('"')),
                  # The firmware a screen of this board builds today: the core's version, or the board file's own when
                  # a fix for this board alone went out after it (docs/BOARD_RELEASES.md). The
                  # update offer goes by it, so a fix for one board is not an update for every other one.

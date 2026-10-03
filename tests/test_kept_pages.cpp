@@ -51,9 +51,9 @@ int main() {
 
   // The same page on and off the glass, or no page, keeps nothing.
   assert(shelf.visit(1, 1, 0).entry == NONE && shelf.visit(-1, 2, 0).entry == NONE);
-  // A tile beyond the model's 64 counts as everything.
+  // A tile beyond the screen's ceiling (page_protocol.h, 64 in a build that states none) counts as everything.
   const uint32_t before = changes.all;
-  changes.mark_tile(64);
+  changes.mark_tile(page_protocol::MAX_TILES);
   assert(changes.all > before);
   return 0;
 }

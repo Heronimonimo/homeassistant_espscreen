@@ -56,6 +56,7 @@ file; it never adds one.
 ```yaml
 domain: climate               # the file's name without .yaml
 firmware: 0.19.0              # the first firmware that draws this type; required for every type added after 0.4.32
+memory: {bytes: 700, extras: true}   # what one tile of it keeps in a screen's memory, measured; required (see "memory")
 displays:                     # the faces a tile of this type may have, in the order the editor offers them
   standard: {}
   forecast:
@@ -91,6 +92,13 @@ other key (`TOP`, `OPTION`). A `keypad` has up, down, left, right and OK for eve
 keys (`back`, `home`, `play`, `volume_up`, `volume_down`, `mute`) where the remote has them, and every command must be
 one `catalogue/_remote_commands.json` lists for that integration.
 
+**`memory`**, required in every type's file (firmware 0.34.0+): what one tile of the type keeps in the memory inside a
+screen's chip, in bytes, measured on a board with PSRAM, and whether it keeps a block of extras (a forecast, a
+thermostat's modes, a player's sources). It is the type's price in the screen's memory budget: the firmware, the add-on
+and the editor all count a layout with it (docs/TILE_MEMORY.md says how to measure it and how a board without PSRAM adds
+the tile itself and its extras). `catalogue/_tile.yaml` says what a tile's own choices add (`memory: {action, line}`).
+`tools/generate_catalogue.py` refuses a type without it, so a new type cannot leave the budget guessing.
+
 **`needs`**, what an entity must have:
 
 - `actions`: any one of these actions listed by Home Assistant for the entity, optionally with a `field` Home Assistant
@@ -117,8 +125,9 @@ must exist. `tools/generate_catalogue.py` stops on anything else.
 2. **The editor's mockup**: how the tile looks in the editor (`web/src/components/TileCard.vue`).
 3. **Home Assistant's facts**: make sure `catalogue/_ha.json` has the type (see below).
 4. **The file**: `catalogue/<type>.yaml` with `firmware:` set to the version from step 1, its displays and controls,
-   and the words of its controls in `screen_manager/translations/en.json` (then the other languages).
-5. Run `tools/generate_catalogue.py`, `python tests/catalogue_conformance.py`, add a case to `KINDS` in
+   its `memory` measured on the bench as docs/TILE_MEMORY.md says, and the words of its controls in
+   `screen_manager/translations/en.json` (then the other languages).
+5. Run `tools/generate_catalogue.py`, `python tests/catalogue_conformance.py`, `python tests/memory_conformance.py`, add a case to `KINDS` in
    `tests/test_layout_audit.py` (it fails until the type has one, or an `EXCLUDED` entry with the reason the preview
    cannot draw it), and run `tools/check.sh`.
 

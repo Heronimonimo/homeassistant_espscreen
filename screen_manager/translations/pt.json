@@ -533,6 +533,7 @@
         "page_title": "Dê a uma página um título com 96 bytes no máximo.",
         "page_titles": "Um ecrã tem no máximo {n} página. | Um ecrã tem no máximo {n} páginas.",
         "tiles_max": "Escolha no máximo {n} mosaico. | Escolha no máximo {n} mosaicos.",
+        "memory_full": "Estes mosaicos precisam de {need} KB da memória do ecrã, e ele tem {room} KB para mosaicos. Remova alguns ou escolha outros mais leves: uma previsão ou um leitor multimédia ocupa mais do que uma luz.",
         "unsupported": "Esta entidade não é suportada.",
         "once": "O relógio de cabeceira só pode estar uma vez num ecrã.",
         "tile_name": "O nome de um mosaico pode ter no máximo 80 bytes.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Estado",
-          "last_changed": "Última alteração"
+          "last_changed": "Última alteração",
+          "icon": "Só ícone"
         },
         "shows": {
           "always": "Sempre",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filtrar por tipo",
       "no_room": "Sem divisão"
     },
+    "memory": {
+      "label": "Memória para mosaicos",
+      "share": "{n} %",
+      "title": "Estes mosaicos ocupam {need} dos {room} KB que este ecrã tem para mosaicos. Uma previsão, um termóstato ou um leitor multimédia ocupa mais do que uma luz ou um interruptor.",
+      "over": "É mais do que o ecrã comporta: remova alguns mosaicos antes de guardar.",
+      "short": "Alguns mosaicos mostram menos agora: o ecrã ficou com pouca memória.",
+      "last_known": "Tal como o ecrã disse da última vez que esteve online.",
+      "full_tile": "Este mosaico já não cabe na memória do ecrã. Um mais leve talvez ainda caiba.",
+      "full_library": "A memória do ecrã está quase cheia: alguns mosaicos já não cabem, outros mais leves talvez ainda caibam."
+    },
     "domains": {
       "light": "Luz",
       "climate": "Climatização",
@@ -2056,6 +2068,7 @@
         "no_dimming": "Retroiluminação sempre ligada",
         "standby": "Espera e modo noturno",
         "no_standby": "Sem espera",
+        "tiles": "Até {n} mosaicos em {pages} páginas",
         "calibration": "Calibração do toque no primeiro arranque"
       },
       "choice": {
@@ -2064,7 +2077,11 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "A maioria destas placas tem o primeiro. Escolha o outro se o ecrã mostrar ruído ou uma imagem distorcida.",
+<<<<<<< HEAD
         "GRID_ROWS": "Quatro linhas cabem mais blocos pequenos numa página. Três linhas mantêm os blocos maiores e mais fáceis de ler."
+=======
+        "GRID_ROWS": "Mais linhas permitem mostrar mais blocos numa página; menos linhas mantêm os blocos maiores e mais fáceis de ler."
+>>>>>>> upstream/main
       },
       "choice_usual": "a maioria",
       "orientation": "Como vai ficar pendurado?",
