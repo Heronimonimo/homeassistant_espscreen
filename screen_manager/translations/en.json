@@ -533,6 +533,7 @@
         "page_title": "Give a page a title of at most 96 bytes.",
         "page_titles": "A screen has at most 1 page. | A screen has at most {n} pages.",
         "tiles_max": "Choose at most 1 tile. | Choose at most {n} tiles.",
+        "memory_full": "These tiles need {need} KB of the screen's memory, and it has {room} KB for tiles. Remove a few, or choose lighter ones: a forecast or a media player takes more than a light.",
         "unsupported": "This entity isn't supported.",
         "once": "The bedside clock can only be on a screen once.",
         "tile_name": "A tile name may contain at most 80 bytes.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Status",
-          "last_changed": "Last changed"
+          "last_changed": "Last changed",
+          "icon": "Icon only"
         },
         "shows": {
           "always": "Always",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filter by type",
       "no_room": "No room"
     },
+    "memory": {
+      "label": "Memory for tiles",
+      "share": "{n} %",
+      "title": "These tiles take {need} of the {room} KB this screen has for tiles. A forecast, a thermostat or a media player takes more than a light or a switch.",
+      "over": "This is more than the screen holds: remove a few tiles before saving.",
+      "short": "Some tiles show less right now: the screen ran short of memory.",
+      "last_known": "As the screen said when it was last online.",
+      "full_tile": "This tile no longer fits in the screen's memory. A lighter tile may still fit.",
+      "full_library": "The screen's memory is nearly full: some tiles no longer fit, lighter ones still may."
+    },
     "domains": {
       "light": "Light",
       "climate": "Climate",
@@ -2056,6 +2068,7 @@
         "no_dimming": "Backlight always on",
         "standby": "Standby and night",
         "no_standby": "No standby",
+        "tiles": "Up to {n} tiles on {pages} pages",
         "calibration": "Touch calibration on first start"
       },
       "choice": {
@@ -2064,7 +2077,7 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "Most of these boards have the first one. Take the other when the screen shows noise or a garbled picture.",
-        "GRID_ROWS": "Four rows fit more, smaller tiles on a page. Three rows keep the tiles larger and easier to read."
+        "GRID_ROWS": "More rows fit more tiles on a page; fewer rows keep the tiles larger and easier to read."
       },
       "choice_usual": "most boards",
       "orientation": "Which way will it hang?",

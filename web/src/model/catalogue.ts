@@ -10,14 +10,16 @@ type Needs = { actions?: { action: string; field?: string }[]; features?: string
 type Screen = { firmware?: string; feature?: string; pictures?: boolean; else?: string };
 type Option = { key: string; needs?: Needs; screen?: Screen; sizes?: { full: boolean }; wide?: boolean; rows?: number; of?: string[];
   one_row?: string; fallback?: string; range?: { when?: Needs; screen?: Screen } };
-type Type = { firmware: string | null; key: boolean; features: Record<string, number>; actions: Record<string, string[][]>;
+// What one tile of a type keeps in the memory inside a screen's chip (firmware 0.34.0+, model/memory.ts).
+export type TypeMemory = { bytes: number; extras: boolean };
+type Type = { firmware: string | null; key: boolean; memory: TypeMemory; features: Record<string, number>; actions: Record<string, string[][]>;
   displays: Option[]; controls: Option[]; inline: Option | null; toggle: Needs | null; taps: string[]; guards: string[]; picture: Record<string, unknown[]> | null;
   map: { framing: string[]; distance: string[]; overlay: string[]; follow: string[]; markers: string[]; names: string[];
     zones: string[]; streets: string[]; look: string[]; with: string[]; max: number } | null };
 type Attributes = Record<string, any>;
 
 export const TYPES = data.domains as unknown as Record<string, Type>;
-export const TILE = data.tile as { taps: string[]; sizes: string[]; history_hours: number[] };
+export const TILE = data.tile as { taps: string[]; sizes: string[]; history_hours: number[]; memory: { action: number; line: number; page: number; bar_text: number } };
 export const DOMAINS = new Set(Object.keys(TYPES));
 
 export const ofType = (domain: string): Type | undefined => TYPES[domain];

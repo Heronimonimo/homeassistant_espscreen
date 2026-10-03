@@ -98,7 +98,7 @@ An alert is a card over the whole screen with an icon, a title, a subtitle and o
 
 ## Tiles on a screen
 
-A screen shows tiles on pages, and a page is a grid of cells whose columns and rows depend on the screen: {_grids()} lying down, and other grids standing up. A screen has at most {FIRMWARE_MAX_PAGES} pages and {FIRMWARE_MAX_TILES} tiles, one per cell, so a page with more than eight cells gives fewer pages (seven pages of nine); firmware before {FULL_PAGE_VERSION} holds twenty tiles. The screen's own sensor (below) says its `columns`, `rows` and `max_pages`, so read it before counting. A tile is single, double-width or full-page: a double-width one takes two cells side by side, a full-page one takes a whole page of its own and is one big button, so someone can switch a light by pushing anywhere on the screen without looking. A `controls` choice, a small slider or a graph sits at the bottom of that page (a full-page tile shows no control unless you choose one).
+A screen shows tiles on pages, and a page is a grid of cells whose columns and rows depend on the screen: {_grids()} lying down, and other grids standing up. A screen has at most {FIRMWARE_MAX_PAGES} pages and {FIRMWARE_MAX_TILES} tiles, one per cell, or more on a board with the memory for them (up to 24 pages and 128 tiles, or 16 pages and 256 tiles), and a heavy tile such as a forecast or a media player takes more of a screen's memory than a light, so a screen full of them holds fewer; firmware before {FULL_PAGE_VERSION} holds twenty tiles. The screen's own sensor (below) says its `columns`, `rows`, `max_pages` and `max_tiles`, so read it before counting, and an add that does not fit is refused with the reason. A tile is single, double-width or full-page: a double-width one takes two cells side by side, a full-page one takes a whole page of its own and is one big button, so someone can switch a light by pushing anywhere on the screen without looking. A `controls` choice, a small slider or a graph sits at the bottom of that page (a full-page tile shows no control unless you choose one).
 
 Fire one of these events and ESP Screens changes that screen and sends it right away, the same way its own editor does.
 
@@ -135,7 +135,7 @@ actions:
 
 A tile with a control, a forecast or a sun path is drawn double-width on its own; you don't have to ask for that.
 
-A navigation tile goes to another page: add the entity `screen.page_3` (for page 3, `screen.page_1` to `screen.page_{FIRMWARE_MAX_PAGES}`, as far as the screen's `max_pages` goes) with a `name` such as "Heating"; it shows an arrow (or an `icon`), its name and the page number, and a tap opens that page. Handy as a menu on page 2 when page 1 is one full-page light switch. It is single or double width, never full-page.
+A navigation tile goes to another page: add the entity `screen.page_3` (for page 3, `screen.page_1` and up, as far as the screen's `max_pages` goes) with a `name` such as "Heating"; it shows an arrow (or an `icon`), its name and the page number, and a tap opens that page. Handy as a menu on page 2 when page 1 is one full-page light switch. It is single or double width, never full-page.
 
 On firmware {ENTITY_REPEAT_VERSION} or newer an entity can be on a screen more than once, such as a light as a small tile on page 1 and with its slider on page 3, or a `screen.page_1` named "Back" on every other page. `esp_screens_add_tile` always puts a new tile on the screen, also when the entity is there already; to change a tile, remove it and add it again with what it should have. Only the bedside clock (`screen.nightstand`) is on a screen once. On older firmware an entity is on a screen once (a navigation tile once per page from firmware {PAGE_TILE_REPEAT_VERSION}), and adding it again changes the tile that is there, or moves it when you name another place.
 
@@ -155,7 +155,7 @@ Everything else shows its name and state, and opens a card of its own on a long 
 
 ### Reading a screen first
 
-Every screen also publishes what it shows, as `sensor.esp_screens_<device name>`: the state is the number of tiles, and the attributes hold `title`, the grid of its pages (`columns`, `rows` and `max_pages`), `pages` and `tiles` with `entity`, `name`, `page`, `row`, `column`, `slot`, `size`, `controls` and `display` per tile (and `to_page` for a `screen.page_<n>` tile), every copy of an entity on its own. The `column` is `left` or `right` on a two-column screen and a number counted from 1 on any other. Read that before moving things around, so you know what is already there and where.
+Every screen also publishes what it shows, as `sensor.esp_screens_<device name>`: the state is the number of tiles, and the attributes hold `title`, the grid of its pages (`columns`, `rows`, `max_pages` and `max_tiles`), `pages` and `tiles` with `entity`, `name`, `page`, `row`, `column`, `slot`, `size`, `controls` and `display` per tile (and `to_page` for a `screen.page_<n>` tile), every copy of an entity on its own. The `column` is `left` or `right` on a two-column screen and a number counted from 1 on any other. Read that before moving things around, so you know what is already there and where.
 
 Ordering a page means naming the tiles that are on it, in the order you want:
 

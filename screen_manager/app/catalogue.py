@@ -19,6 +19,11 @@ DATA = json.loads((Path(__file__).with_name('catalogue.json')).read_text())
 TILE = DATA['tile']
 TYPES = DATA['domains']
 DOMAINS = frozenset(TYPES)
+# What a tile keeps in the memory inside a screen's chip (catalogue `memory`, firmware 0.34.0+, docs/TILE_MEMORY.md): each
+# type's entry, the dearest for a type the catalogue does not know, and what a tile's own choices add.
+MEMORY = {domain: data['memory'] for domain, data in TYPES.items()}
+DEAREST = max(MEMORY.values(), key=lambda entry: entry['bytes'])
+CHOICE_MEMORY = TILE['memory']
 # The commands a remote of each integration takes, read from Home Assistant's source and the libraries it pins
 # (tools/read_remote_commands.py, GitHub #117): {integration: {'from': [...], 'commands': [...]}}.
 REMOTE_COMMANDS = json.loads((Path(__file__).with_name('remote_commands.json')).read_text())['platforms']

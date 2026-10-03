@@ -222,6 +222,16 @@ a:hover { text-decoration: underline; }
 .canvas { display: flex; flex-direction: column; }
 .editor-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .toolbar-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+/* The screen's memory for tiles (firmware 0.34.0+, MemoryMeter.vue): a thin bar and a share, quiet until it fills. */
+.memory-meter { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; cursor: default; font-variant-numeric: tabular-nums; }
+.memory-bar { position: relative; width: 44px; height: 4px; border-radius: 2px; background: var(--seg); overflow: hidden; }
+.memory-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--muted); transition: width 0.3s, background-color 0.3s; }
+.memory-meter.close .memory-bar i { background: var(--warn); }
+.memory-meter.close .memory-text { color: var(--warn); }
+.memory-meter.full .memory-bar i, .memory-meter.over .memory-bar i { background: var(--danger); }
+.memory-meter.full .memory-text, .memory-meter.over .memory-text { color: var(--danger); }
+.memory-short { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+.sheet-title small .memory-meter { margin-left: 6px; font-size: inherit; }
 .editor-toolbar .spacer { flex: 1; }
 /* One line about the whole layout: an icon, what is up, and what you can do about it. */
 .canvas > .notice { margin-bottom: 10px; }

@@ -40,6 +40,11 @@ substitutions:
   # The cells of a page when this screen stands up: two columns of seven keep the standard tile size.
   GRID_COLS_PORTRAIT: "2"
   GRID_ROWS_PORTRAIT: "7"
+  # More tiles and pages than the 64 and eight of a board without PSRAM (firmware 0.34.0+): an ESP32-P4 has the PSRAM and
+  # the memory inside the chip for them, and the memory budget (tile_memory.h) says how many a layout really takes.
+  SCREEN_MAX_TILES: "256"
+  SCREEN_MAX_PAGES: "16"
+  SCREEN_MAX_BAR_ITEMS: "12"                   # a wider top bar where the glass has the width for it
   # LVGL's draw buffer as a share of the screen. A quarter of 1024x600 is 300 KB, most of what the chip keeps free
   # inside it, so the buffer goes to PSRAM at once, as on the 10.1-inch (docs/ADDING_A_BOARD.md).
   LVGL_BUFFER_SIZE: "50%"

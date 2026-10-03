@@ -31,7 +31,12 @@ VERSION = re.compile(r'^\d+\.\d+\.\d+$')
 FIRST_TYPES = frozenset('alarm_control_panel automation binary_sensor button camera climate cover fan image input_boolean input_button '
                         'input_number input_select light lock media_player number person scene screen script select sensor sun switch '
                         'timer vacuum weather'.split())
-TOP = {'domain', 'firmware', 'displays', 'controls', 'inline', 'toggle', 'taps', 'guards', 'picture', 'map', 'key', 'keypad'}
+TOP = {'domain', 'firmware', 'displays', 'controls', 'inline', 'toggle', 'taps', 'guards', 'picture', 'map', 'key', 'keypad', 'memory'}
+# What one tile of a type keeps in the memory inside a screen's chip (firmware 0.34.0+, docs/TILE_MEMORY.md): `bytes`
+# measured on a board with PSRAM, `extras` whether it keeps a block of extras. Every type says it, so a new one cannot
+# leave the screen's memory budget guessing; the most a tile may keep is a sanity bound, not a rule.
+MEMORY = {'bytes', 'extras'}
+MOST_BYTES = 16384
 # The keys of a remote's card (keypad): up, down, left, right and OK always, the rest where the remote has them.
 KEYPAD_KEYS = ('up', 'down', 'left', 'right', 'ok', 'back', 'home', 'play', 'volume_up', 'volume_down', 'mute')
 OPTION = {'needs', 'screen', 'sizes', 'wide', 'rows', 'of', 'one_row', 'fallback', 'range'}
@@ -216,8 +221,17 @@ def normalise(tile, types, translations, facts, commands=None):
                                                      'look', 'with', 'max'})
             if 'map' not in displays:
                 fail(where, 'map options need the map display')
+        memory = data.get('memory')
+        if memory is None:
+            fail(where, 'says what one tile of it keeps in the memory inside the chip (memory: {bytes: N, extras: true or '
+                        'false}), measured as docs/TILE_MEMORY.md says')
+        check_keys(f'{where} memory', memory, MEMORY)
+        if set(memory) != MEMORY or type(memory['bytes']) is not int or not 0 <= memory['bytes'] <= MOST_BYTES \
+                or type(memory['extras']) is not bool:
+            fail(f'{where} memory', f'needs bytes (0 to {MOST_BYTES}) and extras (true or false)')
         domains[domain] = {
             'firmware': firmware,
+            'memory': {'bytes': memory['bytes'], 'extras': memory['extras']},
             'key': bool(data.get('key', True)),
             'features': ha[domain]['features'],
             'actions': ha[domain]['actions'],
@@ -232,7 +246,11 @@ def normalise(tile, types, translations, facts, commands=None):
             'map': map_options,
             'keypad': keypad(f'{where} keypad', data['keypad'], commands) if 'keypad' in data else None,
         }
-    check_keys('catalogue/_tile.yaml', tile, {'taps', 'sizes', 'history_hours'})
+    check_keys('catalogue/_tile.yaml', tile, {'taps', 'sizes', 'history_hours', 'memory'})
+    choice = tile.get('memory')
+    if not isinstance(choice, dict) or set(choice) != {'action', 'line', 'page', 'bar_text'} or \
+            not all(type(choice[k]) is int and 0 <= choice[k] <= MOST_BYTES for k in choice):
+        fail('catalogue/_tile.yaml memory', f'needs action, line, page and bar_text, in bytes (0 to {MOST_BYTES})')
     return {'version': 1, 'ha': facts['source'], 'tile': tile, 'domains': domains}
 
 
@@ -245,6 +263,18 @@ def header(catalogue):
              '#include <cstdint>', '', 'namespace tile_catalogue {', '',
              '// Every type a tile can show, the screen\'s own cards (screen.*) included.',
              'inline constexpr const char *DOMAINS[] = {' + ', '.join(f'"{d}"' for d in catalogue['domains']) + '};', '']
+    lines += ['// What one tile of each type keeps in the memory inside the chip besides the tile itself, in bytes, measured on a board',
+              '// with PSRAM, and whether it keeps a block of extras (catalogue `memory`, docs/TILE_MEMORY.md): tile_memory.h works out',
+              '// what a tile costs on this board from it.',
+              'struct Memory { const char *domain; uint16_t bytes; bool extras; };',
+              '// What a tile\'s own choices add (catalogue/_tile.yaml `memory`): a tap that runs its own action, a second line set',
+              '// to one of its values. Each also keeps a block of extras on a tile whose type keeps none.',
+              f'inline constexpr uint16_t ACTION_BYTES = {catalogue["tile"]["memory"]["action"]}, LINE_BYTES = {catalogue["tile"]["memory"]["line"]};',
+              '// What a page keeps (its title) and an item of its top bar that shows an entity (its text).',
+              f'inline constexpr uint16_t PAGE_BYTES = {catalogue["tile"]["memory"]["page"]}, BAR_TEXT_BYTES = {catalogue["tile"]["memory"]["bar_text"]};',
+              'inline constexpr Memory MEMORY[] = {' + ', '.join(
+                  f'{{"{d}", {data["memory"]["bytes"]}, {"true" if data["memory"]["extras"] else "false"}}}'
+                  for d, data in catalogue['domains'].items()) + '};', '']
     keywords = {'switch', 'case', 'default', 'delete', 'new', 'register', 'template', 'this', 'union', 'volatile'}
     for domain, data in catalogue['domains'].items():
         if not data['features']:

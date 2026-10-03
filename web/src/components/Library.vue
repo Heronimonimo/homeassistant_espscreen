@@ -8,10 +8,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { vDrag } from "../drag";
 import { t } from "../i18n";
-import { domainInfo } from "../model/layout";
+import { domainInfo, pageTarget } from "../model/layout";
 import { glyph } from "../model/topbar";
 import { tilePalette } from "../model/tile-palette";
-import { addTile, automaticIcon, editorLayout, liveOf, loadLibraryStates, pageTitleShown, phone, pictures, repeatable, state, tileLimit } from "../store";
+import { addTile, automaticIcon, editorLayout, fitsMemory, liveOf, loadLibraryStates, memory, pageTitleShown, phone, pictures, repeatable, state, tileLimit } from "../store";
 import Icon from "./ui/Icon.vue";
 import UiSwitch from "./ui/UiSwitch.vue";
 
@@ -51,6 +51,9 @@ const onScreen = (id: string) => chosen.value.has(id);
 const placed = (id: string) => onScreen(id) && !repeatable(id);
 const mark = (id: string) => (chosen.value.get(id) || 0) > 1 ? `×${chosen.value.get(id)}` : onScreen(id) ? "✓" : "+";
 const builtin = (id: string) => id.startsWith("screen.");
+// Go to page tiles for the pages there are and the next one, at least the eight every screen has and at most what this
+// screen takes: a board with 24 pages (firmware 0.34.0+) would otherwise list 24 of them.
+const pagesOffered = computed(() => Math.min(editorLayout.grid.pages, Math.max(8, (state.document?.pages.length || 0) + 1)));
 const query = computed(() => state.search.trim().toLocaleLowerCase());
 // What the search and the hide switch leave over. The rooms are counted off this, the kinds off it narrowed to the
 // room, and neither off the finished list: picking one would take every other one away with it.
@@ -58,7 +61,7 @@ const base = computed<Entry[]>(() => {
   const q = query.value;
   // The picker offers what a tile can show; camera and image tiles need a board that draws pictures (app 0.2.66).
   return [...(state.inventory.builtin || []), ...state.inventory.entities].filter((e) =>
-    e.tile !== false &&
+    e.tile !== false && pageTarget(e.id) <= pagesOffered.value &&
     (pictures.value || (!["camera", "image"].includes(e.id.split(".")[0]) && e.id !== "screen.map")) &&
     (!state.hidePlaced || !onScreen(e.id)) &&
     `${e.name} ${e.id} ${e.device || ""} ${e.area || ""}`.toLocaleLowerCase().includes(q));
@@ -113,6 +116,9 @@ const rooms = computed(() => {
   return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
 });
 const full = computed(() => (state.layout?.tiles.length || 0) >= tileLimit.value);
+// Room left by count but not by memory for this one (firmware 0.34.0+): a forecast may no longer fit where a light does.
+const heavy = (id: string) => !full.value && !fitsMemory(id);
+const memoryFull = computed(() => memory.value?.level === "full" || memory.value?.level === "over");
 const count = computed(() => state.inventory.entities.length);
 // The avatar shows the state at a glance: lit for on, grey for an entity Home Assistant can't reach.
 const tone = (e: { id: string; state?: string }) => {
@@ -282,7 +288,7 @@ onBeforeUnmount(release);
             <button v-for="entity in group.entities" :id="`lib-${entity.id}`" :key="entity.id" type="button" class="ent" role="option"
               :class="{ active: state.search && flat[active]?.id === entity.id }" :aria-selected="state.search && flat[active]?.id === entity.id ? 'true' : 'false'"
               :title="onScreen(entity.id) && !placed(entity.id) ? `${entity.id} · ${t('editor.library.again')}` : entity.id"
-              :disabled="placed(entity.id) || full" v-drag="{ kind: 'entity', id: entity.id }" @click="addTile(entity.id)">
+              :disabled="placed(entity.id) || full || heavy(entity.id)" v-drag="{ kind: 'entity', id: entity.id }" @click="addTile(entity.id)">
               <span class="av mdi" :class="tone(entity)" :style="{ color: tilePalette(entity.id, liveOf(entity.id)).icon, background: tilePalette(entity.id, liveOf(entity.id)).circle }">{{ glyph(automaticIcon(entity.id)) }}</span>
               <span class="tx">
                 <b>{{ short(entity) }}</b>
@@ -295,6 +301,7 @@ onBeforeUnmount(release);
         <p v-if="!matches.length" class="hint lib-empty">{{ state.hidePlaced && !state.search && !state.filter && !state.room ? t("editor.library.all_placed") : t("editor.library.none_found") }}</p>
         <p v-else-if="matches.length > SHOWN" class="hint">{{ t("editor.common.results", matches.length) }}</p>
         <div v-if="full" class="lib-foot">{{ t(tileLimit < 48 ? "editor.library.full_update" : "editor.library.full", tileLimit) }}</div>
+        <div v-else-if="memoryFull" class="lib-foot">{{ t("editor.memory.full_library") }}</div>
       </div>
     </div>
   </aside>

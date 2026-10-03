@@ -9,6 +9,12 @@ import re
 from aiohttp import web
 
 
+# A screen's tiles plus the entity items of its pages' top bars (firmware 0.34.0+): 256 tiles and twelve items on each of
+# 16 pages on a P4 board (448), 128 tiles and twelve on each of 24 pages on an S3 board (416). core.STORE_MAX_* allows
+# more, which no board states today.
+MOST_ENTITIES = 512
+
+
 class Changes:
     def __init__(self):
         self.listeners = {}
@@ -21,8 +27,7 @@ class Changes:
 
 async def stream(changes, request):
     entities = request.query.getall('entity', [])
-    # 64 tiles plus up to six top-bar entities on each of eight pages.
-    if (not 1 <= len(entities) <= 128 or
+    if (not 1 <= len(entities) <= MOST_ENTITIES or
             any(len(entity) > 120 or not re.fullmatch(r'[a-z0-9_]+\.[a-z0-9_]+', entity) for entity in entities)):
         raise ValueError('Invalid preview entity subscription.')
     response = web.StreamResponse(headers={'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store',

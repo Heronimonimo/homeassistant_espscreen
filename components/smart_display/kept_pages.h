@@ -15,9 +15,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include "page_protocol.h"
 
 namespace kept_pages {
-// Every page but the one on the glass (runtime_model.h PAGES_MAX is 8).
+// Seven pages beside the one on the glass, whatever the board's page ceiling (page_protocol.h MAX_PAGES): a kept set is
+// a page of cards made ahead of time, so more of them would only make the first opening of a layout slower.
 constexpr size_t MAX_KEPT = 7;
 constexpr size_t NONE = MAX_KEPT;
 
@@ -32,7 +34,7 @@ struct Visit {
 // Changes numbered as they are asked for (see above).
 struct Changes {
   uint32_t last = 0, all = 0;
-  std::array<uint32_t, 64> tile{};  // runtime_model.h TILES_MAX
+  std::array<uint32_t, page_protocol::MAX_TILES> tile{};
   uint32_t mark_tile(size_t index) { return index < tile.size() ? tile[index] = ++last : mark_all(); }
   uint32_t mark_all() { return all = ++last; }
   // What a page drawn up to `synced` lacks.

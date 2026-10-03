@@ -533,6 +533,7 @@
         "page_title": "Adj az oldalnak legfeljebb 96 bájtos címet.",
         "page_titles": "Egy kijelzőn legfeljebb 1 oldal lehet. | Egy kijelzőn legfeljebb {n} oldal lehet.",
         "tiles_max": "Legfeljebb 1 csempét válassz. | Legfeljebb {n} csempét válassz.",
+        "memory_full": "Ezeknek a csempéknek {need} KB kell a kijelző memóriájából, és {room} KB jut csempékre. Vegyél ki néhányat, vagy válassz könnyebbeket: egy előrejelzés vagy egy médialejátszó többet foglal, mint egy lámpa.",
         "unsupported": "Ez az entitás nem támogatott.",
         "once": "Az éjjeliszekrény-óra csak egyszer lehet egy kijelzőn.",
         "tile_name": "A csempe neve legfeljebb 80 bájt lehet.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Állapot",
-          "last_changed": "Utolsó változás"
+          "last_changed": "Utolsó változás",
+          "icon": "Csak ikon"
         },
         "shows": {
           "always": "Mindig",
@@ -1482,6 +1484,16 @@
       "filter_label": "Szűrés típus szerint",
       "no_room": "Helyiség nélkül"
     },
+    "memory": {
+      "label": "Memória a csempéknek",
+      "share": "{n} %",
+      "title": "Ezek a csempék {need} KB-ot foglalnak abból a {room} KB-ból, ami ezen a kijelzőn a csempéknek jut. Egy előrejelzés, egy termosztát vagy egy médialejátszó többet foglal, mint egy lámpa vagy egy kapcsoló.",
+      "over": "Ez több, mint amennyi a kijelzőre fér: mentés előtt vegyél ki néhány csempét.",
+      "short": "Néhány csempe most kevesebbet mutat: a kijelzőnek elfogyott a memóriája.",
+      "last_known": "Ahogy a kijelző legutóbb, még online állapotban jelentette.",
+      "full_tile": "Ez a csempe már nem fér el a kijelző memóriájában. Egy könnyebb talán még elfér.",
+      "full_library": "A kijelző memóriája majdnem megtelt: néhány csempe már nem fér el, a könnyebbek talán még igen."
+    },
     "domains": {
       "light": "Lámpa",
       "climate": "Klíma",
@@ -2056,6 +2068,7 @@
         "no_dimming": "Háttérvilágítás mindig be",
         "standby": "Készenlét és éjszaka",
         "no_standby": "Nincs készenlét",
+        "tiles": "Legfeljebb {n} csempe {pages} oldalon",
         "calibration": "Érintéskalibrálás az első indításkor"
       },
       "choice": {
@@ -2064,7 +2077,7 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "A legtöbb ilyen panelen az első van. Ha a kijelző zajos vagy torz képet mutat, válaszd a másikat.",
-        "GRID_ROWS": "Négy sorban több kisebb csempe fér el egy oldalon. Három sorban a csempék nagyobbak és jobban olvashatók."
+        "GRID_ROWS": "Több sor több csempét jelenít meg egy oldalon; kevesebb sor nagyobb és könnyebben olvasható csempéket hagy."
       },
       "choice_usual": "a legtöbb panel",
       "orientation": "Hogyan lesz felszerelve?",

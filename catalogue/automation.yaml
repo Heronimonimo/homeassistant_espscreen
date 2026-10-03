@@ -2,6 +2,7 @@
 # Home Assistant's own facts for it (flags, actions) come from its source: catalogue/_ha.json (tools/read_ha_source.py).
 # docs/CATALOGUE.md says what every key means.
 domain: automation
+memory: {bytes: 112, extras: false}
 firmware: 0.7.0   # the first firmware that draws this type
 displays:
   standard: {}

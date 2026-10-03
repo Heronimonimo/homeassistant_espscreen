@@ -1,3 +1,38 @@
+## 0.4.58 (firmware 0.34.0)
+
+- **More rows on the 10.1-inch Guition.** Choose five, six, seven or eight rows per page when building any of the three
+  JC8012P4A1 variants. Five remains the default; other boards are unchanged.
+- Verified the generated cells, board catalog and row-choice profile paths. No physical screen was tested.
+
+- **More than 100 tiles on a screen that has the memory for them.** A screen now says how many tiles, pages and top bar
+  items it takes. Boards with PSRAM (the ESP32-S3 boards) take 128 tiles on up to 24 pages, the ESP32-P4 boards 256
+  tiles on up to 16 pages, and both up to 12 items in each page's top bar. The boards with 4 MB of flash and no PSRAM
+  (the CYD, the CYD with an ILI9342 and the Hosyond 4-inch) keep 64 tiles on 8 pages and 6 items.
+- **A memory budget in the editor.** What a tile keeps in the memory inside the screen's chip depends on its type: a
+  forecast or a media player takes ten times what a light takes. Every type in the tile catalogue now has a price, and
+  the screen reports how much room it has. The editor shows the share in use beside the number of tiles, turns amber
+  close to full, and greys out the tiles in the library that would not fit. docs/TILE_MEMORY.md explains the numbers.
+- **A layout that does not fit is refused before it is saved**, with how much it needs and how much the screen has. A
+  screen that runs out of memory halfway anyway (an older app sends a layout without asking) stops taking it, lets go
+  of what it took and stays reachable, and the app says the layout needs more memory than the screen has. Before, a
+  screen could lose its Wi-Fi link until someone restarted it.
+- **Lighter in the memory inside the chip.** The extra details of a tile (a forecast, a media player's titles, a
+  thermostat's modes) now live in PSRAM on a board that has it, about a kilobyte per tile less in the scarce memory.
+- **A top bar item can show its icon alone** (GitHub #144), coloured with its state, so more of them fit beside the
+  name. Items that do not fit leave from the front, as before, and the editor marks them.
+- **Past eight pages the page bar shows the page number** ("3 / 20") instead of a row of dots.
+- **Screens update when you choose.** An app on this version works with screens on older firmware: they keep 64 tiles
+  on 8 pages, and the editor shows no memory bar for them until they run firmware 0.34.0.
+- The CYD, the CYD with an ILI9342 and the Hosyond 4-inch join the shared firmware again (0.33.1 becomes 0.34.0). The
+  CYD's firmware takes 85.9 % of its update slot.
+- Tested: on an ESP32-S3 4-inch (Guition), an ESP32-S3 4.3-inch (Waveshare) and a CYD on USB, with a bench Home
+  Assistant. 120 tiles on 20 pages with 12 top bar items on the 4-inch, checked on the glass; 128 tiles on the
+  4.3-inch; each screen filled to its whole budget with the heaviest tiles (45 on the 4.3-inch, 40 on the CYD) held for
+  a quarter of an hour without a restart, where the CYD stopped before at 48. Too heavy a layout was refused with its
+  numbers. A CYD on firmware 0.33.1 with this app kept its old limits and showed no memory bar. The prices were
+  measured on the screens: on the PSRAM boards they count about a tenth more than the tiles take, on the CYD about 80
+  bytes a tile less, inside the reserve the budget keeps.
+
 ## 0.4.57 (firmware 0.33.0)
 
 - **Support Tessera every month.** The card on the editor's overview now offers a monthly membership first, with a
@@ -886,9 +921,7 @@ Automations on every screen (GitHub #62, thanks @Crazyraf87).
   on the Guition, the CYD and the Waveshare 4.3 (lying down and standing up). On a Guition 4 inch with a Home
   Assistant 2026.9: tap switches, hold runs, a run button runs also while the automation is off, holding it switches,
   and "Running..." shows for as long as the actions run.
->>>>>>> ac5c271 (Release 0.4.10 (firmware 0.7.0): automations on every screen (GitHub #62))
 
-<<<<<<< HEAD
 ## 0.4.10 (firmware 0.6.1 for waveshare4b)
 
 The Waveshare ESP32-S3-Touch-LCD-4B draws after a cold start.
@@ -898,7 +931,7 @@ The Waveshare ESP32-S3-Touch-LCD-4B draws after a cold start.
   the board's IO expander, and after a cold start those lines were never driven (ESPHome issue #11748). The board now
   prepares them before the display starts. Update the 4B from Tessera; it runs, so the update goes over the air.
 - Other screens get nothing new.
-=======
+
 ## 0.4.9 (firmware 0.6.2 for jc8012p4a1v3)
 
 Touch on the Guition JC8012P4A1 V3 (GitHub #52, thanks @ivanfmartinez).

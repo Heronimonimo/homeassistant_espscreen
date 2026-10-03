@@ -533,6 +533,7 @@
         "page_title": "Pon a una página un título de 96 bytes como máximo.",
         "page_titles": "Una pantalla tiene como máximo 1 página. | Una pantalla tiene como máximo {n} páginas.",
         "tiles_max": "Elige como máximo 1 mosaico. | Elige como máximo {n} mosaicos.",
+        "memory_full": "Estos mosaicos necesitan {need} KB de la memoria de la pantalla, y tiene {room} KB para mosaicos. Quita algunos o elige otros más ligeros: un pronóstico o un reproductor ocupa más que una luz.",
         "unsupported": "Esta entidad no es compatible.",
         "once": "El reloj de mesita solo puede estar una vez en una pantalla.",
         "tile_name": "El nombre de un mosaico puede tener 80 bytes como máximo.",
@@ -866,7 +867,8 @@
         },
         "contents": {
           "state": "Estado",
-          "last_changed": "Último cambio"
+          "last_changed": "Último cambio",
+          "icon": "Solo icono"
         },
         "shows": {
           "always": "Siempre",
@@ -1482,6 +1484,16 @@
       "filter_label": "Filtrar por tipo",
       "no_room": "Sin estancia"
     },
+    "memory": {
+      "label": "Memoria para mosaicos",
+      "share": "{n} %",
+      "title": "Estos mosaicos ocupan {need} de los {room} KB que esta pantalla tiene para mosaicos. Un pronóstico, un termostato o un reproductor ocupa más que una luz o un interruptor.",
+      "over": "Es más de lo que cabe en la pantalla: quita algunos mosaicos antes de guardar.",
+      "short": "Ahora algunos mosaicos muestran menos: la pantalla se quedó corta de memoria.",
+      "last_known": "Tal como lo dijo la pantalla la última vez que estuvo en línea.",
+      "full_tile": "Este mosaico ya no cabe en la memoria de la pantalla. Uno más ligero quizá sí.",
+      "full_library": "La memoria de la pantalla está casi llena: algunos mosaicos ya no caben, otros más ligeros quizá sí."
+    },
     "domains": {
       "light": "Luz",
       "climate": "Climatización",
@@ -2056,6 +2068,7 @@
         "no_dimming": "Retroiluminación siempre encendida",
         "standby": "Reposo y modo noche",
         "no_standby": "Sin reposo",
+        "tiles": "Hasta {n} mosaicos en {pages} páginas",
         "calibration": "Calibración táctil al primer arranque"
       },
       "choice": {
@@ -2064,7 +2077,7 @@
       },
       "choice_hint": {
         "DISPLAY_MODEL": "La mayoría de estas placas llevan el primero. Elige el otro si la pantalla muestra ruido o una imagen distorsionada.",
-        "GRID_ROWS": "Cuatro filas caben más mosaicos pequeños en una página. Tres filas mantienen los mosaicos más grandes y fáciles de leer."
+        "GRID_ROWS": "Más filas permiten mostrar más mosaicos en una página; menos filas mantienen los mosaicos más grandes y fáciles de leer."
       },
       "choice_usual": "la mayoría",
       "orientation": "¿Cómo la vas a colgar?",

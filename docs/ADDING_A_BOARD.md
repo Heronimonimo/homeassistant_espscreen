@@ -84,9 +84,11 @@ columns lying down may hold one standing up, and Tessera offers the owner both w
 Two things to weigh for the standing grid. `tools/generate_cells.py` gives a board the cards of whichever of its
 two grids is larger, so a standing grid with more cells than the lying one costs every screen of that board those
 extra cards, whichever way it hangs; every board in `boards.yaml` is at the larger of its two lying down, so none of
-them pays for the second way round. And a screen holds 64 tiles in all, one dirty bit each, over at most eight pages
-(firmware 0.18.0+, `MAX_PAGES` in `page_protocol.h`): a page need not be full, but a page of many cells fills those 64
-tiles in fewer pages.
+them pays for the second way round. And a screen holds 64 tiles in all over at most eight pages unless its board file says
+more (firmware 0.18.0+; `SCREEN_MAX_TILES` and `SCREEN_MAX_PAGES`, firmware 0.34.0+): a page need not be full, but a
+page of many cells fills its tiles in fewer pages. A board with PSRAM states 128 tiles on 24 pages on an ESP32-S3 and
+256 on 16 pages on an ESP32-P4; a board without keeps the 64 and eight. [TILE_MEMORY.md](TILE_MEMORY.md) says why and
+how the screen's memory then decides how many a layout takes.
 
 State no number in the board file that follows from the canvas. The tile area, the cells, the page keys, the strip
 that opens the settings, the crosses of the touch test and the card of an alert are all measured at boot from the

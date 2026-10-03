@@ -8,6 +8,7 @@ import { entriesOf, effectiveControls, isFull, isWide, newTile, pageOrder, pageP
 import { agoText, barMetricsFor, clockText, dateText, itemKey, type ItemView, whenBarFontsLoad } from "./model/topbar";
 import { pillMetrics, uiScale } from "./model/ui-scale";
 import { createLayout, dimensions, type Size, versionAtLeast } from "./model/layout";
+import { fitsOneMore, memoryUse } from "./model/memory";
 import { validPreviewShape, type PreviewProfile } from "./model/preview";
 import renderer from "./wasm/renderer.json";
 import type { Capability, ChildTile, FeedbackView, ChangelogSection, EntityAction, HeaderItem, Inventory, Layout, Screen, ScreensaverChoice, Tile, PageLayout, PageTile, PageDocument, PageGrid, PageWorkspace } from "./types";
@@ -214,6 +215,12 @@ export const tileLimit = computed(() => {
   const limit = currentScreen.value?.tile_limit;
   return typeof limit === "number" && Number.isInteger(limit) && limit > 0 ? limit : limitFor(firmwareOf.value);
 });
+// The memory this screen has for its tiles (firmware 0.34.0+, its hello) and how much of it the layout being edited
+// takes: the meter beside the tile count, and the library's "full" for a tile that would not fit (model/memory.ts).
+export const screenMemory = computed(() => currentScreen.value?.memory || null);
+export const memory = computed(() => (screenMemory.value && state.layout ? memoryUse(state.layout.tiles, screenMemory.value, state.document?.pages || []) : null));
+// A new tile of this entity, as a library click makes it (its own action and line come later, in its settings).
+export const fitsMemory = (entity: string) => !screenMemory.value || !state.layout || fitsOneMore(state.layout.tiles, { entity }, screenMemory.value, state.document?.pages || []);
 export const fullPage = computed(() => {
   const full = currentScreen.value?.full_page;
   return typeof full === "boolean" ? full : supports(0, 2, 62);
@@ -581,10 +588,13 @@ function historyCounts() {
   const counts = draftHistory.counts(state.editorMode === 'advanced');
   state.undoCount = counts.undo; state.redoCount = counts.redo;
 }
+// A document's grid with the pages this screen takes (page_limit): what every edit is held to, where a stored document is
+// held to the most any board takes (model/pages.ts pageLimit).
+const screenGridOf = (grid: PageGrid): PageGrid => ({ columns: grid.columns, rows: grid.rows, pages: editorLayout.grid.pages, barItems: topbarMax() });
 function applyDocument(next: PageLayout, remember = true, nextGrid = state.documentGrid) {
   if (!state.document || !state.documentGrid) return false;
   if (!nextGrid) return false;
-  pages.validatePages(next, nextGrid);
+  pages.validatePages(next, screenGridOf(nextGrid));
   if (sameValue(next, state.document) && pages.sameGrid(nextGrid, state.documentGrid)) return false;
   if (remember) {
     draftHistory.remember(snapshot());
@@ -715,7 +725,7 @@ export function commitArrangement(result: { tile: Tile; slot: number }[], field?
     const count = Math.max(draft.pages.length, ...result.filter(({ tile }) => !tile.id).map(({ tile }) => pageTarget(tile.entity)));
     if (count > editorLayout.grid.pages) throw new Error(t("addon.errors.pages.pages_full"));
     while (draft.pages.length < count) draft.pages.push(pages.emptyPage(draft.pages.at(-1)!.topbar));
-    const arranged = pages.arrangeTiles(draft, state.documentGrid, result);
+    const arranged = pages.arrangeTiles(draft, screenGridOf(state.documentGrid), result);
     const existing = new Set(state.document.pages.map(page => page.id));
     for (const page of arranged.pages) if (!existing.has(page.id)) {
       const title = suggestedPageTitle(page, state.inventory.entities);
@@ -741,6 +751,7 @@ export function placeTile(tile: Tile, target: number) {
 export function addTile(id: string) {
   const layout = state.layout;
   if (!layout || (!repeatable(id) && layout.tiles.some((t) => t.entity === id)) || layout.tiles.length >= tileLimit.value) return;
+  if (!fitsMemory(id)) return toast(t('editor.memory.full_tile'));
   if (state.insertKey) {
     const { holder, key } = state.insertKey;
     state.insertKey = null;
@@ -790,6 +801,7 @@ export function removeTile(tile: Tile) {
     toast(t("editor.layout.removed", { name: tile.name || entityName(tile.entity) }), { label: t("editor.common.undo"), run: undo });
 }
 export function addPage(bar?: PageLayout["pages"][number]["topbar"]) {
+  if (state.document && state.document.pages.length >= editorLayout.grid.pages) { toast(t("addon.errors.pages.pages_full")); return false; }
   let created = '';
   if (editDocument((draft) => {
     const selected = draft.pages.find((page) => page.id === state.selectedPageId) || draft.pages.at(-1)!;
@@ -839,7 +851,10 @@ export function pageCopyable(page: PageTile[] | undefined) {
 }
 export function duplicateEditorPage(id: string, empty: boolean) {
   if (!state.document || !state.documentGrid) return false;
-  try { return applyDocument(pages.duplicatePage(state.document, state.documentGrid, id, empty)); }
+  if (state.document.pages.length >= editorLayout.grid.pages) { toast(t("addon.errors.pages.pages_full")); return false; }
+  const copied = empty ? 0 : (state.document.pages.find((page) => page.id === id)?.tiles.length || 0);
+  if ((state.layout?.tiles.length || 0) + copied > tileLimit.value) { toast(t("addon.errors.layout.tiles_max", tileLimit.value)); return false; }
+  try { return applyDocument(pages.duplicatePage(state.document, screenGridOf(state.documentGrid), id, empty)); }
   catch (error: any) { toast(error.message); return false; }
 }
 export function setPageHomeControl(id: string, visible: boolean) {
@@ -1143,7 +1158,7 @@ export async function save() {
   if (currentScreen.value?.virtual) {
     const screen = currentScreen.value;
     try {
-      const layout = pages.clone(pages.validatePages(state.document, state.documentGrid));
+      const layout = pages.clone(pages.validatePages(state.document, screenGridOf(state.documentGrid)));
       const record: PageDocument = { format: 'pages-v2', revision: pages.instanceId(), layout,
         sourceGrid: pages.clone(state.documentGrid), workspace: { ...pages.clone(state.workspace), revision: pages.instanceId() } };
       const updated = { ...screen, page_document: record, source_grid: record.sourceGrid,
@@ -1367,7 +1382,7 @@ export const gridChanged = computed(() => !!state.documentGrid && !!currentScree
 function reviewGrid(record: PageDocument, target: PageGrid, copy: boolean, message = '') {
   try {
     if (record.layout.pages.length > editorLayout.grid.pages) throw new Error(t("addon.errors.pages.adapt_pages"));
-    state.gridReview = { record: pages.clone(record), layout: pages.adaptGrid(record.layout, record.sourceGrid, target),
+    state.gridReview = { record: pages.clone(record), layout: pages.adaptGrid(record.layout, record.sourceGrid, screenGridOf(target)),
     target: { columns: target.columns, rows: target.rows }, copy, message }; }
   catch (error: any) { toast(error.message); }
 }
@@ -1469,7 +1484,8 @@ export function updateProgress(screen: Screen): { percent: number; text: string 
 // ---- Top bar ----
 // Without a stored top bar the screen shows what it always did: the clock of show_clock.
 export const topbarItems = (page = state.barPage): HeaderItem[] => pageAt(page)?.topbar.trailing || [];
-export const topbarMax = () => state.inventory.header?.max_items || 6;
+// The items one page's top bar takes on this screen: its own (firmware 0.34.0+), else the add-on's six.
+export const topbarMax = () => currentScreen.value?.bar_limit || state.inventory.header?.max_items || 6;
 export function setTopbarItems(items: HeaderItem[], page = state.barPage) {
   if (!state.document || !state.documentGrid || !state.document.pages[page]) return;
   try { applyDocument(pages.setBarItems(state.document, state.documentGrid, state.document.pages[page].id, items, !pageReady.value)); }
@@ -1513,7 +1529,7 @@ export function topbarView(item: HeaderItem): ItemView {
   if (item.type === "date") return { text: dateText(now, screenLanguage.value), shown: true };
   if (item.type === "analog") return { analog: true, shown: true };
   const p = state.topbarPreviews[itemKey(item)];
-  if (!p) return { icon: item.icon === "none" ? null : iconNamed(item.icon)?.cp || automaticIcon(item.entity!), text: "…", shown: true, loading: true };
+  if (!p) return { icon: item.icon === "none" ? null : iconNamed(item.icon)?.cp || automaticIcon(item.entity!), text: item.content === "icon" ? "" : "…", shown: true, loading: true };
   return { icon: p.i || null, text: p.k === "ago" ? agoText(p.e, Math.floor(state.now / 1000), screenLanguage.value) : p.t, color: p.c ? `#${p.c}` : null, shown: p.shown };
 }
 export function moveTopbarItem(from: number, to: number) {

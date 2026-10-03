@@ -8,7 +8,8 @@ import asyncio
 from copy import deepcopy
 import json
 
-from core import ENTITY_REPEAT_MIN_FIRMWARE, FREE_PAGES_MIN_FIRMWARE, NIGHTSTAND_MIN_FIRMWARE, is_key, repeated_entities
+from core import (ENTITY_REPEAT_MIN_FIRMWARE, FIRMWARE_MAX_BAR_ITEMS, FIRMWARE_MAX_PAGES, FIRMWARE_MAX_TILES, FREE_PAGES_MIN_FIRMWARE,
+                  NIGHTSTAND_MIN_FIRMWARE, STORE_MAX_BAR_ITEMS, STORE_MAX_PAGES, STORE_MAX_TILES, is_key, repeated_entities)
 from page_layout import compile_tiles, fingerprint, grid_of_record, new_id
 from i18n import english
 
@@ -95,11 +96,13 @@ def tile_message(message, tile, *, initial, holders=None):
     return message
 
 
-def bar_value_messages(bars, previous):
+def bar_value_messages(bars, previous, stride=FIRMWARE_MAX_BAR_ITEMS):
     """Send each changed resolved value once, with bounded explicit destinations.
 
     Pages still own their bars. Only identical rendered values share a packet;
-    different formatting or colour choices remain independent.
+    different formatting or colour choices remain independent. A target is
+    page * stride + index: six, as every screen reads it, or the items a screen
+    said its bar holds (firmware 0.34.0+), which the message then names (`w`).
     """
     grouped, replacements = {}, []
     for page, items in enumerate(bars):
@@ -112,8 +115,9 @@ def bar_value_messages(bars, previous):
             if page < len(previous) and index < len(previous[page]) and item == previous[page][index]:
                 continue
             key = json.dumps(item, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-            message = grouped.setdefault(key, {"op": "bar_value", "item": item, "targets": []})
-            message["targets"].append(page * 6 + index)
+            message = grouped.setdefault(key, {"op": "bar_value", "item": item, "targets": [],
+                                               **({"w": stride} if stride != FIRMWARE_MAX_BAR_ITEMS else {})})
+            message["targets"].append(page * stride + index)
     return [*replacements, *grouped.values()]
 
 
@@ -137,6 +141,25 @@ def prepare(inbox, record, region, values, bars):
     for message in [begin, *initial_tiles, *initial_bars, *live_values]:
         bounded({**message, "v": PROTOCOL, "session": "0" * 16, "seq": 0xFFFFFFFF, "rev": revision})
     return begin, initial_tiles, initial_bars, live_values
+
+
+def ceiling_of(value, most):
+    """A ceiling from a hello (firmware 0.34.0+): a whole number from 1 to `most`, or None for anything else."""
+    return value if type(value) is int and 1 <= value <= most else None
+
+def memory_of(answer):
+    """The memory figures of a hello or ping reply (firmware 0.34.0+, components/smart_display/tile_memory.h), in bytes:
+    the room for tiles and what the tiles on the screen take, what the tile catalogue's prices need from the board to
+    price a tile (whether it has PSRAM, the size of a tile and of its block of extras: core.tile_cost), and whether a tile
+    went without its extras for want of memory lately. None when the screen says nothing."""
+    memory = answer.get("memory") if isinstance(answer, dict) else None
+    if not isinstance(memory, dict): return None
+    room, used, tile, extra, page = (memory.get(key) for key in ("room", "used", "tile", "extra", "page"))
+    if not all(type(value) is int and 0 <= value < 1 << 24 for value in (room, used, tile, extra, page)) or not tile or not extra:
+        return None
+    if type(memory.get("psram")) is not bool: return None
+    return {"room": room, "used": used, "psram": memory["psram"], "tile": tile, "extra": extra, "page": page,
+            "short": memory.get("short") == 1}
 
 
 class Sender:
@@ -169,6 +192,10 @@ class Sender:
         self.tile_repeats = False
         self.free_pages = False
         self.features = set()
+        # This screen's own ceilings and memory (firmware 0.34.0+): None while it has not said, and the last ones it said
+        # for editing while it is offline (page_capabilities keeps them across restarts of the app).
+        self.max_tiles = self.max_pages = self.max_bar_items = self.memory = None
+        self.last_max_tiles = self.last_max_pages = self.last_max_bar_items = self.last_memory = None
         self.structure, self.appearance = None, None
 
     def disconnected(self):
@@ -181,6 +208,7 @@ class Sender:
         self.tile_repeats = False
         self.free_pages = False
         self.features = set()
+        self.max_tiles = self.max_pages = self.max_bar_items = self.memory = None
         self.structure, self.appearance = None, None
         self.phase = "waiting"
         self.failed_revision = self.failure = None
@@ -211,6 +239,13 @@ class Sender:
             # and none of its own here. climate_range: a thermostat's range on its -/+. The older flags above stay.
             listed = answer.get("features")
             self.features = {name for name in listed if isinstance(name, str)} if isinstance(listed, list) else set()
+            # Its own ceilings and the memory its tiles may take (firmware 0.34.0+): 64 tiles over eight pages when it says
+            # nothing (core.Grid), and no memory check at all.
+            self.max_tiles = ceiling_of(answer.get("max_tiles"), STORE_MAX_TILES)
+            self.max_pages = ceiling_of(answer.get("max_pages"), STORE_MAX_PAGES)
+            self.max_bar_items = ceiling_of(answer.get("max_bar_items"), STORE_MAX_BAR_ITEMS)
+            self.last_max_tiles, self.last_max_pages, self.last_max_bar_items = self.max_tiles, self.max_pages, self.max_bar_items
+            self.heard(answer)
             return PROTOCOL
         # This is an answer from the running old firmware, not cached registry metadata.
         if isinstance(answer, dict) and answer.get("protocol") in (None, 1) and answer.get("status") == "Error: protocol version":
@@ -218,6 +253,12 @@ class Sender:
             self.last_protocol, self.last_tile_sizes = 1, {"single", "wide", "full"}
             return 1
         raise DeliveryError("The running screen's protocol could not be verified")
+
+    def heard(self, answer):
+        """The memory figures of a hello or a ping, kept as the last ones too. Both come from the running firmware, so an
+        answer without them means a firmware that keeps no budget (a screen flashed back to an older release): the figures
+        of the firmware before it go, as its ceilings do in the hello."""
+        self.memory = self.last_memory = memory_of(answer)
 
     async def probe(self):
         async with self.lock:
@@ -294,6 +335,17 @@ class Sender:
                         raise Refused(english('addon.errors.layout.firmware_first', version='.'.join(map(str, ENTITY_REPEAT_MIN_FIRMWARE))))
                     if not self.free_pages and begin["pages"] > grid_of_record(record).legacy_pages:
                         raise Refused(english('addon.errors.layout.firmware_first', version='.'.join(map(str, FREE_PAGES_MIN_FIRMWARE))))
+                    # Past this screen's own ceilings (64 and eight when it says none): refused here, before a begin the
+                    # screen would refuse with nothing more than "invalid layout".
+                    most_tiles = self.max_tiles or FIRMWARE_MAX_TILES
+                    most_pages = self.max_pages or FIRMWARE_MAX_PAGES
+                    if begin["tiles"] > most_tiles:
+                        raise Refused(english('addon.errors.layout.tiles_max', n=most_tiles))
+                    if begin["pages"] > most_pages:
+                        raise Refused(english('addon.errors.pages.pages_full'))
+                    most_items = self.max_bar_items or FIRMWARE_MAX_BAR_ITEMS
+                    if any(len(items) > most_items for items in bars):
+                        raise Refused(english('addon.errors.top_bar.full', n=most_items))
                     current()
                     answer = await self._packet(begin, revision)
                     self.revision = revision
@@ -312,7 +364,7 @@ class Sender:
                     if i >= len(self.values) or message != self.values[i]:
                         await self._packet(message, revision)
                         current()
-                updates = bar_value_messages(bars, self.bars) if self.bar_values else (
+                updates = bar_value_messages(bars, self.bars, self.max_bar_items or FIRMWARE_MAX_BAR_ITEMS) if self.bar_values else (
                     page_message(page, i, items, initial=False)
                     for i, (page, items) in enumerate(zip(pages, bars))
                     if i >= len(self.bars) or items != self.bars[i])
@@ -340,6 +392,7 @@ class Sender:
             try:
                 answer = await self._packet({"op": "ping"}, self.confirmed)
                 if not answer.get("applied"): raise DeliveryError("Screen needs synchronization")
+                self.heard(answer)
                 return True
             except (Exception, asyncio.CancelledError):
                 self.disconnected()

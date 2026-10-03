@@ -72,7 +72,8 @@
   ],
   "headerContents": [
     "state",
-    "last_changed"
+    "last_changed",
+    "icon"
   ],
   "headerShows": [
     "always",

@@ -204,7 +204,10 @@ describe("full-page tiles and navigation tiles (firmware 0.2.62+)", () => {
   });
   it("knows a navigation tile and gives it no default card", () => {
     expect(pageTarget("screen.page_3")).toBe(3);
-    expect(pageTarget("screen.page_9")).toBe(0);
+    // Two digits past nine on a board with more pages (firmware 0.34.0+); never a leading zero or a page 0.
+    expect(pageTarget("screen.page_9")).toBe(9);
+    expect(pageTarget("screen.page_24")).toBe(24);
+    expect([pageTarget("screen.page_0"), pageTarget("screen.page_01"), pageTarget("screen.page_100"), pageTarget("screen.page_1a")]).toEqual([0, 0, 0, 0]);
     expect(pageTarget("screen.clock")).toBe(0);
     expect(defaultOptions("screen.page_2")).toEqual({});
   });
@@ -267,7 +270,8 @@ describe("a whole page that moves (app 0.2.121)", () => {
     expect(retargetedPage("screen.page_1", to)).toBe("screen.page_2");
     expect(retargetedPage("light.a", to)).toBe("light.a");
     // A page number no screen can have is left alone.
-    expect(retargetedPage("screen.page_8", () => 9)).toBe("screen.page_8");
+    expect(retargetedPage("screen.page_8", () => 9)).toBe("screen.page_9");
+    expect(retargetedPage("screen.page_32", () => 33)).toBe("screen.page_32");
     expect(retargetedPage("screen.page_2", () => 0)).toBe("screen.page_2");
   });
 });
