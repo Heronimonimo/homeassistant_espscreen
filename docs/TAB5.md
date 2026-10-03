@@ -25,7 +25,8 @@ If it identifies another board, such as the CYD, reinstall the screen using the 
 reports the correct board.
 
 The landscape grid defaults to three rows of tiles. In **New screen**, choose four rows to fit more, smaller tiles on a
-page. The portrait grid remains one column by five rows.
+page. Both grid choices support up to 64 tiles across eight pages; the last page may be partly filled. The portrait
+grid remains one column by five rows.
 
 Camera tiles, live camera pictures, full-screen camera views, camera alerts and media artwork are enabled. Add a camera
 entity to a screen tile to use these features.

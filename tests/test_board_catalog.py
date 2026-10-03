@@ -138,6 +138,13 @@ class Choices(unittest.TestCase):
             self.assertEqual(path.name, f'{cells}.yaml')
             self.assertTrue(path.exists(), path)
             self.assertEqual(path.read_text().count('runtime_tiles::bind('), cells)
+            grid = core.grid_of({'board': 'tab5', 'grid_rows': int(rows)})
+            self.assertEqual((grid.pages, grid.max_tiles), (8, 64))
+            tiles = [{'entity': f'light.tab5_{n}', 'name': ''} for n in range(64)]
+            self.assertEqual(len(core.validate_layout({'title': 'Tab5', 'tiles': tiles}, grid=grid)['tiles']), 64)
+            with self.assertRaisesRegex(ValueError, 'at most 64'):
+                core.validate_layout({'title': 'Tab5', 'tiles': tiles + [{'entity': 'light.extra', 'name': ''}]},
+                                     grid=grid)
         import generate_cells
         self.assertIn(12, generate_cells.counts())
 
