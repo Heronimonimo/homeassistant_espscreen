@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT / 'screen_manager' / 'app'))
 import profiles  # noqa: E402
 import core  # noqa: E402
-import generate_cells  # noqa: E402
 import firmware as firmware_module  # noqa: E402
+import generate_cells  # noqa: E402
 
 SHAPES = json.loads((ROOT / 'screen_manager/app/boards.json').read_text())
 
@@ -45,8 +45,9 @@ class Catalog(unittest.TestCase):
         self.assertEqual((big['name'], big['inch'], big['touch'], big['status'], big['calibrate']),
                          ('Guition', 10.1, 'GSL3670', 'new', False))
         tab5 = firmware_module.BOARD_CHOICES['tab5']
-        self.assertEqual((tab5['name'], tab5['model'], tab5['inch'], tab5['touch'], tab5['status'], tab5['calibrate']),
-                         ('M5Stack Tab5', 'Tab5 ST7121', 5.0, 'ST7121', 'experimental', False))
+        self.assertEqual((tab5['name'], tab5['model'], tab5['inch'], tab5['touch'], tab5['status'], tab5['calibrate'],
+                          tab5['camera']),
+                         ('M5Stack Tab5', 'Tab5 ST7121', 5.0, 'ST7121', 'new', False, True))
         source = profiles.BOARDS['tab5'].read_text()
         self.assertIn('model: M5STACK-TAB5-ST7121', source)
         self.assertIn('platform: st7123', source)
@@ -137,6 +138,13 @@ class Choices(unittest.TestCase):
             self.assertEqual(path.name, f'{cells}.yaml')
             self.assertTrue(path.exists(), path)
             self.assertEqual(path.read_text().count('runtime_tiles::bind('), cells)
+            grid = core.grid_of({'board': 'tab5', 'grid_rows': int(rows)})
+            self.assertEqual((grid.pages, grid.max_tiles), (8, 64))
+            tiles = [{'entity': f'light.tab5_{n}', 'name': ''} for n in range(64)]
+            self.assertEqual(len(core.validate_layout({'title': 'Tab5', 'tiles': tiles}, grid=grid)['tiles']), 64)
+            with self.assertRaisesRegex(ValueError, 'at most 64'):
+                core.validate_layout({'title': 'Tab5', 'tiles': tiles + [{'entity': 'light.extra', 'name': ''}]},
+                                     grid=grid)
         import generate_cells
         self.assertIn(12, generate_cells.counts())
 
