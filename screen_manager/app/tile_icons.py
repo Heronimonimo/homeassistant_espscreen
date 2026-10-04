@@ -186,6 +186,7 @@ GROUPS = (
         ('alert-outline', 'F002A', 'Warning'),
         ('cog', 'F0493', 'Settings'),
         ('broom', 'F00E2', 'Cleaning'),
+        ('diabetes', 'F1126', 'Diabetes'),
     )),
 )
 
