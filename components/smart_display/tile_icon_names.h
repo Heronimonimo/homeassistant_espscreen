@@ -157,6 +157,7 @@ inline constexpr Named NAMES[] = {
   {"alert-outline", 0xF002A},
   {"cog", 0xF0493},
   {"broom", 0xF00E2},
+  {"diabetes", 0xF1126},
   {"alert-circle-outline", 0xF05D6},
   {"chevron-up", 0xF0143},
   {"chevron-down", 0xF0140},
