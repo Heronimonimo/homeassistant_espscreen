@@ -581,6 +581,11 @@ class CameraFeed:
                     await asyncio.wait_for(asyncio.shield(watch.task), wait)
                 except asyncio.TimeoutError:
                     return None
+            # Like a full-screen camera and the screensaver, get the next snapshot
+            # underway as soon as the first one is ready. The tile's own pace still
+            # controls when later requests start another fetch.
+            if watch.raw is not None:
+                self.refresh(entity, watch)
         elif self.clock() - watch.fetched_at >= pace:
             self.refresh(entity, watch)
         return watch.raw
