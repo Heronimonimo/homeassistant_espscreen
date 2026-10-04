@@ -901,7 +901,11 @@ class LiveTiles(unittest.TestCase):
             token = feed.link(','.join(tiles), (54, 54), live=(tiles, 54, grounds, paces))
             status, body, etag = await feed.serve(token)
             self.assertEqual(status, 200)
-            self.assertEqual(sorted(e for e, _ in fetched), ['camera.a', 'camera.b'], 'the first load waits for both')
+            # The first live tile load starts the next snapshots as the screensaver does, so the next
+            # display refresh can use a fresh image without waiting for its own request to fetch one.
+            await asyncio.sleep(0)
+            self.assertEqual(sorted(e for e, at in fetched if at == 1000.0),
+                             ['camera.a', 'camera.a', 'camera.b', 'camera.b'])
             # 15 s later the page loads again: only the 15 s camera is fetched again. The strip comes whole each
             # time, never a 304, whatever ETag the screen offers: ESPHome's http_request logs a 304 as an error (seen
             # on the bench Guition with a radar camera).
@@ -943,12 +947,13 @@ class LiveTiles(unittest.TestCase):
                 self.assertEqual(image.getpixel((27, 108 + 27)), (255, 255, 255), 'a radio without a picture: a plain square')
             found = await feed.live(tiles, 54, grounds, paces)
             self.assertEqual(found[2], ['camera.a', 'media_player.sonos', ''], 'the answer names the tiles with a picture')
-            # Every 15 s the camera again, the cover not: its address did not change.
+            # The first camera response starts one snapshot ahead, then every 15 s the camera again;
+            # the cover is still fetched once because its address did not change.
             for _ in range(3):
                 clock[0] += 15
                 await feed.serve(token)
             self.assertEqual(len([e for e, _ in fetched if e == 'media_player.sonos']), 1)
-            self.assertEqual(len([e for e, _ in fetched if e == 'camera.a']), 4)
+            self.assertEqual(len([e for e, _ in fetched if e == 'camera.a']), 5)
             # A new track: another address, fetched at the next load.
             pictures['media_player.sonos'] = '/api/media_player_proxy/media_player.sonos?token=a&cache=2'
             clock[0] += 15

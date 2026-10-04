@@ -84,11 +84,13 @@ cut square with the tile's rounded corners, delivered as described below.
   whole page gets one square of 128 px.
 - **At the pace of the fastest tile.** The page loads its pictures at the pace of its fastest live
   tile: every 15 s when any of its tiles says 15 s, every 30 s when all of them say 30 s (firmware before
-  0.3.7 loaded such a page every 15 s). The app fetches a camera again only when that camera's own pace
-  has passed, so a 30 s camera on a 15 s page is fetched every other load. The strip comes whole every time, never as a 304:
+  0.3.7 loaded such a page every 15 s). On the first load without a cached snapshot, the app starts one
+  follow-up fetch as soon as the first image arrives, like the full-screen camera and screensaver. Later,
+  it fetches a camera again only when that camera's own pace has passed, so a 30 s camera on a 15 s page
+  is fetched every other load. The strip comes whole every time, never as a 304:
   ESPHome's `http_request` logs a 304 as a failed request and raises its error flag, which a page of
-  slow cameras would do every 15 s. Nobody loading means nothing fetched, as with the camera full
-  screen.
+  slow cameras would do every 15 s. After that initial follow-up, nobody loading means nothing fetched,
+  as with the camera full screen.
 - **After the other pictures.** The strip waits for the alert's picture, a cover on its way and the
   camera full screen (one picture loads at a time), and does not load under an open card, in standby,
   under a finger or while the pages are turning. Dark mode (other colours behind the corners) or a
