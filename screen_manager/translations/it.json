@@ -928,7 +928,8 @@
         "like_not_listed": "Solo i plugin del catalogo di Tessera possono ricevere un mi piace.",
         "rate_not_installed": "Metti prima il plugin su uno dei tuoi schermi, poi potrai valutarlo.",
         "rate_failed": "Le stelle non sono state inviate. Riprova tra un attimo.",
-        "count_failed": "Non è stato possibile disattivare il conteggio: Tessera non era raggiungibile. Riprova tra un attimo."
+        "count_failed": "Non è stato possibile disattivare il conteggio: Tessera non era raggiungibile. Riprova tra un attimo.",
+        "forget_running": "Uno schermo usa ancora questo plugin. Toglilo prima dallo schermo."
       },
       "extras": {
         "request": "Questa modifica di un extra non è possibile su questo schermo."
@@ -2236,6 +2237,10 @@
         "text": "Aiuta gli altri a trovare buoni plugin. Mi piace e stelle partono solo quando li dai, il conteggio solo finché è attivo.",
         "asking": "Chiedi stelle qualche giorno dopo un nuovo plugin",
         "asking_hint": "Una scheda sopra lo schermo, un plugin alla volta."
+      },
+      "forget": {
+        "go": "Rimuovi dall'elenco",
+        "note": "Nessuno schermo usa questo plugin. Rimuovilo dall'elenco per dimenticare il link."
       }
     },
     "plugin_tile": {

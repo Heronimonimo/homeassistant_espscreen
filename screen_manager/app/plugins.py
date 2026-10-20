@@ -850,6 +850,16 @@ class Plugins:
         self._know_tiles()
         return entry
 
+    def forget_link(self, plugin):
+        """Take a plugin someone added with a link (a release or a branch) off the Plugins page again. Only one that
+        runs on no screen: one a screen runs is taken off the screen first, which is what keeps its commit pinned."""
+        if plugin not in self.links:
+            raise ValueError(t('addon.errors.plugins.unknown', id=plugin))
+        if any(record['id'] == plugin for records in self.store.everywhere().values() for record in records):
+            raise ValueError(t('addon.errors.plugins.forget_running'))
+        del self.links[plugin]
+        self._know_tiles()
+
     async def refresh_links(self, force=False):
         """A plugin added with a link follows its repository: its newest release (a link) or the newest commit of its
         branch (a test) is asked for at most every LINK_TTL, and the editor offers it as an update. The repository is

@@ -928,7 +928,8 @@
         "like_not_listed": "Só os plugins do catálogo do Tessera podem receber um gosto.",
         "rate_not_installed": "Ponha primeiro o plugin num dos seus ecrãs e depois pode avaliá-lo.",
         "rate_failed": "As estrelas não foram enviadas. Tente de novo daqui a pouco.",
-        "count_failed": "Não foi possível desligar a contagem: o Tessera não estava acessível. Tente de novo daqui a pouco."
+        "count_failed": "Não foi possível desligar a contagem: o Tessera não estava acessível. Tente de novo daqui a pouco.",
+        "forget_running": "Um ecrã ainda usa este plugin. Retire-o primeiro do ecrã."
       },
       "extras": {
         "request": "Esta alteração de um extra não é possível neste ecrã."
@@ -2236,6 +2237,10 @@
         "text": "Ajude outros a encontrar bons plugins. Gostos e estrelas só seguem quando os dá, a contagem só enquanto estiver ligada.",
         "asking": "Pedir estrelas alguns dias depois de um plugin novo",
         "asking_hint": "Um cartão por cima do ecrã, um plugin de cada vez."
+      },
+      "forget": {
+        "go": "Remover da lista",
+        "note": "Nenhum ecrã usa este plugin. Remova-o da lista para esquecer a ligação."
       }
     },
     "plugin_tile": {

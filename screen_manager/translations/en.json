@@ -928,7 +928,8 @@
         "like_not_listed": "Only plugins of Tessera's catalogue can be liked.",
         "rate_not_installed": "Put the plugin on one of your screens first, then you can rate it.",
         "rate_failed": "The stars did not go out. Try again in a moment.",
-        "count_failed": "Counting could not be turned off: Tessera could not be reached. Try again in a moment."
+        "count_failed": "Counting could not be turned off: Tessera could not be reached. Try again in a moment.",
+        "forget_running": "A screen still runs this plugin. Take it off the screen first."
       },
       "extras": {
         "request": "This change of an extra is not possible on this screen."
@@ -3912,6 +3913,10 @@
         "text": "Help others find good plugins. Hearts and stars go only when you give them, counting only while it is on.",
         "asking": "Ask for stars a few days after a new plugin",
         "asking_hint": "A card above the screen, one plugin at a time."
+      },
+      "forget": {
+        "go": "Remove from the list",
+        "note": "No screen runs this plugin. Remove it from the list to forget the link."
       }
     },
     "plugin_tile": {

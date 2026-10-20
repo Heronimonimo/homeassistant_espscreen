@@ -928,7 +928,8 @@
         "like_not_listed": "Solo los plugins del catálogo de Tessera pueden recibir un me gusta.",
         "rate_not_installed": "Pon primero el plugin en una de tus pantallas y después podrás valorarlo.",
         "rate_failed": "Las estrellas no se enviaron. Inténtalo de nuevo en un momento.",
-        "count_failed": "No se pudo desactivar el recuento: no se pudo contactar con Tessera. Inténtalo de nuevo en un momento."
+        "count_failed": "No se pudo desactivar el recuento: no se pudo contactar con Tessera. Inténtalo de nuevo en un momento.",
+        "forget_running": "Una pantalla todavía usa este plugin. Quítalo primero de la pantalla."
       },
       "extras": {
         "request": "Este cambio de un extra no es posible en esta pantalla."
@@ -2236,6 +2237,10 @@
         "text": "Ayuda a otros a encontrar buenos plugins. Los me gusta y las estrellas solo se envían cuando los das, el recuento solo mientras está activado.",
         "asking": "Pedir estrellas unos días después de un plugin nuevo",
         "asking_hint": "Una tarjeta encima de la pantalla, un plugin cada vez."
+      },
+      "forget": {
+        "go": "Quitar de la lista",
+        "note": "Ninguna pantalla usa este plugin. Quítalo de la lista para olvidar el enlace."
       }
     },
     "plugin_tile": {

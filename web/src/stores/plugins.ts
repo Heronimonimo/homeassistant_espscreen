@@ -380,6 +380,13 @@ export const usePluginsStore = defineStore("plugins", () => {
     if (consent) likeConsent.value = true;
   }
   type Rated = { stars: number | null; rating: number | null; ratings: number; homes: number };
+  // A plugin added with a link that runs on no screen, off the Plugins page again (the add-on only keeps it in memory).
+  const runsAnywhere = (id: string) => Object.values(installed.value).some((list) => list.some((item) => item.id === id));
+  const forgettable = (plugin: Plugin) => (plugin.source === "link" || plugin.source === "branch") && !runsAnywhere(plugin.id);
+  async function forgetLink(plugin: Pick<Plugin, "id">) {
+    await send(`plugins/${plugin.id}/link`, "DELETE");
+    await reloadPlugins();
+  }
   async function rate(plugin: Pick<Plugin, "id">, stars: number | null, screen?: string) {
     const result = await send<Rated>(`plugins/${plugin.id}/rating`, "PUT", { stars, ...(screen ? { screen } : {}) });
     const listed = index.value.find((p) => p.id === plugin.id);
@@ -598,7 +605,7 @@ export const usePluginsStore = defineStore("plugins", () => {
 
   return {
     index, installed, loaded, received, secrets, files, choices, previews, entities, pluginEntities, folders, features, likeConsent, likeAsk, sharing, appFit,
-    values, parts, attached, focus, consented, plans, providers, tray, pluginsEnabled, trayGroups,
+    values, parts, attached, focus, consented, plans, providers, tray, pluginsEnabled, trayGroups, forgettable, forgetLink,
     // What the Plugins page, a screen's tab and the cards read as they draw (stores/lookup.ts); choicesFor, previewFor and
     // planOn answer at once and ask the add-on for what they do not have yet.
     ...lookups({

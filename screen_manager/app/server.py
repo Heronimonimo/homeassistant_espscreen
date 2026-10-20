@@ -5063,6 +5063,11 @@ def create_app(manager, development=False):
             return web.json_response(manager.plugins.editor_plugin(entry, REQUEST_LANGUAGE.get()))
         app.router.add_post('/api/plugins/link', plugins_link)
 
+        async def plugins_forget(request):
+            manager.plugins.forget_link(request.match_info['plugin'])
+            return web.json_response({'ok': True})
+        app.router.add_delete('/api/plugins/{plugin}/link', plugins_forget)
+
         async def plugins_settings(request):
             return web.json_response(manager.plugins.settings_for(request.match_info['inbox'], REQUEST_LANGUAGE.get()))
 

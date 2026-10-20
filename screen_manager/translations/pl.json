@@ -928,7 +928,8 @@
         "like_not_listed": "Polubić można tylko wtyczki z katalogu Tessery.",
         "rate_not_installed": "Najpierw dodaj wtyczkę do jednego z ekranów, wtedy możesz ją ocenić.",
         "rate_failed": "Gwiazdki nie zostały wysłane. Spróbuj za chwilę.",
-        "count_failed": "Nie udało się wyłączyć liczenia: Tessera była nieosiągalna. Spróbuj za chwilę."
+        "count_failed": "Nie udało się wyłączyć liczenia: Tessera była nieosiągalna. Spróbuj za chwilę.",
+        "forget_running": "Ekran nadal używa tej wtyczki. Najpierw zdejmij ją z ekranu."
       },
       "extras": {
         "request": "Tej zmiany dodatku nie można wprowadzić na tym ekranie."
@@ -2236,6 +2237,10 @@
         "text": "Pomóż innym znaleźć dobre wtyczki. Polubienia i gwiazdki wysyłane są tylko, gdy je dajesz, a liczenie tylko, gdy jest włączone.",
         "asking": "Proś o gwiazdki kilka dni po nowej wtyczce",
         "asking_hint": "Karta nad ekranem, po jednej wtyczce."
+      },
+      "forget": {
+        "go": "Usuń z listy",
+        "note": "Żaden ekran nie używa tej wtyczki. Usuń ją z listy, aby zapomnieć link."
       }
     },
     "plugin_tile": {

@@ -589,6 +589,40 @@ class LinkFolder(unittest.IsolatedAsyncioTestCase):
         entry = await service.resolve_link('https://github.com/someone/plugins/tree/main/plugins/bus')
         self.assertEqual(entry.ref, 'm' * 40)
 
+    async def test_a_link_nobody_runs_can_be_forgotten(self):
+        # A release read from a link lives in the app's memory only; with no screen running it, it can leave the list.
+        import yaml
+        import plugins as plugin_service
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        service = plugin_service.Plugins(type('Manager', (), {'page_senders': {}})(), Path(tmp.name) / 'data',
+                                         Path(tmp.name) / 'esphome')
+
+        async def github(url, text=False):
+            if url.endswith('/releases/latest'):
+                return {'tag_name': 'v1.0.0'}
+            if '/commits/' in url:
+                return {'sha': 'r' * 40}
+            if url.endswith('tessera-plugin.yaml'):
+                return yaml.safe_dump(manifest())
+            if '/contents/' in url and 'translations' in url:
+                return [{'name': 'en.json'}]
+            if url.endswith('translations/en.json'):
+                return json.dumps(ENGLISH)
+            return []
+        service._github = github
+        entry = await service.resolve_link('https://github.com/someone/tessera-bus')
+        self.assertIn(entry.id, service.listed())
+        service.store.put('screen-1', {'id': entry.id, 'source': 'link', 'ref': entry.ref, 'version': entry.version})
+        with self.assertRaises(ValueError):
+            service.forget_link(entry.id)           # a screen still runs it
+        self.assertIn(entry.id, service.listed())
+        service.store.remove('screen-1', entry.id)
+        service.forget_link(entry.id)
+        self.assertNotIn(entry.id, service.listed())
+        with self.assertRaises(ValueError):
+            service.forget_link(entry.id)           # already gone
+
     async def test_its_picture_for_the_plugins_page(self):
         # store.png beside the manifest, at most a megabyte, is the plugin's picture; the app fetches it when shown.
         import yaml

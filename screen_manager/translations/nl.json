@@ -928,7 +928,8 @@
         "like_not_listed": "Alleen plugins uit de catalogus van Tessera kun je een hartje geven.",
         "rate_not_installed": "Zet de plugin eerst op een van je schermen, dan kun je hem beoordelen.",
         "rate_failed": "De sterren zijn niet verstuurd. Probeer het zo nog eens.",
-        "count_failed": "Meetellen kon niet uit: Tessera was niet bereikbaar. Probeer het zo nog eens."
+        "count_failed": "Meetellen kon niet uit: Tessera was niet bereikbaar. Probeer het zo nog eens.",
+        "forget_running": "Een scherm gebruikt deze plugin nog. Haal hem eerst van het scherm."
       },
       "extras": {
         "request": "Deze extra kan op dit scherm niet zo worden gewijzigd."
@@ -3912,6 +3913,10 @@
         "text": "Help anderen goede plugins te vinden. Hartjes en sterren gaan alleen als jij ze geeft, meetellen alleen zolang het aan staat.",
         "asking": "Vraag om sterren een paar dagen na een nieuwe plugin",
         "asking_hint": "Een kaart boven het scherm, één plugin tegelijk."
+      },
+      "forget": {
+        "go": "Uit de lijst halen",
+        "note": "Geen enkel scherm gebruikt deze plugin. Haal hem uit de lijst om de link te vergeten."
       }
     },
     "plugin_tile": {

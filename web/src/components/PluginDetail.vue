@@ -22,7 +22,7 @@ const ui = useUiStore();
 const plugins = usePluginsStore();
 
 const props = defineProps<{ plugin: Plugin; screen?: Screen | null }>();
-defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: [] }>();
 
 const label = computed(() => plugins.labelOf(props.plugin));
 const stage = computed(() => plugins.stageOf(props.plugin));
@@ -66,6 +66,10 @@ function confirmRemove() {
   const ask = confirming.value!;
   confirming.value = null;
   plugins.setAsideRemoval(ask.screens, props.plugin, [...ask.with, ...(alsoOrphans.value ? ask.orphans : [])]);
+}
+// A plugin added with a link and run by no screen is taken off the list again.
+async function forget() {
+  try { await plugins.forgetLink(props.plugin); emit("close"); } catch (error: any) { ui.toast(error.message); }
 }
 // A like, for any plugin of the index: the first one asks once whether it may count in a public number (plugin_likes.py).
 // A heart on a card in the list that had not asked yet opens these details with the question (likeAsk).
@@ -230,6 +234,11 @@ const history = computed(() => (!newsFrom.value ? changesBetween(text(props.plug
       <li><Icon name="wifi-strength-off-outline" /><span><b>{{ plugin.permissions.network.length ? t("editor.plugins.may.network", { hosts: plugin.permissions.network.join(", ") }) : t("editor.plugins.may.network_none") }}</b></span></li>
     </ul>
     <p v-if="!plugin.tessera" class="pd-warning" id="plugin-warning">{{ t("editor.plugins.warning") }}</p>
+  </section>
+
+  <section v-if="plugins.forgettable(plugin)" class="pd-section" id="plugin-forget">
+    <p class="pd-note">{{ t("editor.plugins.forget.note") }}</p>
+    <button type="button" class="btn" id="plugin-forget-go" @click="forget"><Icon name="delete-outline" />{{ t("editor.plugins.forget.go") }}</button>
   </section>
 
   <section v-if="label !== 'test'" class="pd-section">

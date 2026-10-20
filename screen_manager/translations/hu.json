@@ -928,7 +928,8 @@
         "like_not_listed": "Csak a Tessera katalógusában lévő bővítményeket lehet kedvelni.",
         "rate_not_installed": "Előbb tedd fel a bővítményt az egyik kijelződre, utána értékelheted.",
         "rate_failed": "A csillagok nem mentek el. Próbáld újra egy kicsit később.",
-        "count_failed": "A számolást nem sikerült kikapcsolni: a Tessera nem volt elérhető. Próbáld újra egy kicsit később."
+        "count_failed": "A számolást nem sikerült kikapcsolni: a Tessera nem volt elérhető. Próbáld újra egy kicsit később.",
+        "forget_running": "Egy képernyő még használja ezt a bővítményt. Előbb vedd le a képernyőről."
       },
       "extras": {
         "request": "Ez a módosítás ezen a kijelzőn nem lehetséges."
@@ -2236,6 +2237,10 @@
         "text": "Segíts másoknak jó bővítményeket találni. Kedvelés és csillag csak akkor megy, ha te adod, a számolás csak amíg be van kapcsolva.",
         "asking": "Csillagok kérése néhány nappal egy új bővítmény után",
         "asking_hint": "Egy kártya a kijelző fölött, egyszerre egy bővítményről."
+      },
+      "forget": {
+        "go": "Eltávolítás a listából",
+        "note": "Egyetlen képernyő sem használja ezt a bővítményt. Távolítsd el a listából, hogy a hivatkozás feledésbe merüljön."
       }
     },
     "plugin_tile": {

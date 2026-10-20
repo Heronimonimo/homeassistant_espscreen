@@ -928,7 +928,8 @@
         "like_not_listed": "Nur Plugins aus dem Katalog von Tessera können ein Gefällt mir bekommen.",
         "rate_not_installed": "Setz das Plugin zuerst auf einen deiner Bildschirme, dann kannst du es bewerten.",
         "rate_failed": "Die Sterne wurden nicht gesendet. Versuch es gleich noch einmal.",
-        "count_failed": "Das Mitzählen ließ sich nicht ausschalten: Tessera war nicht erreichbar. Versuch es gleich noch einmal."
+        "count_failed": "Das Mitzählen ließ sich nicht ausschalten: Tessera war nicht erreichbar. Versuch es gleich noch einmal.",
+        "forget_running": "Ein Bildschirm nutzt dieses Plugin noch. Nimm es zuerst vom Bildschirm."
       },
       "extras": {
         "request": "Diese Änderung eines Extras ist auf diesem Bildschirm nicht möglich."
@@ -2236,6 +2237,10 @@
         "text": "Hilf anderen, gute Plugins zu finden. Gefällt mir und Sterne gehen nur, wenn du sie gibst, das Mitzählen nur, solange es an ist.",
         "asking": "Ein paar Tage nach einem neuen Plugin nach Sternen fragen",
         "asking_hint": "Eine Karte über dem Bildschirm, ein Plugin nach dem anderen."
+      },
+      "forget": {
+        "go": "Aus der Liste entfernen",
+        "note": "Kein Bildschirm nutzt dieses Plugin. Entferne es aus der Liste, um den Link zu vergessen."
       }
     },
     "plugin_tile": {

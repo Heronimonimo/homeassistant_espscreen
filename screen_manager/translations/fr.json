@@ -928,7 +928,8 @@
         "like_not_listed": "Seuls les plugins du catalogue de Tessera peuvent recevoir un j'aime.",
         "rate_not_installed": "Mettez d'abord le plugin sur un de vos écrans, vous pourrez ensuite le noter.",
         "rate_failed": "Les étoiles ne sont pas parties. Réessayez dans un instant.",
-        "count_failed": "Le comptage n'a pas pu être désactivé : Tessera était injoignable. Réessayez dans un instant."
+        "count_failed": "Le comptage n'a pas pu être désactivé : Tessera était injoignable. Réessayez dans un instant.",
+        "forget_running": "Un écran utilise encore ce plugin. Retirez-le d'abord de l'écran."
       },
       "extras": {
         "request": "Ce changement d’un extra n’est pas possible sur cet écran."
@@ -2236,6 +2237,10 @@
         "text": "Aidez les autres à trouver de bons plugins. Les j'aime et les étoiles ne partent que si vous les donnez, le comptage seulement tant qu'il est activé.",
         "asking": "Demander des étoiles quelques jours après un nouveau plugin",
         "asking_hint": "Une carte au-dessus de l'écran, un plugin à la fois."
+      },
+      "forget": {
+        "go": "Retirer de la liste",
+        "note": "Aucun écran n'utilise ce plugin. Retirez-le de la liste pour oublier le lien."
       }
     },
     "plugin_tile": {

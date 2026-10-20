@@ -6,6 +6,8 @@
   opens it full screen, with the calendar card's header: Day, Week, Month and Year as keys, Today, and back and forward
   to earlier periods. A circle still opens its sensor's history. A screen needs this firmware to show a period; with
   older firmware it keeps showing the power now.
+- **A plugin added with a link can be taken off the list again.** A release added with a link that no screen runs (an old try-out) had no way off the Plugins page except restarting the app. Its details now have "Remove from the list". A plugin a screen still runs is taken off the screen first.
+
 - **Pictures in one system (docs/PICTURES.md).** Every picture a screen shows now goes one way: the camera full
   screen, a camera's or a cover's tile, a map, the media card's cover, a player's library, a vacuum's map, the
   screensaver's cover, camera and photos, an alert's picture and a plugin's places. A screen asks for each as one
