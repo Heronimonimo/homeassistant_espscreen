@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **The energy card shows energy over a period (docs/ENERGY.md).** Its new Show choice is Power now (as before), Today,
+  This week, This month or This year: the same diagram with how much each source gave and took in kWh and what each
+  device used, split the way Home Assistant's energy dashboard splits it, with the period named over the diagram. A tap
+  opens it full screen, with the calendar card's header: Day, Week, Month and Year as keys, Today, and back and forward
+  to earlier periods. A circle still opens its sensor's history. A screen needs this firmware to show a period; with
+  older firmware it keeps showing the power now.
 - **Pictures in one system (docs/PICTURES.md).** Every picture a screen shows now goes one way: the camera full
   screen, a camera's or a cover's tile, a map, the media card's cover, a player's library, a vacuum's map, the
   screensaver's cover, camera and photos, an alert's picture and a plugin's places. A screen asks for each as one
