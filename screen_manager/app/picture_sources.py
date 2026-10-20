@@ -497,7 +497,7 @@ class Sources:
         if display == 'cover':
             if rest_mosaic.wants(options) and rest_mosaic.at_rest(m.ha.states.get(m.followed(entity))) and \
                     (m.rest_pools.get(entity) or (0, []))[1]:
-                mark, draw = m.rest_render(entity)
+                mark, draw = m.rest_render(entity, rest_mosaic.rows_for(options))
                 return Resolved(_Drawn(draw), f'mosaic:{mark()}')
             found = await self.snapshots.cover(entity)
             return Resolved(found[0], f'cover:{found[1][:16]}') if found else NONE

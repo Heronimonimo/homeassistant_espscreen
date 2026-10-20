@@ -17,7 +17,8 @@ the cheapest road there is (measured 2026-10-10 on an EZVIZ, 1080p main stream a
   made straight from the decoder's YUV with ffmpeg's encoder, at the camera's own size (1 ms for 512 x 288 on a PC,
   where Pillow from RGB took 3), or scaled down to the room where the camera is larger (7 ms for 1080p to 720p, Pillow
   19). Until WebRTC's first frame (it waits for the camera's next key frame, seconds on some cameras) the screen gets
-  the camera's still.
+  the camera's still, each such part marked `X-Picture: still`: the screen turns a loader over it until the first part
+  without the mark (live_view.h, "Until it is live"). A screen that knows no mark shows it as any picture.
 - Any other camera (a snapshot camera, an ESPHome camera, a picture an integration draws) gives its snapshot, asked
   again as soon as the last came. A JPEG the P4 decodes as it is (baseline, at most MAX_SIDE a side) goes out untouched,
   which costs this app nothing; anything else is made into one.
@@ -190,10 +191,11 @@ class Encoder:
 
 
 class Frame:
-    __slots__ = ('number', 'jpeg', 'video', 'at')
+    """A camera's picture; `still` when it is the camera's still from before its stream came."""
+    __slots__ = ('number', 'jpeg', 'video', 'at', 'still')
 
-    def __init__(self, number, jpeg=None, video=None):
-        self.number, self.jpeg, self.video, self.at = number, jpeg, video, time.monotonic()
+    def __init__(self, number, jpeg=None, video=None, still=False):
+        self.number, self.jpeg, self.video, self.at, self.still = number, jpeg, video, time.monotonic(), still
 
 
 class Source:
@@ -219,9 +221,9 @@ class Source:
     def mark(self, what):
         self.marks.setdefault(what, time.monotonic() - self.started)
 
-    async def publish(self, jpeg=None, video=None):
+    async def publish(self, jpeg=None, video=None, still=False):
         self.number += 1
-        self.frame = Frame(self.number, jpeg, video)
+        self.frame = Frame(self.number, jpeg, video, still)
         async with self.changed:
             self.changed.notify_all()
 
@@ -331,13 +333,16 @@ class Source:
         each frame while `keep()`. False when no frame of the first kind came within WEBRTC_FIRST_SECONDS or the session
         could not start."""
         try:
-            from aiortc import RTCPeerConnection, RTCSessionDescription
+            from aiortc import RTCConfiguration, RTCPeerConnection, RTCSessionDescription
             from aiortc.sdp import candidate_from_sdp
         except ImportError:
             return False
         kind = kinds[0]
         first = asyncio.Event()
-        connection = RTCPeerConnection()
+        # No STUN server: this app and Home Assistant share a network (the Supervisor's, or the LAN), where the host's
+        # own addresses reach each other. aiortc asks Google's STUN server by default and the offer waited for its answer,
+        # about five seconds on a LAN without one, before every live camera started (2026-10-20, a full view and a tile).
+        connection = RTCPeerConnection(RTCConfiguration(iceServers=[]))
         for each in kinds:
             connection.addTransceiver(each, direction='recvonly')
         pulls = []
@@ -464,7 +469,7 @@ class Source:
                 raw = await self.feed.fetch(self.entity)
                 self.mark('still')
                 if raw and not first.is_set():
-                    await self.publish(jpeg=raw)
+                    await self.publish(jpeg=raw, still=True)
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 - only the pictures before the stream's; the next is tried
@@ -599,7 +604,8 @@ class LiveFeed:
                 jpeg = await source.picture(frame, link.box, link.cover)
                 if not jpeg:
                     continue
-                await write(b'--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n' % len(jpeg), jpeg)
+                await write(b'--frame\r\nContent-Type: image/jpeg\r\n%sContent-Length: %d\r\n\r\n'
+                            % (b'X-Picture: still\r\n' if frame.still else b'', len(jpeg)), jpeg)
                 if not sent:
                     LOG.info('Live %s: first picture %.1f s after the link went out (the screen came %.1f s after it); '
                              'its source: %s', link.entity, self.clock() - link.made, began - link.made,

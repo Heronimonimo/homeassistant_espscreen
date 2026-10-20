@@ -62,6 +62,11 @@ substitutions:
   # amplifier's enable.
   AUDIO_DIN_PIN: GPIO11
   AUDIO_AMPLIFIER_PIN: GPIO20
+  # The camera's sensor (the feature camera_sensor, docs/PLUGINS.md): the OmniVision OV02C10 on the MIPI-CSI port of
+  # the boards that carry one (the "C" in Guition's model name). It answers on the touch bus at 0x36, clocks itself
+  # and has no reset or power-down pin; a camera plugin drives it (screen_camera), as sullb/esphome-p4-csi-camera ran it on the JC8012P4A1C.
+  CAMERA_I2C: touch_bus
+  CAMERA_XCLK_PIN: "-1"                        # the sensor has its own clock
 
 # ============================================================
 # No need to edit below this line.

@@ -798,6 +798,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -1054,6 +1055,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -1186,6 +1188,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -1318,6 +1321,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -1450,6 +1454,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -4463,6 +4468,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -4719,6 +4725,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -4851,6 +4858,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -4983,6 +4991,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -5115,6 +5124,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -6130,6 +6140,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -6386,6 +6397,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -6518,6 +6530,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -6650,6 +6663,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",
@@ -6782,6 +6796,7 @@
    "speaker",
    "microphone",
    "media_player",
+   "camera_sensor",
    "bluetooth"
   ],
   "firmware": "0.57.0",

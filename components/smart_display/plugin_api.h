@@ -71,10 +71,14 @@ namespace tessera {
 // block (places that lie over each other, a cover flow); on_picture(place, PictureState) on a tile, a card and a
 // screensaver, whether a place's picture came; the core's sources as a place's address (`cover:<entity>`,
 // `camera:<entity>`, `entity:<entity>` for a place of that entity, `step:` for the screensaver step's own picture, the
-// old `saver:picture` still read); slide_pictures from any call of a tile or a card; and capturing(), a plugin that uses
+// old `saver:picture` still read); slide_pictures from any call of a tile or a card; ui::live, a tile's place that
+// streams its camera on a P4 as a camera tile set to Live does; and capturing(), a plugin that uses
 // the screen's own camera on the screen itself, which the core then shows with its dot (the core shows Home
 // Assistant's own use of the camera by itself).
-constexpr uint8_t PLUGIN_API_MAJOR = 0, PLUGIN_API_MINOR = 17;
+// 0.18: popups (show_popup, close_popup, popup_shown, Popup): the alert's card in the middle of the glass with what the
+// plugin draws in it, as high as that, over everything but an alert, for a voice assistant that listens, thinks and
+// answers; and ui::animate and ui::still, a part of it that pulses, spins or ripples while something goes on.
+constexpr uint8_t PLUGIN_API_MAJOR = 0, PLUGIN_API_MINOR = 18;
 
 // The screen's fixed fonts, largest first. A tile takes the largest that fits; a plugin brings no font of its own.
 // VALUE is the big number of a watch card, HEADLINE a card's large words, TITLE a card's name, BODY its second line,
@@ -180,6 +184,52 @@ class Card : public InPsram {
   virtual void on_tap() {}
   // What came of the picture of one of its places (0.17), as Tile::on_picture.
   virtual void on_picture(lv_obj_t *place, PictureState state) {}
+};
+
+// How a part moves (0.18, ui::animate). PULSE: its opacity goes from full to a fifth and back. SPIN: it turns around its
+// middle (a ring with one side drawn, an icon). RIPPLE: it grows to half again its size while it fades out, as a ripple
+// on water, and starts again.
+enum class Motion : uint8_t { PULSE, SPIN, RIPPLE };
+
+// How wide a popup is (0.18): ALERT, as an alert's card on this glass and at least two fifths of the glass's width (for
+// words, a question and its answer); WIDE, the glass less its edge on each side (a list, a row of keys).
+enum class PopupWidth : uint8_t { ALERT, WIDE };
+
+// What a popup gets when it shows (0.18): the room inside its card. The card is as high as what the popup puts in the
+// room, up to `height`: lay the parts out from the top, and the card follows when they grow or shrink (a part that is
+// hidden takes no room). What lies below `height` is cut off; a part that moves (ui::animate) may reach out over the
+// room's edge into the card's.
+struct PopupContext {
+  lv_obj_t *parent;          // the card's room, inside its edge: everything the popup makes goes in here
+  int width, height;         // the room's width, and the most it may grow to on this glass, in pixels
+  int key;                   // the close key's size: it stands in the room's top right corner, as high as a first row
+                             // of that size (a disc, an icon) at the top left, on the same line and as far in
+  int corner;                // how far the first row keeps from the right for it: the key and a gap
+};
+
+// A popup of a plugin (0.18, docs/PLUGINS.md "A popup"): the card an alert of Home Assistant shows (its width on this
+// glass, its corners and colours, in the middle over the dimmed screen), as high as what the plugin draws in it, for a
+// moment that wants the eye now: a voice assistant that listens, thinks and answers, a timer that went off, a question.
+// Its top right corner holds the round close key of every card's top bar (PopupContext::corner). It lies over the page,
+// a card, the settings and the screensaver, and under an alert. One shows at a time, of any plugin, and showing one
+// lights a dark screen (as wake() does), also one that Home Assistant's Sleep put out. It goes when its plugin closes it
+// (tessera::close_popup) or shows another, and by itself on its close key, a tap beside the card, when the screen goes
+// dark, before an update and when an alert comes: then it hears on_dismiss first. It may close itself from any of its
+// own calls; it leaves the glass at once and is deleted once that call returned. It shows no pictures (ui::picture).
+class Popup : public InPsram {
+ public:
+  virtual ~Popup() = default;
+  virtual void open(const PopupContext &context) = 0;
+  // Every 250 ms while it shows, with millis(): for what moves on by itself (words that come one by one).
+  virtual void on_interval(uint32_t now_ms) {}
+  // Once a second while it shows, with the screen's clock.
+  virtual void on_tick(uint32_t epoch) {}
+  virtual void on_theme() {}
+  // A tap on the card through the touch filter, as Card::on_tap: tap_point() says where, in the room's pixels.
+  virtual void on_tap() {}
+  // It goes by itself (its close key, a tap beside it, the screen going dark, an update, an alert, another plugin's
+  // popup): the last call before it is deleted. Not when its own plugin closed it or showed another.
+  virtual void on_dismiss() {}
 };
 
 // A tap action on a tile of Home Assistant's own (a thermostat that opens the plugin's schedule): what it was tapped on.
@@ -471,6 +521,14 @@ bool open_card(const char *plugin_id, const char *card, const std::string &entit
                const std::string &title = "");
 // Close the card that is open, as Back does.
 void close_card();
+// Show a popup of this plugin over the glass (0.18), made by `make` (the core deletes it), in place of the popup shown
+// now. A dark screen lights up first, as wake() does: a popup is something to see. Call it from the plugin's own calls
+// (the screen's loop). False when nothing could show (`make` returned none).
+bool show_popup(const Plugin *plugin, std::function<Popup *()> make, PopupWidth width = PopupWidth::ALERT);
+// Close this plugin's popup, if it shows one (it hears no on_dismiss).
+void close_popup(const Plugin *plugin);
+// Whether a popup of this plugin shows.
+bool popup_shown(const Plugin *plugin);
 // Where the finger of a tile's on_tap was (0.10), in the pixels of the tile's drawing area (TileContext::parent: 0,0
 // its top left, width and height as create() got them), so a tile with a list or a row of posters knows which one was
 // tapped; or of a card's on_tap (0.12), in the pixels of its room (CardContext::parent). Valid during on_tap; -1,-1
@@ -610,6 +668,20 @@ void set_picture(lv_obj_t *place, const std::string &url, Fit fit, Turn turn, bo
 // set_picture calls of a change (a cover flow that turns), so the change shows which way it goes while the next picture
 // comes. Call it in any call of the tile or the card (on_state, on_tap, on_tick).
 void slide_pictures(int dx, uint32_t ms = 300);
+// The part moves once every `period_ms`, again and again, starting `delay_ms` from now (three dots that pulse one after
+// the other, two ripples half a period apart), until ui::still or until the part is deleted. For a popup, whose moment
+// is short (a microphone that listens, a ring that turns while it thinks); a tile, a card and a screensaver stand
+// still, since the screen draws the part again in every frame while it moves. Keep a part that moves small: it is drawn
+// anew each frame, and a part that spins or ripples through a layer of its own.
+void animate(lv_obj_t *part, Motion motion, uint32_t period_ms, uint32_t delay_ms = 0);
+// The part stops moving and shows as it was laid out: whole, upright, at its size.
+void still(lv_obj_t *part);
+// A tile's place shows its camera live (0.17): a place whose address is `camera:<entity>` of the tile's own entity
+// streams on a screen that streams (the ESP32-P4 boards) while it is on the glass, the page stands still and nothing
+// lies over it, exactly as a camera tile set to Live does (docs/PICTURES.md); everywhere else, and until its first live
+// picture, it shows its stills. Lay nothing over a live place (a label, another place): LVGL's drawing there stops the
+// stream. Only on a tile's places; a card's and a saver's places show stills. Call it in create() or on_state.
+void live(lv_obj_t *place, bool on = true);
 }  // namespace ui
 
 }  // namespace tessera

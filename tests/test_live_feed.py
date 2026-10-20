@@ -136,10 +136,12 @@ class Held(unittest.TestCase):
 class Stream(unittest.TestCase):
     """A snapshot camera through LiveFeed on a real socket, read like the screen reads it: HTTP/1.0, then parts."""
 
-    def run_stream(self, entity='camera.door', parts=3, token=None, streams_open=0):
+    def run_stream(self, entity='camera.door', parts=3, token=None, streams_open=0, rtc=None):
+        """`rtc`: the camera has a stream, and this stands in for its WebRTC session (Source.rtc)."""
         from aiohttp import web
         picture = jpeg(512, 288)
         asked = []
+        self.heads = []
 
         async def fetch(name):
             asked.append(name)
@@ -147,7 +149,11 @@ class Stream(unittest.TestCase):
             return picture
 
         async def main():
-            live = live_feed.LiveFeed(fetch, None, lambda name: False)
+            live = live_feed.LiveFeed(fetch, None, lambda name: rtc is not None)
+            if rtc is not None:
+                source = live.source(entity)
+                source.rtc = lambda kinds, take, keep: rtc(source, take)
+
             async def stream(request):
                 return await live.serve(request, request.match_info['token'])
 
@@ -174,6 +180,7 @@ class Stream(unittest.TestCase):
                     found = re.search(rb'Content-Length: (\d+)\r\n\r\n', data)
                     if not found or len(data) < found.end() + int(found.group(1)):
                         break
+                    self.heads.append(data[:found.end()])
                     got.append(data[found.end():found.end() + int(found.group(1))])
                     data = data[found.end() + int(found.group(1)):]
             writer.close()
@@ -189,6 +196,38 @@ class Stream(unittest.TestCase):
         # The P4 takes the camera's own JPEG as it is: this app spent nothing on it.
         self.assertTrue(all(part == picture for part in got))
         self.assertTrue(set(asked) == {'camera.door'})
+
+    def test_a_snapshot_camera_is_live_from_its_first_picture(self):
+        self.run_stream()
+        # No part is marked as a still: the screen shows no loader (live_view.h, "Until it is live").
+        self.assertTrue(self.heads and not any(b'X-Picture' in head for head in self.heads), self.heads)
+
+    def test_the_stills_before_webrtc_are_marked_and_its_frames_are_not(self):
+        try:
+            import av
+        except ImportError:
+            self.skipTest('PyAV is not installed here (the add-on image has it)')
+
+        async def rtc(source, take):
+            await asyncio.sleep(0.45)  # the camera's next key frame
+            for _ in range(3):
+                await take('video', av.VideoFrame.from_image(Image.new('RGB', (320, 180), (200, 80, 30))))
+                await asyncio.sleep(0.05)
+            await asyncio.sleep(5)
+            return True
+        before = live_feed.STILL_SECONDS
+        live_feed.STILL_SECONDS = 0.1
+        try:
+            (_, got), _, asked = self.run_stream(parts=6, rtc=rtc)
+        finally:
+            live_feed.STILL_SECONDS = before
+        marks = [b'X-Picture: still\r\n' in head for head in self.heads]
+        # The stills first, each marked; then WebRTC's frames, none marked, and no still after them.
+        self.assertTrue(marks[0], self.heads)
+        self.assertFalse(marks[-1], self.heads)
+        self.assertEqual(marks, sorted(marks, reverse=True), marks)
+        # The mark is a line of the part's own head, before its length, as picture_fetch::parse_head reads it.
+        self.assertRegex(self.heads[0], rb'--frame\r\nContent-Type: image/jpeg\r\nX-Picture: still\r\nContent-Length: \d+')
 
     def test_an_unknown_link_and_too_many_streams_are_refused(self):
         (head, got), _, asked = self.run_stream(token='x' * 24, parts=1)
@@ -260,15 +299,18 @@ class WaitForWebRTC(unittest.TestCase):
 
         async def main():
             source = live_feed.Source(live_feed.LiveFeed(None, websocket, lambda e: True), 'camera.door', True)
+            started = asyncio.get_running_loop().time()
             with self.assertLogs('live_feed', 'INFO') as logged:
                 gave = await source.rtc(('video',), None, lambda: True)
-            return gave, asyncio.get_running_loop().time() - sent[0], logged.output
+            done = asyncio.get_running_loop().time()
+            return gave, sent[0] - started, done - sent[0], logged.output
 
-        gave, seconds, output = asyncio.run(main())
+        gave, offering, refused, output = asyncio.run(main())
         self.assertFalse(gave)
-        # From the offer to the snapshots: the refusal, not WEBRTC_FIRST_SECONDS (aiortc's own offer, before, takes what
-        # its ICE gathering takes).
-        self.assertLess(seconds, 2)
+        # The offer goes out at once (no STUN server to wait for, about five seconds before), and the refusal ends the
+        # session at once, not after WEBRTC_FIRST_SECONDS.
+        self.assertLess(offering, 1.5)
+        self.assertLess(refused, 1.5)
         self.assertTrue(any('Camera does not support WebRTC' in line for line in output), output)
 
 

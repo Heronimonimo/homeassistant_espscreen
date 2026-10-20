@@ -31,7 +31,8 @@ there reaches no ordinary Home Assistant and no screen; it is tested on a test H
   heading when it is missing). What's new in the app shows releases only, and the release turns this section into its
   heading;
 - the proof is a test Home Assistant with real screens: the change on the app and on the boards it concerns, looked at
-  and tapped. A push to dev starts no CI and no heavy check; those run once, at the release, on the commit that goes
+  and tapped. A push to dev starts no CI and no heavy check, apart from the Docker image `:dev` when the app changed
+  (docs/DOCKER.md, "Testing dev"); those run once, at the release, on the commit that goes
   out. A firmware change without its number only warns in `tools/check.sh` there (`CHECK_BRANCH`); the release sets
   it.
 
@@ -79,7 +80,9 @@ again (both lines say its tag, below), and the screen's next update builds that 
 How the app knows: the Supervisor names an app `<hash>_<slug>`, where the hash comes from the repository URL as it
 was added. `screen_manager/app/core.py` (`CHANNELS`) knows the two hashes of this repository. An app from any other
 URL (a local copy, a fork) has no channel: new screens build from main and existing ones keep their `ref:`, so a
-screen pointed at dev or `release-candidate` by hand stays there.
+screen pointed at dev or `release-candidate` by hand stays there. Without a Supervisor, `SCREEN_CHANNEL` says it
+(`core.start_channel`): the Docker image of dev, `:dev`, carries `SCREEN_CHANNEL=dev`, so Docker has the dev app too
+(docs/DOCKER.md, "Testing dev").
 
 ## Which firmware a screen builds
 

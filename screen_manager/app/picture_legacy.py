@@ -182,7 +182,7 @@ def _map(request, screen, index_of=None):
     if isinstance(move, str) and move and len(move) <= 40 and re.fullmatch(r'[0-9,+-]*', move):
         params.append(('move', move))
     source = pq.Source('map', str(index), (('entity', entity),) + tuple(params))
-    q = Question(Owner('view', index, of=entity), (source,), box, (Place(0, 0, *box, fit='exact'),), look=_dark(request),
+    q = Question(Owner('view', of=entity), (source,), box, (Place(0, 0, *box, fit='exact'),), look=_dark(request),
                  cap=cap, formats=pq.formats(screen), number=_number(request))
     return Legacy(q, 'full', entity)
 

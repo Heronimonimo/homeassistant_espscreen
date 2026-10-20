@@ -66,12 +66,19 @@ def top():
 
 
 class TheTile(unittest.TestCase):
-    def test_only_a_cover_tile_whose_picture_fills_the_card(self):
+    def test_every_cover_tile_whose_picture_fills_the_card(self):
+        # The cover fills the card on every size (one row too, since the picture system), so every cover tile has one.
         for options, wanted in (({'display': 'cover', 'size': 'tall'}, True), ({'display': 'cover', 'size': 'square'}, True),
-                                ({'display': 'cover', 'size': '3x2'}, True), ({'display': 'cover', 'size': 'wide'}, False),
-                                ({'display': 'cover'}, False), ({'display': 'favorite', 'size': 'square'}, False),
+                                ({'display': 'cover', 'size': '3x2'}, True), ({'display': 'cover', 'size': 'wide'}, True),
+                                ({'display': 'cover'}, True), ({'display': 'favorite', 'size': 'square'}, False),
                                 ({'size': 'square'}, False), (None, False)):
             self.assertEqual(rest_mosaic.wants(options), wanted, options)
+
+    def test_one_row_of_covers_on_a_card_of_one_row(self):
+        for options, rows in (({'display': 'cover', 'size': 'wide'}, 1), ({'display': 'cover'}, 1),
+                              ({'display': 'cover', 'size': '3x1'}, 1), ({'display': 'cover', 'size': 'tall'}, 2),
+                              ({'display': 'cover', 'size': 'square'}, 2), ({'display': 'cover', 'size': '3x2'}, 2), (None, 1)):
+            self.assertEqual(rest_mosaic.rows_for(options), rows, options)
 
     def test_at_rest_is_nothing_to_show(self):
         cover = '/api/media_player_proxy/media_player.spotify?token=x&cache=1'
@@ -123,6 +130,12 @@ class TheMosaic(unittest.TestCase):
             self.assertLessEqual(abs((rows * side - height) - 2 * top_), 1)
         self.assertEqual(rest_mosaic.grid_of(448, 268)[:2], (4, 2))
         self.assertEqual(rest_mosaic.grid_of(218, 268)[:2], (2, 3))
+        # A card of one row: one strip of covers as high as the card, cut off evenly at both ends.
+        columns, rows, side, left, top_ = rest_mosaic.grid_of(456, 130, 1)
+        self.assertEqual((columns, rows, side, top_), (4, 1, 130, 0))
+        self.assertLessEqual(abs((columns * side - 456) - 2 * left), 1)
+        strip = rest_mosaic.draw([picture((250, 0, 0))], 456, 130, 1)
+        self.assertEqual(strip.size, (456, 130))
 
     def test_one_cover_moves_on_at_a_time_and_none_shows_twice(self):
         for cells in range(1, 13):
@@ -293,13 +306,14 @@ class TheApp(unittest.IsolatedAsyncioTestCase):
             message = await self.message(m)
             self.assertFalse(message['x']['pic'].startswith('rest'), 'the cover of what plays, not the library')
 
-    async def test_no_mosaic_where_it_does_not_fill_the_card_or_is_not_drawn(self):
+    async def test_a_card_of_one_row_too_and_no_mosaic_where_it_is_not_drawn(self):
         with tempfile.TemporaryDirectory() as tmp:
             ha = self.ha()
+            # A cover fills a card of one row too (the picture system): its library comes as a strip of covers.
             m = self.manager(ha, tmp, size='wide')
             await self.message(m, 2)
-            self.assertNotIn('pic', (await self.message(m)).get('x', {}))
-            self.assertFalse(any(entry[0] == 'answer' and entry[2] == 'current_user_saved_tracks' for entry in ha.log))
+            self.assertTrue((await self.message(m)).get('x', {}).get('pic', '').startswith('rest'))
+            self.assertTrue(any(entry[0] == 'answer' and entry[2] == 'current_user_saved_tracks' for entry in ha.log))
             m = self.manager(ha, tmp)
             tile = m.layouts['text.d1_tiles']['tiles'][0]
             old = await m.tile_message(0, tile, features=frozenset())

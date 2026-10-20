@@ -183,6 +183,49 @@ class SameAsBefore(unittest.TestCase):
         self.assertIn(b'\xff\xc0', jpg)
         self.assertNotIn(b'\xff\xc2', jpg)
 
+    def test_a_jpeg_is_whole_mcus_and_names_its_own_size(self):
+        # The P4's decoder takes whole MCUs only (a cover of 226x254 was refused, 2026-10-20): the JPEG is a multiple of 16
+        # each way, its last column and row carried on, and its own size is in an APP15 segment right after its start.
+        image = Image.new('RGB', (226, 254), (30, 90, 160))
+        for x in range(226):
+            image.putpixel((x, 253), (220, 200, 40))  # the last row, which the rows below it carry on
+        jpg = paint.encode(image, 'jpeg')
+        self.assertEqual(jpg[2:4] + jpg[6:10], b'\xff\xef' + paint.JPEG_SIZE)
+        self.assertEqual(paint.jpeg_size(jpg), (226, 254))
+        with Image.open(io.BytesIO(jpg)) as decoded:
+            self.assertEqual(decoded.size, (240, 256))
+            below = decoded.convert('RGB').getpixel((100, 255))
+            self.assertTrue(all(abs(a - b) < 40 for a, b in zip(below, (220, 200, 40))), below)
+        # Whole MCUs already: no segment, its own size.
+        fits = paint.encode(Image.new('RGB', (240, 128), (10, 10, 10)), 'jpeg')
+        self.assertEqual(fits[2:4], b'\xff\xe0')
+        self.assertEqual(paint.jpeg_size(fits), (240, 128))
+
+    def test_a_jpeg_names_the_corners_the_screen_makes_exact(self):
+        # JPEG rings at a corner's edge (white on a light page around a dark cover, the D1001 2026-10-20): the JPEG names
+        # every flat place's rounded corners with their ground, so the screen sets what lies outside each arc back to it.
+        def png(colour):
+            out = io.BytesIO()
+            Image.new('RGB', (64, 64), colour).save(out, 'PNG')
+            return out.getvalue()
+        page = 0xE7E7E7
+        one = Question(Owner('tile', 0), (None,), (240, 128), (Place(0, 0, 240, 128, radius=24, ground=page),))
+        body = paint.paint(one, [png((30, 30, 40))], 'jpeg')
+        size, corners = paint.jpeg_notes(body)
+        self.assertEqual(size, (240, 128))
+        self.assertEqual(corners, ((0, 0, 240, 128, 24, paint.rgb565(page)),))
+        # A cover flow: the back covers lie under the front one, turned and mirrored: only a flat place no later place
+        # lies over has its corners mended (mending a covered corner would cut into the cover over it).
+        flow = Question(Owner('plugin_tile', 0, 'plugin:a.b'), (None, None, None), (300, 160),
+                        (Place(0, 20, 100, 120, radius=8, ground=page), Place(200, 20, 100, 120, radius=8, ground=page, turn='left'),
+                         Place(80, 0, 140, 160, radius=12, ground=page)))
+        _, corners = paint.jpeg_notes(paint.paint(flow, [png((200, 0, 0))] * 3, 'jpeg'))
+        self.assertEqual(corners, ((80, 0, 140, 160, 12, paint.rgb565(page)),))
+        # A BMP never needs it, and a place without a radius has no corner.
+        square = Question(Owner('tile', 0), (None,), (240, 128), (Place(0, 0, 240, 128, ground=page),))
+        self.assertEqual(paint.jpeg_notes(paint.paint(square, [png((30, 30, 40))], 'jpeg'))[1], ())
+        self.assertTrue(paint.paint(one, [png((30, 30, 40))], 'bmp24').startswith(b'BM'))
+
 
 if __name__ == '__main__':
     unittest.main()

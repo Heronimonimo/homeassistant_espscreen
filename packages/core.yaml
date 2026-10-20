@@ -166,7 +166,7 @@ esphome:
           runtime_tiles::now_time = []() { return id(homeassistant_time).now(); };
           runtime_tiles::screen_awake = []() { return !id(display_dimmed); };
           // The screensaver (firmware 0.29.0+): a new word from ESP Screens in standby sets the level and the glass again.
-          runtime_tiles::saver_changed = []() { id(apply_screen_settings).execute(); };
+          runtime_tiles::saver_changed = []() { id(apply_screen_settings).execute(false); };
           runtime_tiles::mini_icon_font = id(materialdesign_icons_mini)->get_lv_font();
           // The top bar of every page a tap opens (detail_bar.h): its keys' glyphs and the page's name.
           detail_bar::icon_font = id(materialdesign_icons_mini)->get_lv_font();
@@ -229,7 +229,7 @@ esphome:
           };
           theme::paints();
           theme::set_dark(settings_screen::dark_mode != 0);
-          runtime_tiles::settings_changed = []() { id(apply_screen_settings).execute(); };
+          runtime_tiles::settings_changed = []() { id(apply_screen_settings).execute(false); };
           runtime_tiles::dismiss = []() {
             effects_page::close();
             group_page::close();
@@ -332,7 +332,7 @@ esphome:
           settings_screen::row_font = id(sublabel_big)->get_lv_font();
           settings_screen::icon_font = id(materialdesign_icons_mini)->get_lv_font();
           settings_screen::store = []() { runtime_tiles::persist_settings(); };
-          settings_screen::apply = []() { id(apply_screen_settings).execute(); };
+          settings_screen::apply = []() { id(apply_screen_settings).execute(false); };
           settings_screen::report = [](const char *key, int32_t value) { runtime_tiles::setting_event(key, value); };
           settings_screen::name_text = []() { return std::string("${DEVICE_FRIENDLY_NAME}"); };
           settings_screen::address_text = []() { return id(wifi_ip).state.empty() ? std::string(screen_text::tr(screen_text::txt::status_no_network)) : id(wifi_ip).state; };
@@ -789,15 +789,18 @@ time:
     update_interval: 60s
     on_time_sync:
       then:
-        - script.execute: apply_screen_settings
-        # Only the time moved on: a kept page draws its cards once it is back (firmware 0.3.2+).
-        - lambda: 'runtime_tiles::mark_time(); if (!id(ui_refresh).is_running()) id(ui_refresh).execute();'
+        # Only the time moved on: the night hours, and the cards that show the time (a kept page's once it is back,
+        # firmware 0.3.2+), never every card.
+        - script.execute:
+            id: apply_screen_settings
+            minute: true
     on_time:
       - seconds: 0
         minutes: /1
         then:
-          - script.execute: apply_screen_settings
-          - lambda: 'runtime_tiles::mark_time(); if (!id(ui_refresh).is_running()) id(ui_refresh).execute();'
+          - script.execute:
+              id: apply_screen_settings
+              minute: true
 
 globals:
   # Alert overlay (HA action show_alert): standby waits while one is up.
@@ -2359,8 +2362,11 @@ script:
           for (lv_obj_t *control : {id(page_prev), id(page_next), id(page_number)}) lv_obj_add_flag(control, LV_OBJ_FLAG_HIDDEN);
 
   # Runtime changes do not count as touches and do not reset the idle timer.
+  # `minute`: it runs because the minute turned or Home Assistant set the clock, not because a setting changed.
   - id: apply_screen_settings
     mode: restart
+    parameters:
+      minute: bool
     then:
       - lambda: |-
           const auto &settings = screen_settings::current;
@@ -2417,8 +2423,10 @@ script:
           // The Page buttons setting moves the cards into the bar's room or back (firmware 0.2.69+).
           if (runtime_tiles::enabled) runtime_tiles::page_buttons_changed();
           settings_screen::refresh();
-          // A display setting (the clock's format, say): drawn like a minute turning (firmware 0.3.2+).
-          runtime_tiles::mark_time();
+          // A display setting (the clock's format, say): every card drawn (firmware 0.3.2+); the minute draws the cards
+          // that show the time.
+          if (minute) runtime_tiles::mark_minute();
+          else runtime_tiles::mark_time();
           if (!id(ui_refresh).is_running()) id(ui_refresh).execute();
 
   # Every card closes through runtime_tiles::dismiss (set in on_boot): the runtime detail card, the light,
@@ -2583,7 +2591,7 @@ script:
                   - lambda: 'settings_screen::close();'
                   - script.execute: close_cards
             # After the cards closed: the screensaver (firmware 0.29.0+) may open the camera's full view itself.
-            - lambda: 'id(apply_screen_settings).execute();'
+            - lambda: 'id(apply_screen_settings).execute(false);'
 
   # The power saving's one wait (screen_power.h): after the backlight's fade out, or after a touch on the dark glass.
   - id: screen_power_wait

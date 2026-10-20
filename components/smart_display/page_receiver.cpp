@@ -391,13 +391,15 @@ std::string receive(const std::string &payload) {
       // "vmap" (module vacuum): a vacuum card's map, cleaned up by the app (vacuum_map.py).
       // "pcard" (plugin API 0.13): the pictures of a plugin's card over the page; `e` names the card (plugin:<p>.<card>).
       // "psaver" (plugin API 0.14): the pictures of a plugin's screensaver; `e` names it (plugin:<p>.<saver>).
-      if (view == "live" ? !valid_entity_list(entity) : (!valid_entity(entity) && entity != SAVER_PHOTOS) || (view != "full" && view != "alert" && view != "cover" && view != "lib" && view != "saver" && view != "vmap" && view != "pcard" && view != "psaver")) return false;
+      // "plive" (plugin API 0.17, a question only): the stream of a plugin tile's live place; `e` names its camera.
+      if (view == "live" ? !valid_entity_list(entity) : (!valid_entity(entity) && entity != SAVER_PHOTOS) || (view != "full" && view != "alert" && view != "cover" && view != "lib" && view != "saver" && view != "vmap" && view != "pcard" && view != "psaver" && view != "plive")) return false;
       if (!url.empty() && url.rfind("http://", 0) != 0) return false;
       // Every answer but an alert's carries the number of its question; one to an older question is dropped. A tile's
       // picture is the answer to that tile's last question (tile_picture::Questions).
       const bool current = view == "live" ? tile_questions.answered(number) >= 0
                            : view == "pcard" ? plugin_host::card_question(number)
                            : view == "psaver" ? plugin_host::saver_question(number)
+                           : view == "plive" ? live_place_question(number)
                            : number == (view == "cover" ? cover_view_id : view == "lib" ? library_art_view_id : view == "vmap" ? vacuum_map_view_id : camera_view_id);
       if (view != "alert" && (!numbered || !current)) {
         ESP_LOGD("picture", "answer %u (%s) to an older question: dropped", (unsigned) number, view.c_str());

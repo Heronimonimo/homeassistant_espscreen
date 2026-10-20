@@ -183,7 +183,15 @@ inline std::string json(const Question &q) {
 // ---- The question as an older app reads it (before the feature `pictures`) ----
 // The fields each owner asked with before, made from the same question; the sender adds the session's (`inbox`,
 // `session`, `rev`) and the owner's own number (`view`). The constants an older app checks a tile's question against
-// (camera_feed.LIVE_SIZES) and the screensaver's photos entity are the owners' (tile_picture.h, runtime_tiles.h).
+// (picture_legacy.LIVE_SIZES in the app) and the screensaver's photos entity are the owners' (tile_picture.h,
+// runtime_tiles.h).
+//
+// TO REMOVE ONE DAY: this part (legacy, atlas_of, CIRCLE_MIN/MAX) and the `else` of runtime_tiles::picture_ask that
+// uses it exist only for an app from before the feature `pictures` (0.4.89 and older) that builds this firmware anyway:
+// a Docker or other app without a channel, or a screen's own ESPHome YAML on `ref: main` (core.ref; the stable app
+// builds its own release tag since 0.4.85). The maintainer chose to keep it (2026-10-20): it costs about 2.3 KB on the
+// boards with pictures and none on the 4 MB boards (picture_ask asks nothing there). It may go once no app older than
+// the feature can build a screen any more; the app's own reading of older firmware (picture_legacy.py) stays.
 constexpr int CIRCLE_MIN = 24, CIRCLE_MAX = 160;
 using Fields = std::vector<std::pair<std::string, std::string>>;
 inline std::string atlas_of(const Question &q) {

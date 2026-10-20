@@ -2361,7 +2361,6 @@
         "live_card_hint": "L'immagine riempie il riquadro, aggiornata al ritmo qui sotto finché la pagina è sullo schermo. Un tocco la apre ancora a schermo intero.",
         "live_card_needs_firmware": "Un'immagine che riempie il riquadro richiede il firmware 0.3.7 o più recente: premi Aggiorna sullo schermo dopo il salvataggio. Fino ad allora lo schermo mostra una piccola immagine al posto dell'icona.",
         "cover": "Copertina",
-        "cover_hint": "La copertina di ciò che suona al posto dell'icona, come nel riquadro di Home Assistant; un lettore senza immagine mantiene la sua icona. Un tocco apre ancora la scheda.",
         "cover_needs_firmware": "La copertina sul riquadro richiede il firmware 0.2.78 o più recente: premi Aggiorna sullo schermo dopo il salvataggio.",
         "map": "Mappa",
         "map_hint": "Dove si trovano questa persona e quelle che aggiungi, su una mappa tranquilla nei colori dello schermo. Home Assistant fornisce le strade di OpenStreetMap; lo schermo riceve solo l'immagine, mai una posizione. Viene ridisegnata quando qualcuno si sposta. Un tocco la apre a tutto schermo.",

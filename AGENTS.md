@@ -119,7 +119,8 @@ release is checked fully, once a week. docs/TESTING.md says what each layer prov
 - **On dev the proof is the bench**: the three real boards on the owner's bench Home Assistant and its local app
   (`.esphome/bench/README.md` on the owner's machine). Put the app on it, flash the change to the boards it concerns,
   and have the owner look and tap. Run a single test when that is the quickest way to see a piece of logic work. No
-  `tools/check.sh`, no builds of other boards and no renders on dev, and a push to dev starts no CI. After a change
+  `tools/check.sh`, no builds of other boards and no renders on dev, and a push to dev starts no CI but the Docker
+  image `:dev` when `screen_manager/` changed (docs/DOCKER.md, "Testing dev"). After a change
   under `web/src`, `cd web && npm run build` (the app serves that build) and commit `screen_manager/app/static` with it.
 - **At a release** (and a hotfix) everything runs, on the commit that goes out: `tools/check.sh`, CI on that commit
   (`tools/release.py ci`: every board on both ESPHome versions), the renders when the release changes what screens

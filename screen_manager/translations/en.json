@@ -1936,7 +1936,6 @@
         "live_card_hint": "The picture fills the tile, refreshed at the pace below while the page is on screen. A tap still opens it full screen.",
         "live_card_needs_firmware": "A picture that fills the tile needs firmware 0.3.7 or newer: press Update on the screen after saving. Until then the screen shows a small picture in the icon's place.",
         "cover": "Album cover",
-        "cover_hint": "The album cover of what plays in the icon's place, like Home Assistant's own tile; a player without a picture keeps its icon. A tap still opens the card.",
         "cover_needs_firmware": "The album cover on the tile needs firmware 0.2.78 or newer: press Update on the screen after saving.",
         "map": "Map",
         "map_hint": "Where this person and the people you add are, on a calm map drawn in the screen's colours. Home Assistant supplies the streets from OpenStreetMap; the screen only gets the picture, never a location. It is drawn again when someone moves. A tap opens it over the whole screen.",

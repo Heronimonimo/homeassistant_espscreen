@@ -2000,16 +2000,16 @@ class Manager:
             self.ha.dirty.add(entity)
             self.ha.changed.set()
 
-    def rest_render(self, entity):
+    def rest_render(self, entity, rows=rest_mosaic.ROWS):
         """A player's mosaic for the page's strip (picture_sources, a cover tile's source): its mark now, and the covers of this
-        turn drawn into the card's frame."""
+        turn drawn into the card's frame, `rows` of them along its shorter side (rest_mosaic.rows_for)."""
         pool = (self.rest_pools.get(entity) or (0, []))[1]
 
         async def draw(width, height):
-            columns, lines, *_ = rest_mosaic.grid_of(width, height)
+            columns, lines, *_ = rest_mosaic.grid_of(width, height, rows)
             order = rest_mosaic.shown(len(pool), columns * lines, rest_mosaic.step_at(time.time()))
             raws = await asyncio.gather(*(self.thumbnail(entity, pool[n][0], pool[n][1]) for n in order))
-            return await asyncio.get_running_loop().run_in_executor(None, rest_mosaic.draw, list(raws), width, height)
+            return await asyncio.get_running_loop().run_in_executor(None, rest_mosaic.draw, list(raws), width, height, rows)
         return (lambda: rest_mosaic.mark(pool, rest_mosaic.step_at(time.time())), draw)
 
     def rest_turn(self, dirty):
@@ -5035,9 +5035,10 @@ async def main():
     if not token:
         raise SystemExit('No Home Assistant access. Start the app via Supervisor.')
     async with ClientSession(timeout=ClientTimeout(total=20)) as session:
-        # The branch the screens build from (docs/RELEASING.md, "Testing dev"): dev for an app added from the `#dev` URL.
+        # The branch the screens build from (docs/RELEASING.md, "Testing dev"): dev for an app added from the `#dev` URL,
+        # or for the image GitHub builds from dev (docs/DOCKER.md, "Testing dev").
         slug, version = await addon_self(session)
-        core.set_channel(core.channel_of(slug))
+        core.set_channel(core.start_channel(slug))
         core.set_version(version)
         LOG.info('App %s %s, channel %s, screens build from %s', slug or 'without a Supervisor', version or '',
                  core.channel() or 'none', core.ref() if core.channel() else 'the ref they have')

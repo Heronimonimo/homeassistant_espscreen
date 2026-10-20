@@ -1174,6 +1174,68 @@ class Run:
         await self.call('render_close_cards')
         await self.until(lambda l: probe(l, 'card destroy'), 10, 'the card on_back opened closed', start)
         self.warnings.append('closer: closed in open, on_state, on_tick, new data, the look, and Back that opens a card')
+        # A popup (plugin API 0.18): the alert's card over the page with the probe's words in it, which lives (its
+        # interval and clock), takes a tap on the card where the finger was, goes on a tap beside it (on_dismiss first),
+        # when its plugin closes it (no on_dismiss), when it closes itself inside its own on_tap (deleted only after that
+        # call) and when an alert comes; showing one lights the screen as tessera::wake does.
+        async def popup(mode='popup'):
+            start = len(self.lines)
+            await self.send({'v': 2, 'op': 'plugin', 'p': 'host_probe', 'm': {'do': mode}})
+            line = await self.until(lambda l: probe(l, 'popup open '), 10, f'{mode}: the popup opened', start)
+            w, h, x, y = (int(v) for v in re.search(r'open (\d+)x(\d+) at=(-?\d+),(-?\d+)', line).groups())
+            await self.until(lambda l: probe(l, 'popup interval'), 10, f'{mode}: the popup\'s interval', start)
+            await self.until(lambda l: probe(l, 'popup tick'), 10, f'{mode}: the popup\'s clock', start)
+            assert any('Wake from plugin host_probe' in l for l in self.lines[start:]), f'{mode}: showing it woke nothing'
+            key = next(l for l in self.lines[start:] if 'Popup of host_probe shows' in l)
+            self.popup_key = tuple(int(v) for v in re.search(r'close key at (-?\d+),(-?\d+)', key).groups())
+            return start, (x + w // 3, y + 6)   # on its first line: the card is only as high as what it shows
+        start, middle = await popup()
+        await self.render('plugin-popup')
+        await self.tap(*middle)
+        await self.until(lambda l: probe(l, 'popup tap at='), 10, 'a tap on the popup', start)
+        tapped_at = next(l for l in self.lines[start:] if probe(l, 'popup tap at='))
+        assert 'at=-1,-1' not in tapped_at, f'the popup\'s tap said no place: {tapped_at}'
+        assert said(start, 'popup destroy') == 0, 'a tap on the popup closed it'
+        await self.tap(4, 4)
+        await self.until(lambda l: probe(l, 'popup destroy'), 10, 'a tap beside the popup closed it', start)
+        assert said(start, 'popup dismiss') == 1, 'the popup a tap beside closed heard no on_dismiss'
+        start, middle = await popup()
+        await self.send({'v': 2, 'op': 'plugin', 'p': 'host_probe', 'm': {'do': 'popup_close'}})
+        await self.until(lambda l: probe(l, 'popup shown=0'), 10, 'close_popup closed it', start)
+        await self.until(lambda l: probe(l, 'popup destroy'), 10, 'the closed popup deleted', start)
+        assert said(start, 'popup dismiss') == 0, 'close_popup called on_dismiss'
+        start, middle = await popup('popup_self')
+        await self.tap(*middle)
+        await self.until(lambda l: probe(l, 'popup destroy'), 10, 'the popup that closed itself deleted', start)
+        said_now = [l[l.index('popup '):] for l in self.lines[start:] if probe(l, 'popup ')]
+        assert said_now.index('popup destroy') > said_now.index('popup tap end'), \
+            f'the popup was deleted inside its own on_tap: {said_now}'
+        # Its close key, the round key of every card's top bar, in the card's top right corner.
+        start, middle = await popup()
+        await self.render('plugin-popup-key')
+        await self.tap(*self.popup_key)
+        await self.until(lambda l: probe(l, 'popup destroy'), 10, 'the close key closed the popup', start)
+        assert said(start, 'popup dismiss') == 1, 'the popup its close key closed heard no on_dismiss'
+        assert said(start, 'popup tap at=') == 0, 'the close key reached the popup as a tap'
+        # A popup lights a screen in standby, as tessera::wake does.
+        if 'render_standby' in self.services:
+            start = len(self.lines)
+            await self.call('render_standby', enter=1)
+            await self.until(lambda l: probe(l, 'standby dark=1'), 10, 'on_standby(true) before the popup', start)
+            await popup()
+            await self.until(lambda l: 'Wake from plugin host_probe, screen in standby' in l, 10, 'the popup woke the screen', start)
+            await self.until(lambda l: probe(l, 'standby dark=0'), 10, 'on_standby(false) after the popup', start)
+            assert said(start, 'popup destroy') == 0, 'the screen that woke closed its popup'
+            await self.send({'v': 2, 'op': 'plugin', 'p': 'host_probe', 'm': {'do': 'popup_close'}})
+            await self.until(lambda l: probe(l, 'popup destroy'), 10, 'the popup after standby closed', start)
+        start, middle = await popup()
+        await self.call('show_alert', title='Over the popup', subtitle='', icon='', color='', button_text='', timeout=0,
+                        flash=False)
+        await self.until(lambda l: probe(l, 'popup destroy'), 10, 'an alert closed the popup', start)
+        assert said(start, 'popup dismiss') == 1, 'the popup an alert closed heard no on_dismiss'
+        await self.call('dismiss_alert')
+        self.warnings.append('popup: shown, ticked, tapped, closed beside, by its key, by its plugin, by itself and by an '
+                             'alert; it woke a screen in standby')
         # A slot that goes from the plugin tile to a plain card lets the plugin's object go at once (plugin_api.h), not
         # when the slot next draws a custom card; page 2 and back still show their plugin tiles, kept or made anew.
         start = len(self.lines)

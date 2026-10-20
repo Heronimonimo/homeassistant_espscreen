@@ -242,10 +242,15 @@ class Rules(unittest.TestCase):
         # Firmware 0.13.0: a download that broke off halfway made online_image free the buffer the view still drew, and
         # every part of the glass drawn again after that (a tile below going unavailable) came out black. The view draws
         # the store's copy, which the store keeps while it is on the glass and lets go of once the view closes.
-        # Every download goes into the store under its picture's key (picture_done, firmware 0.52.0); a 304 keeps the copy.
+        # Every download goes into the store under its picture's key (picture_done, firmware 0.52.0); a 304 keeps what the
+        # store has. The store takes the download's own buffer, never a copy of it (docs/PICTURES.md, "Memory"), and the
+        # slot lets go of it, keeping its ETag; a 304 for a picture the store let go meanwhile is loaded whole.
         done = TILES.split('inline void picture_done(picture_loader::Slot slot, bool ok, bool cached) {', 1)[1].split('\n}\n', 1)[0]
-        self.assertIn('if (cached && pictures.entry(key)) { pictures.touch(key, now); kept = true; }', done)
-        self.assertIn('pictures.put(key, *src, now)', done)
+        self.assertIn('if (pictures_kept() && cached && pictures.entry(key)) {\n      pictures.touch(key, now);', done)
+        self.assertIn('pictures.adopt(key, taken, now)', done)
+        self.assertIn('if (kept && hooks.hand_over) hooks.hand_over();', done)
+        self.assertIn('if (!asked.empty() && !pictures.entry(asked) && !(held && held->data)) {', done)
+        self.assertNotIn('memcpy', (ROOT / 'components/smart_display/picture_store.h').read_text())
         # A picture the store has no room for is drawn from the download, and says so in the log.
         self.assertIn('ESP_LOGW("picture", "no room to keep %s", key.c_str());', done)
         self.assertIn('if (!kept) { slot_key[s] = key; slot_at[s] = now; }', done)

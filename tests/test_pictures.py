@@ -186,7 +186,7 @@ class Legacy(unittest.TestCase):
         found = self.read({'entity': 'person.alex', 'idx': '2', 'focus': 'person.sam', 'move': '1,-2', 'dark': '1', 'view': '5'},
                           index_of=index_of)
         q = found.question
-        self.assertEqual((found.kind, found.entity, q.owner), ('full', 'person.alex', Owner('view', 2, of='person.alex')))
+        self.assertEqual((found.kind, found.entity, q.owner), ('full', 'person.alex', Owner('view', of='person.alex')))
         self.assertEqual(q.sources, (Source('map', '2', (('entity', 'person.alex'), ('focus', 'person.sam'), ('move', '1,-2'))),))
         self.assertEqual((q.box, q.places, q.look, q.formats), ((480, 480), (Place(0, 0, 480, 480, fit='exact'),), 'd', ('bmp8', 'bmp24')))
         # A focus or a move the map cannot take is left out; the look is light unless the screen says dark.
@@ -301,7 +301,7 @@ class Firmware(unittest.TestCase):
         ask = tiles[tiles.index('inline void picture_ask('):]
         ask = ask[:ask.index('\n}\n')]
         self.assertIn('#if defined(USE_ESP32) && !defined(SCREEN_PICTURES)', ask)
-        self.assertLess(ask.index('#if defined(USE_ESP32) && !defined(SCREEN_PICTURES)'), ask.index('picture_question::json(q)'))
+        self.assertLess(ask.index('#if defined(USE_ESP32) && !defined(SCREEN_PICTURES)'), ask.index('picture_question::json(asked)'))
         store = (ROOT / 'components/smart_display/picture_store.h').read_text()
         self.assertIn('#if defined(USE_ESP32) && !defined(SCREEN_PICTURES)', store)
 
@@ -612,6 +612,21 @@ class Service(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(image.size, (300, 200))
         self.assertEqual(image.convert('RGB').getpixel((2, 100)), (255, 255, 255), 'the card\'s colour beside the map')
 
+    async def test_a_plugin_tiles_live_place_streams_its_own_camera(self):
+        # A plugin tile's place set live (plugin API 0.17, ui::live): its own camera streams into the place, filled or
+        # whole as the place's fit says; another camera is not the place's to show, live or not.
+        self.manager.tiles[6]['options']['plugin_entity'] = 'camera.porch'
+        owner = Owner('plugin_tile', 6, 'plugin:bus.next')
+        for fit, suffix in (('cover', '.mjpeg'), ('contain', '.mjpeg?fit=contain')):
+            question = Question(owner, (Source('camera', 'camera.porch'),), (320, 180), (Place(0, 0, 320, 180, radius=12, fit=fit),),
+                                live=(320, 180))
+            found = await self.service.answer('text.hall', self.manager.player, question)
+            self.assertTrue(found.stream and found.url.endswith(suffix), (fit, found))
+        self.assertEqual(self.stream.calls[-1], ('camera.porch', (320, 180), {'cover': False, 'screen': 'text.hall', 'tile': True}))
+        other = Question(owner, (Source('camera', 'camera.drive'),), (320, 180), (Place(0, 0, 320, 180),), live=(320, 180))
+        found = await self.service.answer('text.hall', self.manager.player, other)
+        self.assertTrue(found.problem and not found.url)
+
     async def test_a_camera_that_streams(self):
         found = await self.service.answer('text.hall', self.manager.player, self.read({'entity': 'camera.porch', 'live': '1280x744', 'sound': '1'}))
         self.assertEqual((found.url, found.stream, found.shown), (f'http://192.168.1.57:8098/camera/{"S" * 24}.mjpeg', True, ('camera.porch',)))
@@ -684,6 +699,228 @@ class Service(unittest.IsolatedAsyncioTestCase):
         self.manager.base = None
         with self.assertLogs(picture_service.LOG, 'WARNING'):
             self.assertEqual(await self.manager.service.answer('text.hall', self.manager.player, question), picture_service.Answer())
+
+
+# ----- the firmware's question, both ways -----
+
+class FirmwareQuestions(unittest.TestCase):
+    """Every owner's question as the firmware builds it (tests/fixtures/picture_questions.cpp): its JSON read as this app
+    reads a question, and its old fields read as this app reads an older screen, give the same question."""
+
+    @classmethod
+    def setUpClass(cls):
+        import os
+        import shutil
+        import subprocess
+        import tempfile
+        compiler = shutil.which(os.environ.get('CXX', 'clang++')) or shutil.which('g++')
+        if not compiler:
+            raise unittest.SkipTest('no C++ compiler')
+        with tempfile.TemporaryDirectory() as tmp:
+            program = Path(tmp) / 'questions'
+            subprocess.run([compiler, '-std=c++17', '-Wall', '-Wextra', '-Werror', f'-I{ROOT}',
+                            str(ROOT / 'tests/fixtures/picture_questions.cpp'), '-o', str(program)], check=True)
+            out = subprocess.run([str(program)], check=True, capture_output=True, text=True).stdout
+        cls.lines = [line.split('\t') for line in out.splitlines() if line]
+
+    def both(self, name, text, old, screen):
+        canvas = tuple(pq.box(screen, 'full'))
+        new = pq.parse(text, 7, canvas)
+        self.assertIsNotNone(new, f'{name}: the app cannot read its question')
+        index_of = lambda entity: 3 if entity in ('camera.porch', 'media_player.kitchen') else -1
+        legacy = picture_legacy.read({**json.loads(old), 'view': '7'}, screen, index_of)
+        self.assertIsNotNone(legacy, f'{name}: the app cannot read its old fields')
+        return new, legacy.question
+
+    def test_every_owner_reads_the_same_both_ways(self):
+        self.assertEqual(len(self.lines), 14)
+        for name, text, old in self.lines:
+            with self.subTest(name):
+                screen = P4 if 'full view' in name else GUITION
+                new, old_q = self.both(name, text, old, screen)
+                self.assertEqual((new.owner.kind, new.owner.index), (old_q.owner.kind, old_q.owner.index))
+                self.assertEqual([s.text for s in new.sources], [s.text for s in old_q.sources])
+                self.assertEqual(new.box, old_q.box)
+                self.assertEqual(new.look, old_q.look)
+                self.assertEqual((new.live, new.sound), (old_q.live, old_q.sound))
+                self.assertEqual(len(new.places), len(old_q.places))
+                for a, b in zip(new.places, old_q.places):
+                    self.assertEqual((a.x, a.y, a.w, a.h, a.radius, a.shade, a.ground), (b.x, b.y, b.w, b.h, b.radius, b.shade, b.ground))
+                    self.assertEqual((a.turn, a.mirror), (b.turn, b.mirror))
+                    self.assertEqual((a.fit, a.dim, a.move, a.fade), (b.fit, b.dim, b.move, b.fade))
+                # A tile's pace is its layout's (Sources reads the tile's refresh); an older screen never said it.
+                if new.owner.kind != 'tile':
+                    self.assertEqual(new.pace, old_q.pace)
+
+
+# ----- every source for every owner, the whole way -----
+
+class Shelf:
+    """A player's library page as the app keeps it (server.shelves): its items by their token."""
+    def get(self, entity, token):
+        return {'thumb': f'https://i.scdn.co/{token}', 'title': f'Album {token}'}
+
+
+class FullManager(Manager):
+    """The Manager with every source's own getting: maps, the covers at rest, thumbnails, a library page, the photos, the
+    screensaver's step, a plugin's pictures and a vacuum's map."""
+
+    def __init__(self, screen):
+        async def fetch(entity):
+            return png((640, 360), (20, 90, 160))
+
+        async def fetch_cover(entity):
+            return png((300, 300), (160, 40, 40))
+
+        async def never(delay):
+            await asyncio.Event().wait()
+        super().__init__(picture_sources.Snapshots(fetch, fetch_cover=fetch_cover, picture=lambda e: '/api/media_player_proxy/' + e,
+                                                    sleep=never), screen)
+        self.tiles.append({'entity': 'media_player.radio', 'name': '', 'options': {'display': 'cover', 'rest': 'liked'}})  # 10
+        self.saver |= {'camera.door'}
+        self.shelves = {'text.hall': Shelf()}
+        self.photos = types.SimpleNamespace(raw=lambda inbox: png((900, 1200), (60, 120, 60)),
+                                            state=lambda inbox, choice: {'mark': 'p1'})
+        self.ha.states.update({'media_player.radio': {'state': 'idle', 'attributes': {}}})
+        self.rest_pools = {'media_player.radio': (0, ['x'])}
+        self.drawn = []
+
+    def drawer(self, what):
+        async def draw(width, height):
+            from PIL import Image
+            self.drawn.append((what, width, height))
+            return Image.new('RGB', (width, height), (90, 90, 200))
+        return (lambda: what), draw
+
+    def map_render(self, tile, shape, dark, full=False, focus='', move=None):
+        return self.drawer('map')
+
+    def rest_render(self, entity, rows=2):
+        self.rest_rows = rows
+        return self.drawer('mosaic')
+
+    def map_meta(self, mark, width, height, focus):
+        return {'p': []}
+
+    def registry_index(self):
+        return {}
+
+    async def thumbnail(self, entity, url, title=''):
+        return png((200, 200), (200, 160, 40))
+
+    def saver_choice(self, screen):
+        return {'photos': {'fit': 'auto', 'motion': 'still'}}
+
+    async def saver_picture(self, inbox, screen, kind):
+        return png((300, 300), (30, 30, 30))
+
+    def plugin_saver_kind(self, inbox, key):
+        return 'media'
+
+    async def plugin_picture(self, inbox, screen, question, source):
+        return png((400, 600), (120, 20, 160))
+
+    def device_entries(self, entity):
+        return [{'entity_id': 'image.robo_map'}]
+
+
+@unittest.skipUnless(HAS_PIL, 'Pillow')
+class EverySource(unittest.IsolatedAsyncioTestCase):
+    """Each kind of source for each owner that may have it, as a screen asks and loads it: the answer's link, and behind
+    it a picture of exactly the question's box in the format the screen asked for first. A source that is drawn (a map, the
+    covers at rest, a vacuum's map) is drawn at its place's size."""
+
+    CASES = [
+        # (owner, sources, box, fit)
+        (Owner('tile', 0), ('tile:0',), (200, 120), 'cover'),                     # a camera's tile
+        (Owner('tile', 2), ('tile:2',), (200, 200), 'cover'),                     # a person's map
+        (Owner('tile', 4), ('tile:4',), (96, 96), 'cover'),                       # a player's cover
+        (Owner('tile', 5), ('tile:5',), (96, 96), 'cover'),                       # a favourite's thumbnail
+        (Owner('tile', 8), ('tile:8',), (300, 200), 'cover'),                     # the screen's map
+        (Owner('tile', 10), ('tile:10',), (200, 200), 'cover'),                   # the covers at rest
+        (Owner('view'), ('camera:camera.porch',), (480, 300), 'contain'),         # a camera's full view
+        (Owner('view'), ('map:2?focus=person.alex&move=0',), (480, 480), 'exact'),  # a map opened
+        (Owner('card'), ('cover:media_player.spotify',), (160, 160), 'cover'),    # the media card's cover
+        (Owner('card'), ('vacuum:vacuum.robo',), (300, 200), 'exact'),            # a vacuum's map
+        (Owner('saver'), ('cover:media_player.living_room',), (480, 480), 'saver'),
+        (Owner('saver'), ('camera:camera.door',), (480, 480), 'saver'),
+        (Owner('saver'), ('photos:',), (480, 480), 'auto'),
+        (Owner('library'), ('library:media_player.spotify/1', 'library:media_player.spotify/2'), (220, 100), 'cover'),
+        (Owner('alert'), ('camera:camera.drive',), (392, 220), 'shrink'),
+        (Owner('plugin_tile', 6, 'plugin:bus.next'), ('https://image.tmdb.org/p.jpg', 'cover:media_player.kitchen'), (240, 120), 'cover'),
+        (Owner('plugin_tile', 6, 'plugin:bus.next'), ('entity:media_player.kitchen',), (120, 120), 'contain'),
+        (Owner('plugin_card', -1, 'plugin:bus.release', 'media_player.kitchen'), ('cover:media_player.kitchen',), (200, 200), 'cover'),
+        (Owner('plugin_saver', -1, 'plugin:vinyl.face'), ('step:',), (300, 300), 'cover'),
+    ]
+
+    async def answer(self, screen, owner, sources, box, fit, formats):
+        import vacuum_map
+        manager = FullManager(screen)
+        drawing = vacuum_map.read(png((80, 80), (40, 160, 90)))
+
+        async def held(entity, mark):
+            return drawing, 'abc123'
+        manager.snapshots.vacuum = held
+        n = len(sources)
+        width = box[0] // n
+        places = tuple(Place(i * width, 0, width, box[1], radius=8, fit=fit, ground=0x123456) for i in range(n))
+        question = Question(owner, tuple(pq.source(s) for s in sources), box, places, formats=formats)
+        self.assertTrue(all(question.sources), sources)
+        with mock.patch.object(picture_sources.rest_mosaic, 'wants', return_value=True), \
+                mock.patch.object(picture_sources.rest_mosaic, 'at_rest', return_value=True), \
+                mock.patch('map_card.shown', return_value={'person.alex'}), \
+                mock.patch('vacuum_card.map_entity', return_value={'e': 'image.robo_map', 'm': '1'}):
+            found = await manager.service.answer('text.hall', manager.player, question)
+            self.assertIsNotNone(found, f'{owner.kind} {sources}: no answer yet')
+            self.assertFalse(found.problem, f'{owner.kind} {sources}: {found.problem}')
+            self.assertTrue(found.url and not found.stream, f'{owner.kind} {sources}: {found}')
+            status, body, etag, kind = await manager.links.serve(found.url.rsplit('/', 1)[1].split('.')[0])
+        for watch in manager.snapshots.watches.values():
+            for task in (watch.task, watch.ahead):
+                if task is not None:
+                    task.cancel()
+        self.assertEqual(status, 200, f'{owner.kind} {sources}')
+        return manager, body, kind
+
+    def size(self, image, box, fit):
+        # `shrink` keeps the picture's own proportions within the box (the alert's 16:9 frame of older firmware): one
+        # side is the box's, the other no larger. Every other fit fills the box exactly.
+        if fit != 'shrink':
+            return image.size == box
+        return image.size[0] <= box[0] and image.size[1] <= box[1] and (image.size[0] == box[0] or image.size[1] == box[1])
+
+    async def test_every_source_for_every_owner(self):
+        from PIL import Image
+        for screen, formats, mode in ((GUITION, ('bmp8', 'bmp24'), 'P'), (OLD_GUITION, ('bmp24',), 'RGB')):
+            for owner, sources, box, fit in self.CASES:
+                with self.subTest(screen=screen['firmware'], owner=owner.kind, sources=sources):
+                    manager, body, kind = await self.answer(screen, owner, sources, box, fit, formats)
+                    self.assertEqual(kind, 'image/bmp')
+                    with Image.open(io.BytesIO(body)) as image:
+                        self.assertTrue(self.size(image, box, fit), image.size)
+                        self.assertEqual(image.mode, mode)
+                    # What is drawn is drawn at its place's size (a map, the covers at rest), never at the box's.
+                    for what, width, height in manager.drawn:
+                        self.assertEqual((width, height), (box[0] // len(sources), box[1]), what)
+
+    async def test_a_jpeg_where_the_screen_takes_one(self):
+        # A P4 names JPEG first: photographs come as JPEG, a drawn map (lines and words) as the screen's first BMP.
+        from PIL import Image
+        drawn = {'tile:2', 'tile:8', 'map:2?focus=person.alex&move=0', 'vacuum:vacuum.robo'}
+        for owner, sources, box, fit in self.CASES:
+            with self.subTest(owner=owner.kind, sources=sources):
+                manager, body, kind = await self.answer(P4, owner, sources, box, fit, ('jpeg', 'bmp8', 'bmp24'))
+                with Image.open(io.BytesIO(body)) as image:
+                    if drawn & set(sources):
+                        self.assertTrue(self.size(image, box, fit), image.size)
+                        self.assertEqual((kind, image.format, image.mode), ('image/bmp', 'BMP', 'P'))
+                    else:
+                        # Whole MCUs for the P4's decoder, shown at the size its APP15 segment names (picture_paint).
+                        self.assertEqual((kind, image.format), ('image/jpeg', 'JPEG'))
+                        self.assertFalse(image.info.get('progressive'), 'the P4 decoder takes baseline JPEG only')
+                        self.assertEqual((image.size[0] % 16, image.size[1] % 16), (0, 0))
+                        shown = picture_paint.jpeg_size(body)
+                        self.assertTrue(self.size(types.SimpleNamespace(size=shown), box, fit), shown)
 
 
 if __name__ == '__main__':

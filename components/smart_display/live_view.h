@@ -93,6 +93,7 @@ class Reader {
         this->need_ = h.content_length;
         this->got_ = 0;
         this->audio_ = h.audio;
+        this->still_ = h.still;
         this->room_ = room(this->need_, this->audio_);
         this->in_body_ = true;
       } else {
@@ -113,10 +114,12 @@ class Reader {
   }
   int status() const { return this->status_; }
   uint32_t parts() const { return this->parts_; }
+  // Whether the part `done` was told of is the camera's still from before its stream came (X-Picture: still).
+  bool still() const { return this->still_; }
 
  private:
   std::string head_;
-  bool answered_ = false, in_body_ = false, broken_ = false, audio_ = false;
+  bool answered_ = false, in_body_ = false, broken_ = false, audio_ = false, still_ = false;
   int status_ = 0;
   size_t need_ = 0, got_ = 0;
   uint8_t *room_ = nullptr;
@@ -179,6 +182,10 @@ struct Look {
   // The name as LVGL draws it (ARGB8888, w x h with `stride` pixels a row), at x, y on the card; copied at open().
   const uint32_t *name = nullptr;
   int name_x = 0, name_y = 0, name_w = 0, name_h = 0, name_stride = 0;
+  // The loader in the card's top right corner until the camera is live ("Until it is live", below): `loader` pixels
+  // across, `loader_margin` from the card's edges, its ring `loader_arc` wide; 0: none.
+  int loader = 0, loader_margin = 0, loader_arc = 0;
+  uint16_t loader_ring = 0, loader_turn = 0;  // RGB565: the ring, and the arc that turns on it
 };
 // Where a picture of w x h goes in a card of cw x ch: the PPA reads the block in_* of it and writes out_* at
 // `sixteenths` / 16. Filling: the middle of the picture, scaled up only when it is smaller than the card. Whole
@@ -289,6 +296,60 @@ inline void compose(uint16_t *px, int stride, int w, int h, const Look &look) {
              look.name_w, look.name_h);
 }
 
+// ---- Until it is live ----
+// A camera's stream starts with its stills: the app sends the camera's still at once, again every few seconds, until
+// Home Assistant's WebRTC brings its first frame (live_feed.py), and marks each such part X-Picture: still. While those
+// show, a live tile turns the firmware's spinner (runtime_tiles::spinner_create, LVGL's 900 ms turn) small in its top
+// right corner, on a round shade so it reads over any picture; the full view turns it in its top bar (runtime_tiles,
+// camera_warm). The first picture without the mark ends it (Event::LIVE). An app that marks nothing is live at once.
+constexpr uint32_t LOADER_TURN_MS = 900;  // one turn, as lv_spinner_set_anim_params(900, 200)
+constexpr uint32_t LOADER_STEP_MS = 50;   // the stream's task draws it again this often
+constexpr unsigned LOADER_SHADE = 110;    // the round shade under it, of 255 black
+constexpr float LOADER_ARC = 200;         // the arc's length in degrees, as LVGL's spinner
+// Where the loader lies in a card of w x h: its square's top left corner; false when the card is too small for it.
+inline bool loader_spot(const Look &look, int w, int h, int &x, int &y) {
+  if (!look.tile || look.loader <= 0 || look.loader + 2 * look.loader_margin > std::min(w, h)) return false;
+  x = w - look.loader_margin - look.loader;
+  y = look.loader_margin;
+  return true;
+}
+// The loader at `ms` into its turn, drawn over the pixels at x, y (a square of look.loader): the shade, the ring, and
+// the arc as LVGL's spinner moves it: its end turns evenly, its start eases in and out behind it, both ends rounded.
+inline void draw_loader(uint16_t *px, int stride, int x, int y, const Look &look, uint32_t ms) {
+  const int size = look.loader;
+  const float r = size / 2.0f;
+  const float outer = r - std::max(2.0f, size / 7.0f), inner = outer - look.loader_arc;
+  const float mid = (outer + inner) / 2, half = (outer - inner) / 2;
+  const float p = static_cast<float>(ms % LOADER_TURN_MS) / LOADER_TURN_MS;
+  const float eased = p * p * (3 - 2 * p);
+  const float start = 360 * eased, end = LOADER_ARC + 360 * p;  // degrees, clockwise from three o'clock
+  const float length = end - start;
+  constexpr float RAD = 3.14159265f / 180;
+  const float sx = mid * std::cos(start * RAD), sy = mid * std::sin(start * RAD);
+  const float ex = mid * std::cos(end * RAD), ey = mid * std::sin(end * RAD);
+  auto clamp01 = [](float v) { return v <= 0 ? 0.0f : v >= 1 ? 1.0f : v; };
+  for (int j = 0; j < size; ++j) {
+    for (int i = 0; i < size; ++i) {
+      const float dx = i + 0.5f - r, dy = j + 0.5f - r;
+      const float d = std::sqrt(dx * dx + dy * dy);
+      const float shade = clamp01(r - d + 0.5f);
+      if (shade <= 0) continue;
+      uint16_t &p565 = px[static_cast<size_t>(y + j) * stride + x + i];
+      p565 = blend(p565, 0, static_cast<unsigned>(shade * LOADER_SHADE));
+      const float band = clamp01(std::min(outer - d, d - inner) + 0.5f);
+      if (band > 0) p565 = blend(p565, look.loader_ring, static_cast<unsigned>(band * 255));
+      float angle = std::atan2(dy, dx) / RAD - start;
+      while (angle < 0) angle += 360;
+      while (angle >= 360) angle -= 360;
+      float on = angle <= length ? band : 0;
+      const float cap_s = std::sqrt((dx - sx) * (dx - sx) + (dy - sy) * (dy - sy));
+      const float cap_e = std::sqrt((dx - ex) * (dx - ex) + (dy - ey) * (dy - ey));
+      on = std::max(on, clamp01(half - std::min(cap_s, cap_e) + 0.5f));
+      if (on > 0) p565 = blend(p565, look.loader_turn, static_cast<unsigned>(on * 255));
+    }
+  }
+}
+
 // ---- The streams, on a P4 (live_view.cpp); elsewhere nothing streams ----
 // The full view and the live tiles of the page on the glass, each in a task of its own.
 constexpr int MAX_STREAMS = 7;
@@ -300,9 +361,18 @@ enum class Event : uint8_t {
   TURNED,  // the glass was turned meanwhile: its owner asks again for its new shape
   ENDED,   // closed by its owner, and gone
   SOUND,   // its first sound came (a full view with sound): its owner shows the mute key
+  LIVE,    // its first live picture is on the glass, after FIRST (or with it): no more stills ("Until it is live")
+};
+// A still decoded from a JPEG (decode_still): `stride` pixels a row (the decoder writes whole MCUs, 8 or 16 wide), its
+// buffer `bytes` long, freed with free().
+struct Still {
+  int w = 0, h = 0, stride = 0;
+  size_t bytes = 0;
 };
 // A P4 (USE_LIVE_VIEW, smart_display/__init__.py) that shows pictures at all (SCREEN_PICTURES, features/camera.yaml).
 #if defined(USE_LIVE_VIEW) && defined(SCREEN_PICTURES)
+// Its stills come as JPEG too (docs/PICTURES.md, "Formats"): its questions name `jpeg` (runtime_tiles::picture_ask).
+constexpr bool STILLS_JPEG = true;
 }  // namespace live_view
 namespace esphome::lvgl {
 class LvglComponent;
@@ -331,7 +401,18 @@ uint32_t misses();
 // picture budget while they run): each stream's input and its decoded picture of its room, from what the main loop
 // set when it opened, so never read under a task.
 size_t held_bytes();
+// Stills as JPEG, with the decoder the streams use. prepare_stills runs on the main loop (it has LVGL hold the glass
+// while it refreshes, as a stream does, since the decoder and LVGL's copy to the panel share the 2D-DMA); false while
+// the decoder cannot start. still_input gives a buffer the decoder may read (free() it). decode_still, from a
+// download's task, decodes a whole JPEG into a new buffer of RGB565 as LVGL draws it (free() it), or nullptr.
+bool prepare_stills();
+uint8_t *still_input(size_t bytes, size_t *got);
+uint8_t *decode_still(const uint8_t *jpeg, size_t length, Still &out);
 #else
+constexpr bool STILLS_JPEG = false;
+inline bool prepare_stills() { return false; }
+inline uint8_t *still_input(size_t, size_t *got) { if (got) *got = 0; return nullptr; }
+inline uint8_t *decode_still(const uint8_t *, size_t, Still &) { return nullptr; }
 inline size_t held_bytes() { return 0; }
 inline bool available() { return false; }
 inline Handle open(const std::string &, const Rect &, const Look & = Look{}, bool = false) { return -1; }

@@ -24,11 +24,33 @@
   nothing, closed the stream after six silent seconds and asked again, black in between, for up to a minute. It now
   gets the camera's picture every two seconds until the stream comes, and a camera Home Assistant has no such stream for
   (one with HLS alone) goes over to its pictures at once instead of after 20 seconds.
+- **A live camera starts sooner, and says when it is live** (the P4 screens). The app started each stream from Home
+  Assistant by asking a server on the internet for its address first (STUN), about five seconds before anything else,
+  which no stream between the app and Home Assistant needs. Until the stream's first frame the camera's picture stands
+  still, so a live tile now turns a small spinner in its top right corner, and the camera full screen one in its top
+  bar, until the picture is live.
+- **Pictures as JPEG on the ESP32-P4 screens.** A camera's tile and full view, the screensaver's photos, a cover and a
+  plugin's pictures now reach a P4 screen as JPEG, about a tenth of the bytes of the BMP it got before, and its hardware
+  decoder unpacks them. A map and a vacuum's map stay BMP (JPEG blurs their lines and words), as does every picture for
+  the other screens and the editor.
+- **The album cover behind a tile of one row too.** A player's tile set to Album cover had the cover in the icon's place on a tile of one row; now the cover lies dimmed behind the whole card, as on a taller tile, with the name and what plays in light letters over it. While nothing plays, it shows the covers of your library there as one strip, as the taller tiles show them as a mosaic. Needs the screen's Update.
+- **One picture after the next without a third copy in memory.** When a picture changed (the next screensaver photo,
+  another track's cover, a map that moved) the screen held the old one, the download and a copy of it for a moment; it
+  now takes the download as it is. A map or cover that did not change comes as "not changed" again instead of whole.
+- **Smoother screens, above all the large ones.** A screen drew its whole glass again whenever it brought another
+  page up to date in the background, and twice a minute it drew every card again for the clock. On a 10-inch screen
+  each of those took about a fifth of a second, in which nothing moved and a sound that played stuttered. Now only the
+  page keys and the cards that show the time are drawn again, and a plugin's sounds keep half a second ready.
+- **Plugin API 0.18: popups.** A plugin can show a popup over the screen, the card an alert shows, as high as what it
+  says and as wide as the screen allows, for a moment that wants your eye: the Voice assistant shows what it heard and
+  its answer as it speaks, with rings that ripple while it listens and an arc that turns while it thinks
+  (docs/PLUGINS.md, "A popup").
 - **Plugin API 0.17**: a picture's place without its grey block, a call when a place's picture came or did not, a
-  media player's cover, a camera's picture and an entity's own picture as a place's address, and `capturing()` for a
-  plugin that uses the screen's own camera (docs/PLUGINS.md). Tessera's own Cinema, New music and Picture frame use it:
-  no more grey bars in a cover flow after the screen fetched its pictures again, and Picture frame shows what a player
-  plays.
+  media player's cover, a camera's picture and an entity's own picture as a place's address, `ui::live` for a place
+  whose camera streams on a P4 screen as a live tile does, and `capturing()` for a plugin that uses the screen's own
+  camera (docs/PLUGINS.md). Tessera's own Cinema, New music and Picture frame use it: no more grey bars in a cover flow
+  after the screen fetched its pictures again, Picture frame shows what a player plays, and a camera in Picture frame
+  is live on a P4 screen.
 - **Stars for plugins, and a heart for any plugin.** A few days after a screen first runs a plugin from the Plugins
   page, a card above the screen asks how it works for you: one to five stars, then Send. Later asks again in two
   weeks; Don't ask again, what is shared and the privacy page are behind the card's ⋯ menu. A plugin's details take
@@ -39,6 +61,12 @@
   else, and turning it off removes them there. The Plugins page sorts by best rated and most used, and every plugin
   has its own page on the Tessera website with these numbers per screen model.
 - **A weather card that fills a cell says its condition in the screen's language (#298).** A weather card on a page of its own showed Home Assistant's key, `clear-night`, under the temperature, where the editor said "Klare Nacht" (Home Assistant sends the key in every language and only its frontend translates it). The card's state line (`detail_state`) now says the condition with the same words the weather cards and the editor use, in the screen's language; a condition the screen has no word for keeps Home Assistant's word or the key, as before. Reaches the preview and the screen after the firmware is rebuilt. Not tried on a screen yet.
+- **The camera of the Guition ESP32-P4 screens, experimental.** The Guition JC8012P4A1 (10.1 inch, also its V2 and V3),
+  JC1060P470 V2 (7 inch) and JC4880P443 (4.3 inch) in their camera version (the "C" in the model name) carry an
+  OmniVision OV02C10. Their boards now name the bus it answers on, so the Screen camera plugin fits them: the screen
+  becomes a camera of its device in Home Assistant. Tried on a JC8012P4A1 V3 by
+  [@Heronimonimo](https://github.com/Heronimonimo) and [@ivanfmartinez](https://github.com/ivanfmartinez); on the
+  other boards it is untried yet. It needs the Screen camera plugin's version with the OV02C10.
 - **Speaker and microphone on the Guition and Waveshare ESP32-P4 screens, experimental.** The Guition JC8012P4A1
   (10.1 inch, also its V2 and V3), JC1060P470 (7 inch, also its V2) and JC4880P443 (4.3 inch) now use their speaker and
   microphone, both at once, and the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B, LCD-7 and LCD-10.1 their speaker and two
@@ -168,6 +196,11 @@
   [@icodeforyou](https://github.com/icodeforyou) ([#281](https://github.com/MaxGramser/homeassistant_espscreen/pull/281)).
   This board file itself has not been run on one yet. Its speaker and microphones are in use too (the first entry here).
   Choose it under New screen.
+- **Dev in Docker.** A Docker install can try what comes with the next release: the image
+  `ghcr.io/maxgramser/homeassistant_espscreen:dev` is the dev app, as the repository URL with `#dev` is in Home
+  Assistant. Its screens build from dev, its Plugins page lists the plugins that wait for the next release, and each
+  screen can be reinstalled from dev. Set `SCREEN_CHANNEL` to `main` to point the screens back at main
+  (docs/DOCKER.md, "Testing dev").
 
 ## 0.4.89 (firmware 0.57.0)
 

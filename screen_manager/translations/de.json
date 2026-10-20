@@ -2361,7 +2361,6 @@
         "live_card_hint": "Das Bild füllt die Kachel, im Takt unten aufgefrischt, solange die Seite zu sehen ist. Ein Tipp öffnet sie weiterhin bildschirmfüllend.",
         "live_card_needs_firmware": "Ein Bild, das die Kachel füllt, braucht Firmware 0.3.7 oder neuer: Nach dem Speichern beim Bildschirm auf Aktualisieren drücken. Bis dahin zeigt der Bildschirm ein kleines Bild anstelle des Symbols.",
         "cover": "Albumcover",
-        "cover_hint": "Das Albumcover des laufenden Titels anstelle des Symbols, wie auf der eigenen Kachel von Home Assistant; ein Player ohne Bild behält sein Symbol. Ein Tipp öffnet weiterhin die Karte.",
         "cover_needs_firmware": "Das Albumcover auf der Kachel braucht Firmware 0.2.78 oder neuer: Nach dem Speichern beim Bildschirm auf Aktualisieren drücken.",
         "map": "Karte",
         "map_hint": "Wo diese Person und die hinzugefügten Personen sind, auf einer ruhigen Karte in den Farben des Bildschirms. Home Assistant liefert die Straßen von OpenStreetMap; der Bildschirm erhält nur das Bild, nie einen Standort. Sie wird neu gezeichnet, wenn sich jemand bewegt. Ein Tippen öffnet sie über den ganzen Bildschirm.",

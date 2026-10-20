@@ -2361,7 +2361,6 @@
         "live_card_hint": "A kép kitölti a csempét, és amíg az oldal látszik, az alább megadott ütemben frissül. Koppintásra továbbra is teljes képernyőn nyílik meg.",
         "live_card_needs_firmware": "A csempét kitöltő képhez 0.3.7 vagy újabb firmware kell: mentés után nyomd meg a Frissítés gombot a kijelzőnél. Addig a kijelző kis képet mutat az ikon helyén.",
         "cover": "Albumborító",
-        "cover_hint": "Az éppen szóló zene albumborítója az ikon helyén, mint a Home Assistant saját csempéjén; kép nélküli lejátszónál az ikon marad. Koppintásra továbbra is a kártya nyílik meg.",
         "cover_needs_firmware": "A csempén lévő albumborítóhoz 0.2.78 vagy újabb firmware kell: mentés után nyomd meg a Frissítés gombot a kijelzőnél.",
         "map": "Térkép",
         "map_hint": "Hol van ez a személy és akiket hozzáadsz, egy nyugodt térképen a kijelző színeiben. Az utcákat a Home Assistant adja az OpenStreetMapből; a kijelző csak a képet kapja, soha nem helyet. Újrarajzolódik, ha valaki elmozdul. Egy érintés a teljes képernyőn nyitja meg.",

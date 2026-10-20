@@ -1936,7 +1936,6 @@
         "live_card_hint": "Het beeld vult de tile en ververst in het tempo hieronder zolang de pagina in beeld is. Een tik opent hem nog steeds schermvullend.",
         "live_card_needs_firmware": "Een beeld dat de tile vult heeft firmware 0.3.7 of nieuwer nodig: druk na het opslaan op Bijwerken bij het scherm. Tot dan toont het scherm een klein beeld op de plek van het icoon.",
         "cover": "Albumhoes",
-        "cover_hint": "De albumhoes van wat er speelt op de plek van het icoon, zoals de eigen tile van Home Assistant; een speler zonder afbeelding houdt zijn icoon. Een tik opent nog steeds de kaart.",
         "cover_needs_firmware": "De albumhoes op de tile heeft firmware 0.2.78 of nieuwer nodig: druk na het opslaan op Bijwerken bij het scherm.",
         "map": "Kaart",
         "map_hint": "Waar deze persoon en de mensen die je toevoegt zijn, op een rustige kaart in de kleuren van het scherm. Home Assistant levert de straten van OpenStreetMap; het scherm krijgt alleen het plaatje, nooit een locatie. De kaart wordt opnieuw getekend als iemand zich verplaatst. Een tik opent hem over het hele scherm.",

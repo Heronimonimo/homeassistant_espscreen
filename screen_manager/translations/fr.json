@@ -2361,7 +2361,6 @@
         "live_card_hint": "L'image remplit la tuile, rafraîchie au rythme ci-dessous tant que la page est affichée. Un appui l'ouvre toujours en plein écran.",
         "live_card_needs_firmware": "Une image qui remplit la tuile demande le firmware 0.3.7 ou plus récent : appuyez sur Mettre à jour sur l'écran après l'enregistrement. D'ici là, l'écran affiche une petite image à la place de l'icône.",
         "cover": "Pochette",
-        "cover_hint": "La pochette de ce qui joue à la place de l'icône, comme la tuile de Home Assistant ; un lecteur sans image garde son icône. Un appui ouvre toujours la carte.",
         "cover_needs_firmware": "La pochette sur la tuile demande le firmware 0.2.78 ou plus récent : appuyez sur Mettre à jour sur l'écran après l'enregistrement.",
         "map": "Carte",
         "map_hint": "Où se trouvent cette personne et celles que vous ajoutez, sur une carte calme aux couleurs de l'écran. Home Assistant fournit les rues d'OpenStreetMap ; l'écran ne reçoit que l'image, jamais une position. Elle est redessinée quand quelqu'un se déplace. Un appui l'ouvre sur tout l'écran.",

@@ -5,7 +5,7 @@ from a web service, hardware on one board, a feature not everyone needs. How to 
 [github.com/MaxGramser/tessera-plugins](https://github.com/MaxGramser/tessera-plugins) (its `docs/` and `AGENTS.md`).
 This page is the core's side: what the firmware, the add-on and the editor do, and the rules a change here keeps.
 
-Plugins are on in every app since 0.4.87 (the plugin API is 0.17 now); before, only in the dev app.
+Plugins are on in every app since 0.4.87 (the plugin API is 0.18 now); before, only in the dev app.
 `core.plugins_enabled()` is the one switch: false takes the Plugins page, its routes and its loops out of the app.
 
 **The API's number.** A plugin builds on every core with the same major and at least its minor. From 1.0 on that is a
@@ -228,10 +228,11 @@ beside it, read again a few times after a press, so a test can say how it went. 
 | Settings rows | `settings(SettingsPage&)`; `settings_screen::plugin_pages` | `Plugins.settings_for`, `set_setting`: the manifest's `settings` (switch, number, select, text, button with its `status`), entities of the screen's own device found in the entity registry (`_setting_entities`) | in the plugin's details on the screen's Plugins tab (`PluginSettings.vue`), with its inputs and parts; Screen settings links there |
 | A question to Home Assistant | `tessera::send`, `on_message` (op `plugin`) | `Plugins.answer`: only `permissions.ha_commands`, logged; an answer the manifest's `answers` maps goes as its fields, the rest as it came; both bounded (`bounded`, 3.2 KB, by bytes) | the commands under "What it may do" |
 | The moments | `on_ready`, `on_interval` (every 250 ms; `on_tick` before 0.4), `on_standby`, `before_update`, `on_cards_closed`, `on_alert`, `on_touch` (0.3: every tap `screen_input::TouchGuard` takes, through `screen_hooks::touched()`), `on_press` and `on_step(Step)` (0.11, "Touch feedback" below) | | |
-| Pictures in one system (0.17) | `ui::picture(parent, Placeholder::NONE)`, a place without its block; `on_picture(place, PictureState)` on a `Tile`, a `Card` and a `Saver` (`plugin_host::picture_outcome`, from `tile_picture_done`); the core's own sources as an address; `slide_pictures` from any call; `tessera::capturing` and the camera's dot (`plugin_host::camera_dot_update`); "Pictures on a plugin tile" below | `plugin_pictures.py` reads `cover:`, `camera:`, `entity:` and `step:`; `Manager.plugin_picture` | nothing |
+| Pictures in one system (0.17) | `ui::picture(parent, Placeholder::NONE)`, a place without its block; `on_picture(place, PictureState)` on a `Tile`, a `Card` and a `Saver` (`plugin_host::picture_outcome`, from `tile_picture_done`); the core's own sources as an address; `slide_pictures` from any call; `ui::live`, a tile's place that streams its camera on a P4 (`plugin_host::live_places`, `runtime_tiles` live places, the answer `plive`); `tessera::capturing` and the camera's dot (`plugin_host::camera_dot_update`); "Pictures on a plugin tile" below | `plugin_pictures.py` reads `cover:`, `camera:`, `entity:` and `step:`; `Manager.plugin_picture`; `picture_service._stream` streams a live place's own camera | nothing |
 | Waking the screen (0.16) | `tessera::wake(plugin)`: `plugin_host::wake`, which `packages/core.yaml` points at the script `wake_from`, the one way Home Assistant's Wake button and a board's sensor take; "Waking the screen" below | nothing | nothing |
 | Entities chosen per tile (0.15) | nothing new: the tile reads `x.entities.<option id>` (state, name, attributes, updated) from its data | an option of kind `entity` (`plugin_manifest.check_option`, `option_value`); `Plugins.tile_message` puts each chosen entity's `state_part` under `entities`, `related_entities` follows them | the tile's inspector: a searchable entity picker per option (`PluginOptions.vue`) |
 | A screensaver (0.14) | `Saver`, `add_saver(id, step, make)`, `SaverContext`; `ui::takes_taps` (only for `taps: true`, `Plugin::set_taps`); `wish()`; `drift()`; "A screensaver" below | the manifest's `savers`; `Plugins.saver_kinds`, `saver_plugins`, `saver_step`, `refresh_savers`; `screen_saver.message`'s `pf`; `answer_plugin_pictures` with `question.saver` and `saver:picture` | the Screensaver card: a face per step, a step of its own in the order, its options |
+| A popup (0.18) | `Popup`, `show_popup`, `close_popup`, `popup_shown`, `PopupWidth`; `ui::animate` with `Motion` and `ui::still`; `plugin_host` "A plugin's popup"; "A popup" below | nothing | nothing |
 | A board's own hardware | the plugin's `plugin.yaml` (audio codecs, a relay), its `boards` in the manifest | offered only to the screens of those boards | the Plugins page says which boards |
 
 ## Touch feedback
@@ -442,6 +443,15 @@ only for the entity the tile, card or step shows (`picture_sources`, `_plugin_en
 step's own picture (`saver:picture` is still read). The app answers them as it answers a tile of that entity: the same
 fetching, the same newest frame of a camera's stream while one runs, no permission of the network needed.
 
+**Live (0.17).** A tile's place with the address `camera:<entity>` of its own entity that the tile set live
+(`ui::live`) streams on a screen that streams, as a camera tile set to Live does (`runtime_tiles`, live places): while
+it is on the glass, the page stands still and nothing lies over it (`drawn_over`; a label over it counts), into the
+place's room with its corners and fit, the card's colour around a whole picture. Its question names `live` and the
+owner `plugin_tile`, sent only to an app that reads questions, and its answer comes back as `plive` by its number. Until
+the camera is live its stills show with the firmware's loader in the place's top right corner, as on a live tile
+(docs/CAMERA.md, "Until it is live"); a plugin draws nothing for it. A card's and a saver's places show stills: a card
+over the page stops every stream.
+
 **What came (0.17).** A plugin hears whether a place's picture came: `on_picture(place, PictureState)` on its tile, card
 or saver, `SHOWN` when it is on the place, `NONE` when the app has no picture at that address now (asked again later,
 each time after a longer while), `FAILED` when the download broke off. A place made with `Placeholder::NONE` shows
@@ -521,6 +531,51 @@ or step only to a screen that names it and has the plugin in its record (`Plugin
 **Tested** by the host probe's three savers (a face of the music with a cover and a key, a face of the clock that
 moves itself, a step of its own) in `plugin_round` (`plugin_savers` in tools/render/run.py), and by
 tests/test_saver_plugins.py.
+
+## A popup (0.18)
+
+A popup is for a moment that wants the eye now: a voice assistant that listens, thinks and answers, a timer that went
+off, a question to answer. It is the card an alert of Home Assistant shows, in the middle of the glass over the alert's
+scrim, with what the plugin draws in it.
+
+- **Its size follows the glass and what it says.** The card is as wide as the alert's card on this glass
+  (`screen_alert::plain`: the look's size in millimetres, never wider than the glass less its edge), or the glass less
+  that edge with `PopupWidth::WIDE`. It is as high as what the plugin puts in its room (`PopupContext::parent`), up to
+  `PopupContext::height`, the most this glass gives a card: the plugin lays its parts out from the top, the card grows
+  and shrinks with them (a hidden part takes no room) and stays in the middle. A popup that has to fit more than that
+  shows its last or first lines, as it chooses; it never scrolls.
+- **One at a time, over everything but an alert.** It lies on the top layer over the page, a card, the settings and
+  the screensaver (`saver_glass` lies at that layer's bottom); a popup shown while an alert shows goes under the
+  alert's overlay, and an alert that comes closes it. Showing another popup replaces it.
+- **It lights the screen.** `show_popup` wakes a dark screen as `tessera::wake` does (the log names the plugin; a Sleep
+  of Home Assistant is over too), and
+  restarts the standby time of a lit one: a popup is something to see. A plugin that shows one unasked, without a
+  person in front of the screen, has a setting for it, as a plugin that wakes the screen does.
+- **A close key in its corner.** Every popup has the round key of every card's top bar (`detail_bar::key`, its size
+  and paint) with the close glyph in the room's top right corner, as far from the card's top and side as the room is.
+  It floats over the room; `PopupContext::key` is its size (a plugin's own disc or icon of that size in the top left
+  corner stands on one line with it) and `PopupContext::corner` how far the room's first row keeps from the right.
+- **How it goes.** Its plugin closes it (`close_popup`) or shows another; it goes by itself on its close key, a tap
+  beside the card,
+  when the screen goes dark, before an update and when an alert comes, and then hears `on_dismiss` first. A popup may
+  close itself in any of its own calls; it leaves the glass at once and is deleted once that call returned, as a card.
+- **Taps.** A tap on the card reaches `on_tap` through the touch guard (`rt::allowed`, keys from `POPUP_TOUCH`), with
+  `tap_point()` in the room's pixels; the scrim takes every other press, so nothing reaches what lies under it.
+- **Moments.** `on_interval` every 250 ms (for words that come one by one), `on_tick` once a second, `on_theme` when
+  the look changes (the host paints the scrim and the card itself).
+- **Motion.** `ui::animate(part, Motion, period_ms, delay_ms)` makes a part pulse (its opacity), spin (around its
+  middle) or ripple (growing by half while it fades), again and again, until `ui::still` or until it is deleted; a
+  delay lets parts move one after another. It is for a popup, whose moment is short: the screen draws a moving part
+  again in every frame, so a tile, a card and a screensaver stand still, and a part that moves stays small.
+
+The voice assistant (tessera-plugins, `voice_assist`) is the first user: a disc in the colour of where a question is,
+rings that ripple out of it while it listens, an arc that turns around it while Assist thinks, what it heard, and the
+answer as the speaker says it.
+
+**Tested** by the host probe's popup (`{"do": "popup"}`, `popup_self`, `popup_close`) in `plugin_round`: it shows and
+wakes, ticks, takes a tap with its place, goes on a tap beside it and on its close key with `on_dismiss`, by
+`close_popup` without it, by itself inside its own `on_tap` (deleted after that call) and when an alert comes, and it
+lights a screen in standby.
 
 ## What is not built yet
 

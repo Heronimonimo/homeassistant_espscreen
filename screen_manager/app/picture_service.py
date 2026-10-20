@@ -22,6 +22,19 @@ LOG = logging.getLogger(__name__)
 KEPT = 48
 KEPT_BYTES = 48 * 1024 * 1024
 SUFFIX = {'jpeg': 'jpg', 'bmp8': 'bmp', 'bmp24': 'bmp'}
+# What a screen names as the formats it takes, best first, is what this app answers in, but a drawn picture (a map, a
+# vacuum's map: lines, words and flat colours) goes as the first BMP the screen takes, since JPEG blurs its lines and
+# the 8-bit palette keeps them sharp and small. Photographs (a camera, a cover, a photo, a poster) go as the screen
+# named first: JPEG on a P4, a tenth of a BMP's bytes (docs/PICTURES.md, "Formats").
+DRAWN = ('map:', 'vacuum:')
+
+
+def format_for(question, resolved):
+    """The format to paint `question` in, from what its sources gave (`resolved`)."""
+    formats = question.formats or ('bmp24',)
+    if any(r.state == 'ok' and str(r.mark).startswith(DRAWN) for r in resolved):
+        return next((f for f in formats if f != 'jpeg'), formats[0])
+    return formats[0]
 
 
 @dataclass
@@ -76,7 +89,7 @@ class Service:
             return Answer(shown=tuple('' for _ in question.places))
         volatile = found.volatile
         revalidate = question.owner.kind != 'tile' or pq.serves_304(screen)
-        suffix = SUFFIX.get(question.format, 'bmp')
+        suffix = SUFFIX.get(found.format, 'bmp')
         token = self.links.add(recipe=Recipe(inbox, question), suffix=suffix, revalidate=revalidate) if volatile else \
             self.links.add(still=found.body, suffix=suffix, revalidate=revalidate)
         return Answer(url_of(token, suffix), found.meta, found.shown)
@@ -99,6 +112,12 @@ class Service:
                 token = self.stream.link(tile['entity'], question.live, cover=not contain, warm=question.sound, screen=inbox,
                                          tile=True)
                 return url_of(token, 'mjpeg') + ('?fit=contain' if contain else '')
+        # A plugin tile's place set to live (plugin API 0.17, ui::live): the camera of its own entity (may() checked it),
+        # into the place's room, filled or whole as the place's fit says.
+        if source.kind == 'camera' and owner.kind == 'plugin_tile' and source.ref.startswith('camera.'):
+            contain = question.places[0].fit in ('contain', 'within', 'whole')
+            token = self.stream.link(source.ref, question.live, cover=not contain, screen=inbox, tile=True)
+            return url_of(token, 'mjpeg') + ('?fit=contain' if contain else '')
         return ''
 
     # ----- painting -----
@@ -133,7 +152,7 @@ class Service:
                 raw = drawn
             raws.append(raw)
         painted = replace(question, places=places)
-        fmt = question.format
+        fmt = format_for(question, resolved)
         key = (painted.box, painted.places, tuple(r.mark for r in resolved), fmt)
         etag = f'"{hashlib.sha1(repr(key).encode()).hexdigest()[:16]}"'
         body = self.kept.get(key)
@@ -147,7 +166,7 @@ class Service:
                 self._keep(key, body)
         else:
             self.kept.move_to_end(key)
-        return Painted('ok', body, etag, meta, shown, any(r.volatile for r in resolved))
+        return Painted('ok', body, etag, meta, shown, any(r.volatile for r in resolved), fmt)
 
     def _painted(self, question, place, r: Resolved):
         """The place as its source would have it painted: a camera tile's own fit and shade, the colour beside the
@@ -181,3 +200,4 @@ class Painted:
     meta: dict = field(default_factory=dict)
     shown: tuple = ()
     volatile: bool = False
+    format: str = 'bmp24'

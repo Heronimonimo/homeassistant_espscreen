@@ -33,7 +33,13 @@ RoomyJson json_memory;
 }  // namespace
 
 namespace rt = runtime_tiles;
-namespace plugin_host { extern tessera::Point tapped; }
+namespace plugin_host {
+extern tessera::Point tapped;
+// A plugin's popup (0.18), further down.
+bool popup_show(const tessera::Plugin *plugin, std::function<tessera::Popup *()> make, tessera::PopupWidth width);
+void popup_close(const tessera::Plugin *plugin);
+bool popup_of(const tessera::Plugin *plugin);
+}  // namespace plugin_host
 
 // ---- The screen's own camera in use (docs/PICTURES.md "Capture", plugin API 0.17) ----
 // A dot in the glass's top right corner, on top of everything (LVGL's system layer: pages, cards, the full view, the
@@ -402,6 +408,11 @@ bool open_card(const char *plugin_id, const char *card, const std::string &entit
 }
 
 void close_card() { plugin_host::close_card(); }
+bool show_popup(const Plugin *plugin, std::function<Popup *()> make, PopupWidth width) {
+  return plugin_host::popup_show(plugin, std::move(make), width);
+}
+void close_popup(const Plugin *plugin) { plugin_host::popup_close(plugin); }
+bool popup_shown(const Plugin *plugin) { return plugin_host::popup_of(plugin); }
 
 Point tap_point() { return plugin_host::tapped; }
 
@@ -452,9 +463,17 @@ static bool tone_color(Tone tone, uint32_t &color) {
 }
 
 void refresh() {
+  bool marked = false;
   for (auto &w : rt::widgets)
-    if (w.plugin && w.index < rt::model.count) rt::mark_tile(w.index);
-  if (rt::refresh) rt::refresh();
+    if (w.plugin && w.index < rt::model.count) {
+      rt::mark_tile(w.index);
+      marked = true;
+    }
+  // No plugin tile on the glass (a plugin with only a top bar item or a popup, or its tiles on other pages): the top
+  // bar alone. A render that has nothing marked draws everything (mark_all), which also puts every kept page behind,
+  // and each of them was then freshened in turn.
+  if (marked && rt::refresh) rt::refresh();
+  else if (!marked) rt::refresh_header_only();
 }
 
 // The screen wakes as Home Assistant's Wake button does (0.16): packages/core.yaml points plugin_host::wake at the
@@ -584,6 +603,7 @@ struct Place {
   bool block = true;     // tessera::Placeholder::BLOCK: its soft block shows until its picture is here (0.17)
   bool laid = false;     // its piece of the atlas is on it now
   int8_t told = -1;      // the PictureState the plugin last heard for this address (0.17, on_picture), -1 none yet
+  bool live = false;     // a tile's place that streams its camera on a P4 (0.17, ui::live; runtime_tiles live places)
 };
 struct Card : tessera::InPsram {   // PSRAM first, as the plugin's own objects (roomy.h)
   std::unique_ptr<tessera::Tile> tile;
@@ -696,10 +716,12 @@ void tap(rt::Widgets &w, int x, int y) {
 
 static void tick_card(uint32_t epoch);
 static void saver_tick(uint32_t epoch);
+static void popup_tick(uint32_t epoch);
 
 void tick_cards(uint32_t epoch) {
   saver_tick(epoch);  // a plugin's screensaver (0.14) counts on its own clock too, on every board
   tick_card(epoch);
+  popup_tick(epoch);
   for (auto &w : rt::widgets) {
     if (!w.plugin || !w.tile || !w.extra || w.extra_mode != "plugin" || w.index >= rt::model.count) continue;
     if (lv_obj_has_flag(w.tile, LV_OBJ_FLAG_HIDDEN) || lv_obj_has_flag(w.extra, LV_OBJ_FLAG_HIDDEN)) continue;
@@ -752,6 +774,13 @@ static int measure(lv_obj_t *frame, std::vector<Place> &places, std::vector<tile
 static int measure(const rt::Widgets &w, std::vector<tile_picture::Part> &parts, std::vector<Place *> &owners) {
   if (!w.plugin || !w.tile) { parts.clear(); owners.clear(); return picture_store::SCALE_ONE; }
   return measure(w.tile, w.plugin->places, parts, owners);
+}
+
+void live_places(const rt::Widgets &w, const std::function<void(lv_obj_t *, const std::string &, bool)> &each) {
+  if (!w.plugin) return;
+  for (const auto &p : w.plugin->places)
+    if (p.live && p.place && !lv_obj_has_flag(p.place, LV_OBJ_FLAG_HIDDEN) && p.url.rfind("camera:", 0) == 0)
+      each(p.place, p.url.substr(7), p.contain);
 }
 
 bool pictured(const rt::Widgets &w) {
@@ -1116,6 +1145,218 @@ static void tick_card(uint32_t epoch) {
     for (auto &p : open->places) rt::set_color(p.place, LV_STYLE_BG_COLOR, theme::color(theme::TRACK));
   }
   call(open, [&](tessera::Card &card) { card.on_tick(epoch); });
+}
+
+// ---- A plugin's popup (plugin API 0.18, docs/PLUGINS.md "A popup") ----
+// The alert's card (screen_alert::plain: its size on this glass; the alert card's corners, its colours) in the middle of
+// the glass over the alert's scrim, on the top layer: over the page, every card, the settings and the screensaver, which
+// lies at the bottom of that layer, and under an alert. The scrim takes every press, so nothing reaches what is under it.
+struct OpenPopup {
+  std::unique_ptr<tessera::Popup> popup;
+  const tessera::Plugin *plugin = nullptr;
+  bool dark = false;
+  lv_obj_t *scrim = nullptr, *card = nullptr, *room = nullptr, *close = nullptr;
+};
+static OpenPopup *popup_open = nullptr;
+// A popup that went during one of its own calls, as a card that closed in one (retired): deleted once it returned.
+static std::vector<OpenPopup *> popup_retired;
+static int popup_calling = 0;
+// The touch guard's keys of a popup's spots, and of a tap beside it, apart from the tiles', the keys' and a card's.
+constexpr int POPUP_TOUCH = 310000;
+constexpr const char *CLOSE_GLYPH = "\U000F0156";  // mdi:close
+
+static void popup_destroy(OpenPopup *open) {
+  ++popup_calling;     // its destructor is a call into it too
+  open->popup.reset();
+  --popup_calling;
+  if (open->scrim) lv_obj_delete(open->scrim);  // the card, its room and the popup's parts are the scrim's children
+  delete open;
+}
+static void popup_bury() {
+  while (!popup_retired.empty() && !popup_calling) {
+    OpenPopup *open = popup_retired.back();
+    popup_retired.pop_back();
+    popup_destroy(open);
+  }
+}
+// One call into the popup `open`: true when it is still the popup shown afterwards.
+template <typename Run> static bool popup_call(OpenPopup *open, Run &&run) {
+  ++popup_calling;
+  run(*open->popup);
+  --popup_calling;
+  const bool still = popup_open == open;
+  popup_bury();
+  return still;
+}
+static void popup_paint(OpenPopup &open) {
+  rt::set_color(open.scrim, LV_STYLE_BG_COLOR, theme::color(theme::SCRIM));
+  rt::set_color(open.card, LV_STYLE_BG_COLOR, theme::color(theme::RAISED));
+  rt::set_color(open.card, LV_STYLE_BORDER_COLOR, theme::color(theme::RAISED_LINE));
+  if (open.close) {  // as detail_bar::key paints it
+    rt::set_color(open.close, LV_STYLE_BG_COLOR, theme::color(theme::KEY));
+    rt::set_color(open.close, LV_STYLE_BG_COLOR, theme::color(theme::KEY_PRESSED), LV_STATE_PRESSED);
+    if (lv_obj_t *glyph = lv_obj_get_child(open.close, 0)) rt::set_color(glyph, LV_STYLE_TEXT_COLOR, theme::color(theme::INK));
+  }
+}
+// The popup leaves the glass. `dismissed`: it goes by itself, and hears on_dismiss first (which may close it, or show
+// another in its place: then that is the end of it here).
+static void popup_end(bool dismissed, const char *why) {
+  OpenPopup *open = popup_open;
+  if (!open) return;
+  ESP_LOGI("plugins", "Popup of %s goes: %s", open->plugin->plugin_id(), why);
+  if (dismissed && !popup_call(open, [](tessera::Popup &p) { p.on_dismiss(); })) return;
+  popup_open = nullptr;
+  if (!popup_calling) return popup_destroy(open);
+  lv_obj_add_flag(open->scrim, LV_OBJ_FLAG_HIDDEN);
+  popup_retired.push_back(open);
+}
+
+// A tap on the card (Popup::on_tap), through the guard a card's tap passes, keyed by an 8 mm spot of the room.
+static void popup_tap(lv_event_t *) {
+  OpenPopup *open = popup_open;
+  if (!open) return;
+  lv_point_t at{-1, -1};
+  if (!rt::finger_at(at)) at = {-1, -1};
+  lv_area_t card, room;
+  lv_obj_get_coords(open->card, &card);
+  lv_obj_get_coords(open->room, &room);
+  const bool known = at.x >= 0 && at.y >= 0;
+  // Where the finger let go must be on the card (LVGL clicks what a finger pressed wherever it lets go).
+  if (known && (at.x < card.x1 || at.x > card.x2 || at.y < card.y1 || at.y > card.y2)) return;
+  const int cell = std::max(1, ::ui::mm(8));
+  const int spot = known ? (std::max<int>(0, at.y - card.y1) / cell) * 64 + std::max<int>(0, at.x - card.x1) / cell : 0;
+  if (!rt::allowed(esphome::millis(), POPUP_TOUCH + 1 + spot, "plugin popup")) return;
+  tapped = known ? tessera::Point{at.x - room.x1, at.y - room.y1} : tessera::Point{-1, -1};
+  popup_call(open, [](tessera::Popup &p) { p.on_tap(); });
+}
+// Its close key, the round key of every card's top bar.
+static void popup_close_key(lv_event_t *) {
+  if (!popup_open || !rt::allowed(esphome::millis(), POPUP_TOUCH - 2, "plugin popup close")) return;
+  popup_end(true, "its close key");
+}
+// A tap beside the card: the popup goes, as a tap beside a sheet closes it on a phone.
+static void popup_beside(lv_event_t *) {
+  if (!popup_open || !rt::allowed(esphome::millis(), POPUP_TOUCH, "plugin popup beside")) return;
+  popup_end(true, "a tap beside it");
+}
+
+bool popup_show(const tessera::Plugin *plugin, std::function<tessera::Popup *()> make, tessera::PopupWidth wide) {
+  if (!plugin || !make) return false;
+  // A dark screen lights up first, as tessera::wake does (a lit one counts its standby time from now): a popup is
+  // something to see.
+  tessera::wake(plugin);
+  // The popup shown now goes first: another plugin's hears on_dismiss, this plugin's own was replaced by its plugin. And
+  // whatever that on_dismiss showed in its place, as this one is the popup asked for last.
+  if (popup_open) popup_end(popup_open->plugin != plugin, "another popup");
+  popup_end(false, "another popup");
+  ++popup_calling;
+  std::unique_ptr<tessera::Popup> popup(make());
+  --popup_calling;
+  popup_end(false, "another popup");  // one that `make` showed itself
+  popup_bury();
+  if (!popup) return false;
+  auto *open = new OpenPopup();
+  open->popup = std::move(popup);
+  open->plugin = plugin;
+  open->dark = theme::dark;
+  const bool large = ::ui::large();
+  open->scrim = lv_obj_create(lv_layer_top());
+  lv_obj_remove_style_all(open->scrim);
+  lv_obj_set_size(open->scrim, lv_pct(100), lv_pct(100));
+  lv_obj_remove_flag(open->scrim, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(open->scrim, LV_OBJ_FLAG_CLICKABLE);
+  rt::set_number(open->scrim, LV_STYLE_BG_OPA, LV_OPA_60);  // the alert's scrim (alert_overlay: 60 %)
+  lv_obj_add_event_cb(open->scrim, popup_beside, LV_EVENT_SHORT_CLICKED, nullptr);
+  // Under an alert that shows: the alert's overlay moves up one place.
+  if (rt::alert_parts.card && lv_obj_is_visible(rt::alert_parts.card))
+    lv_obj_move_to_index(open->scrim, lv_obj_get_index(lv_obj_get_parent(rt::alert_parts.card)));
+  // As wide as the alert's card on this glass, or the glass less the alert's edge on each side (WIDE), and as high as
+  // the room's parts: the room grows with them up to the most this glass gives a card (the glass less that edge, at
+  // most a little more than the alert's own height), and the card is the room with its edge around it.
+  const int canvas_w = overlay_card::screen_width(), canvas_h = overlay_card::screen_height();
+  const auto l = screen_alert::plain(canvas_w, canvas_h, 0, 0);
+  const int edge = l.button_inset;
+  // On large glass (a 7 or 10 inch) the alert's width in millimetres is a small card in a wide field: at least two fifths
+  // of the glass's width there, never wider than the glass less its edge.
+  const int card_w = wide == tessera::PopupWidth::WIDE
+                         ? std::max(0, canvas_w - 2 * edge)
+                         : std::min(std::max(l.card_w, canvas_w * 2 / 5), std::max(0, canvas_w - 2 * edge));
+  const int tallest = std::max(0, std::min(canvas_h - 2 * edge, std::max(::ui::px(large ? 480 : 300), canvas_h * 3 / 5)));
+  open->card = lv_obj_create(open->scrim);
+  lv_obj_remove_style_all(open->card);
+  lv_obj_set_width(open->card, card_w);
+  lv_obj_set_height(open->card, LV_SIZE_CONTENT);
+  lv_obj_center(open->card);
+  lv_obj_remove_flag(open->card, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(open->card, LV_OBJ_FLAG_CLICKABLE);
+  rt::set_number(open->card, LV_STYLE_BG_OPA, LV_OPA_COVER);
+  rt::set_number(open->card, LV_STYLE_BORDER_WIDTH, 1);
+  rt::set_number(open->card, LV_STYLE_BORDER_OPA, LV_OPA_COVER);
+  rt::set_number(open->card, LV_STYLE_RADIUS,
+                 rt::alert_parts.card ? lv_obj_get_style_radius(rt::alert_parts.card, LV_PART_MAIN) : 18);
+  // The room inside the card's edge (the alert's icon stands as far in), which takes no tap itself: a tap on the popup's
+  // own parts reaches the card, unless the plugin made one of them clickable.
+  const int pad = ::ui::px(large ? 22 : 16);
+  rt::set_number(open->card, LV_STYLE_PAD_TOP, pad);
+  rt::set_number(open->card, LV_STYLE_PAD_BOTTOM, pad);
+  rt::set_number(open->card, LV_STYLE_PAD_LEFT, pad);
+  rt::set_number(open->card, LV_STYLE_PAD_RIGHT, pad);
+  lv_obj_add_event_cb(open->card, popup_tap, LV_EVENT_SHORT_CLICKED, nullptr);
+  popup_paint(*open);
+  const int width = std::max(1, card_w - 2 * pad - 2), height = std::max(1, tallest - 2 * pad - 2);
+  // The close key: the round key of every card's top bar (detail_bar::key, its size and paint), with the close glyph,
+  // in the room's top right corner, as far from the card's top and side as the room is, so a part of the popup's own of
+  // the key's size in the room's top left corner (a disc, an icon) stands on the same line; it floats over the room.
+  const auto m = detail_bar::metrics();
+  open->close = detail_bar::key(open->card, {0, 0, m.key, m.key}, CLOSE_GLYPH, popup_close_key);
+  lv_obj_add_flag(open->close, LV_OBJ_FLAG_FLOATING);
+  lv_obj_align(open->close, LV_ALIGN_TOP_RIGHT, 0, 0);
+  const int corner = m.key + m.gap;
+  open->room = lv_obj_create(open->card);
+  lv_obj_remove_style_all(open->room);
+  lv_obj_remove_flag(open->room, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_remove_flag(open->room, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_set_width(open->room, width);
+  lv_obj_set_height(open->room, LV_SIZE_CONTENT);
+  // A part that moves (a ripple, a turning ring) may reach over the room's edge into the card's: only its layout counts.
+  // LVGL draws a child over its parent's edge only as far as the parent's own drawing reaches out, so the room says it
+  // reaches as far as the card's edge.
+  lv_obj_add_flag(open->room, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  lv_obj_add_event_cb(open->room, [](lv_event_t *e) {
+    lv_event_set_ext_draw_size(e, static_cast<int32_t>(reinterpret_cast<intptr_t>(lv_event_get_user_data(e))));
+  }, LV_EVENT_REFR_EXT_DRAW_SIZE, reinterpret_cast<void *>(static_cast<intptr_t>(pad)));
+  lv_obj_refresh_ext_draw_size(open->room);
+  rt::set_number(open->room, LV_STYLE_MAX_HEIGHT, height);
+  popup_open = open;
+  const tessera::PopupContext context{open->room, width, height, m.key, corner};
+  if (!popup_call(open, [&](tessera::Popup &p) { p.open(context); })) return true;
+  // Where the close key stands once the card is as high as what the popup made, for the log (and the render's taps).
+  lv_obj_update_layout(open->scrim);
+  lv_area_t key;
+  lv_obj_get_coords(open->close, &key);
+  ESP_LOGI("plugins", "Popup of %s shows, %dx%d, close key at %d,%d", plugin->plugin_id(), width, height,
+           (int) (key.x1 + key.x2) / 2, (int) (key.y1 + key.y2) / 2);
+  popup_call(open, [](tessera::Popup &p) { p.on_tick(rt::now_epoch()); });
+  return true;
+}
+void popup_close(const tessera::Plugin *plugin) {
+  if (popup_open && popup_open->plugin == plugin) popup_end(false, "closed by its plugin");
+}
+bool popup_of(const tessera::Plugin *plugin) { return popup_open && popup_open->plugin == plugin; }
+
+// Every 250 ms: its own interval, after a change of the look its colours and on_theme.
+static void popup_interval(uint32_t now_ms) {
+  OpenPopup *open = popup_open;
+  if (!open) return;
+  if (open->dark != theme::dark) {
+    open->dark = theme::dark;
+    popup_paint(*open);
+    if (!popup_call(open, [](tessera::Popup &p) { p.on_theme(); })) return;
+  }
+  popup_call(open, [&](tessera::Popup &p) { p.on_interval(now_ms); });
+}
+static void popup_tick(uint32_t epoch) {
+  if (OpenPopup *open = popup_open) popup_call(open, [&](tessera::Popup &p) { p.on_tick(epoch); });
 }
 
 // ---- Pictures on a plugin's card (plugin API 0.13) ----
@@ -1650,6 +1891,8 @@ static void start() {
   // away from page 1, as a camera full screen does, so Back to page 1 closes it in time.
   screen_hooks::cards_closed().push_back([]() { for (auto *p : tessera::plugins()) p->on_cards_closed(); });
   screen_hooks::alert_show().push_back([]() { for (auto *p : tessera::plugins()) p->on_alert(); });
+  // An alert takes the glass: a popup goes (0.18).
+  screen_hooks::alert_show().push_back([]() { popup_end(true, "an alert"); });
   screen_hooks::touched().push_back([]() { for (auto *p : tessera::plugins()) p->on_touch(); });
   // Feedback the moment a finger lands or a value under it steps (touch_feedback.h), heard by the plugins only.
   touch_feedback::pressed().push_back([]() { for (auto *p : tessera::plugins()) p->on_press(); });
@@ -1680,6 +1923,7 @@ void tick(uint32_t now_ms, bool dimmed) {
     standby(dimmed);
   }
   for (auto *p : tessera::plugins()) p->on_interval(now_ms);
+  popup_interval(now_ms);
   // A plugin's page of the settings says again what its rows read (a test that runs, a level), once a second.
   static uint32_t said = 0;
   if (settings_screen::root && settings_screen::current_page >= settings_screen::PAGE_COUNT && now_ms - said >= 1000) {
@@ -1687,8 +1931,14 @@ void tick(uint32_t now_ms, bool dimmed) {
     settings_screen::refresh();
   }
 }
-void standby(bool dark) { for (auto *p : tessera::plugins()) p->on_standby(dark); }
-void before_update() { for (auto *p : tessera::plugins()) p->before_update(); }
+void standby(bool dark) {
+  for (auto *p : tessera::plugins()) p->on_standby(dark);
+  if (dark) popup_end(true, "the screen went dark");  // a card closes in standby as well
+}
+void before_update() {
+  for (auto *p : tessera::plugins()) p->before_update();
+  popup_end(true, "an update");
+}
 
 void hello(JsonObject root) {
   char api[8];
@@ -1786,6 +2036,61 @@ void slide_pictures(int dx, uint32_t ms) {
   }
 }
 
+// The motions of ui::animate (0.18), each an LVGL animation of the part's own style, deleted with the part.
+static void pulse_exec(void *obj, int32_t opa) { lv_obj_set_style_opa(static_cast<lv_obj_t *>(obj), opa, 0); }
+static void spin_exec(void *obj, int32_t angle) { lv_obj_set_style_transform_rotation(static_cast<lv_obj_t *>(obj), angle, 0); }
+static void ripple_exec(void *obj, int32_t step) {   // step 0 to 1000: half again its size, and from whole to gone
+  auto *part = static_cast<lv_obj_t *>(obj);
+  lv_obj_set_style_transform_scale(part, LV_SCALE_NONE + step * LV_SCALE_NONE / 2000, 0);
+  lv_obj_set_style_opa(part, static_cast<lv_opa_t>(LV_OPA_COVER * (1000 - step) / 1000), 0);
+}
+
+void still(lv_obj_t *part) {
+  if (!part) return;
+  for (auto exec : {pulse_exec, spin_exec, ripple_exec}) lv_anim_delete(part, exec);
+  lv_obj_set_style_opa(part, LV_OPA_COVER, 0);
+  lv_obj_set_style_transform_rotation(part, 0, 0);
+  lv_obj_set_style_transform_scale(part, LV_SCALE_NONE, 0);
+}
+
+void animate(lv_obj_t *part, Motion motion, uint32_t period_ms, uint32_t delay_ms) {
+  if (!part) return;
+  still(part);
+  const uint32_t period = std::max<uint32_t>(2, period_ms);
+  lv_anim_t a;
+  lv_anim_init(&a);
+  lv_anim_set_var(&a, part);
+  lv_anim_set_delay(&a, delay_ms);
+  lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+  // Turning and growing around the part's middle.
+  lv_obj_set_style_transform_pivot_x(part, lv_pct(50), 0);
+  lv_obj_set_style_transform_pivot_y(part, lv_pct(50), 0);
+  switch (motion) {
+    case Motion::PULSE:
+      lv_anim_set_values(&a, LV_OPA_COVER, LV_OPA_20);
+      lv_anim_set_duration(&a, period / 2);
+      lv_anim_set_reverse_duration(&a, period / 2);
+      lv_anim_set_exec_cb(&a, pulse_exec);
+      lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
+      break;
+    case Motion::SPIN:
+      lv_anim_set_values(&a, 0, 3600);
+      lv_anim_set_duration(&a, period);
+      lv_anim_set_exec_cb(&a, spin_exec);
+      lv_anim_set_path_cb(&a, lv_anim_path_linear);
+      break;
+    case Motion::RIPPLE:
+      lv_anim_set_values(&a, 0, 1000);
+      lv_anim_set_duration(&a, period);
+      lv_anim_set_exec_cb(&a, ripple_exec);
+      lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+      // Gone until it starts: a ripple that waits its turn shows nothing.
+      lv_obj_set_style_opa(part, LV_OPA_TRANSP, 0);
+      break;
+  }
+  lv_anim_start(&a);
+}
+
 void set_picture(lv_obj_t *place, const std::string &url, Fit fit, Turn turn, bool mirror) {
   plugin_host::Place *p = plugin_host::find_place(place);
   if (!p) return;
@@ -1801,6 +2106,17 @@ void set_picture(lv_obj_t *place, const std::string &url, Fit fit, Turn turn, bo
   // showed until it is here (tile_picture_place), so a row of posters turns without a flash of blocks; "" takes the
   // picture away at once, and a place that showed none keeps its block.
   if (url.empty()) plugin_host::place_clear(*p);
+}
+
+void live(lv_obj_t *place, bool on) {
+  plugin_host::Place *p = plugin_host::find_place(place);
+  if (!p) return;
+  // A tile's places only: a card over the page and a screensaver have every stream stop (nothing lies over one).
+  if (!plugin_host::making || plugin_host::placing != &plugin_host::making->places) {
+    ESP_LOGW("plugins", "ui::live on a place that is not a tile's: it shows its stills");
+    return;
+  }
+  p->live = on;
 }
 }  // namespace tessera::ui
 #else
@@ -1818,6 +2134,7 @@ void tap(runtime_tiles::Widgets &, int, int) {}
 void tick_cards(uint32_t) {}
 uint16_t bytes(const std::string &) { return PLACEHOLDER_BYTES; }
 bool pictured(const runtime_tiles::Widgets &) { return false; }
+void live_places(const runtime_tiles::Widgets &, const std::function<void(lv_obj_t *, const std::string &, bool)> &) {}
 bool picture_ask(const runtime_tiles::Widgets &, const runtime_tiles::Tile &, tile_picture::Ask &) { return false; }
 void picture_place(runtime_tiles::Widgets &, void *) {}
 void picture_outcome(runtime_tiles::Widgets &, picture_loader::Outcome) {}

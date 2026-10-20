@@ -329,6 +329,12 @@ def parse(text, number, canvas):
         sources = tuple(source(t) for t in texts)
         if any(s is None for s in sources):
             return None
+        # A tile's own picture and a map tile opened name the tile's entity in `for`: the tile they ask for must still
+        # show that entity (the layout may have changed since), as an older screen's fields said (picture_legacy,
+        # `tile:<i>?entity=`, `map:<i>?entity=`).
+        if owner.kind in ('tile', 'view') and owner.of:
+            sources = tuple(Source(s.kind, s.ref, (('entity', owner.of),) + s.params)
+                            if s.kind in ('tile', 'map') and not s.param('entity') else s for s in sources)
         per = lambda name, default: (q.get(name) if isinstance(q.get(name), list) else [q.get(name, default)] * len(frames))
         fits, grounds, effects = per('fit', 'cover'), per('bg', '000000'), per('fx', {})
         if len(fits) != len(frames) or len(grounds) != len(frames) or len(effects) != len(frames):

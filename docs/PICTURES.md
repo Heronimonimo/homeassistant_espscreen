@@ -116,16 +116,35 @@ alert, the screensaver) is that stream's newest frame, not another snapshot from
   (`runtime_tiles::picture_ask`), as a question to an app whose hello says `pictures`, or as the fields an older app
   reads; one count numbers every question, and an answer finds its owner by its number.
 - **The loader** (`picture_loader.h`): decides between owners, one download at a time, the most urgent first.
-- **The download** (`picture_fetch`): beside the main loop, into one of three buffers (the full view and the cards, an
-  alert, the tiles). Once the store keeps its copy, the download's buffer goes, so no picture is held twice.
+- **The download** (`picture_fetch`): beside the main loop, into a buffer of its own in one of three slots (the full
+  view and the cards, an alert, the tiles).
 - **The store** (`picture_store.h`): every still on the glass and on kept pages, within one budget from the board's
   PSRAM. The streams that run take their share of the same budget (`live_view::held_bytes`, at most half of it), and no
   picture is ever larger than the store can keep (`picture_store::cap_for`).
+
+### Memory
+
+One picture is in memory once. The store takes a finished download's buffer over as it is (`picture_store::adopt`) and
+the slot lets go of it (`picture_fetch::hand_over`), keeping its link's ETag so an unchanged picture still answers 304;
+nothing is copied. The picture it replaces, a camera's last frame or the photo before, stays on the glass until its cards
+show the new one and goes at the next `collect`. So a picture that changes over to the next one holds two buffers for
+that moment, the one on the glass and the one that comes, and never three; every other moment it holds one. A slot that
+cannot give its buffer away (the editor's WASM preview) is copied once into one the store owns. A 304 for a picture the
+store let go meanwhile is loaded whole again (`runtime_tiles::picture_done`).
 - **Two presenters**: LVGL draws a still from the store; `live_view` writes a stream past LVGL into the panel's frame
   buffer, with the rules of docs/CAMERA.md ("Nothing of LVGL's under a live picture", "One writer on the glass").
 
-The question names the formats a screen's decoder takes (`fmt`); every screen reads BMP today. The ESP32-P4's hardware
-JPEG decoder serves the streams; stills as JPEG on a P4 are the next step this leaves room for.
+### Formats
+
+The question names the formats the screen takes, best first (`fmt`), and the app picks per picture
+(`picture_service.format_for`). Every board takes BMP: 8-bit where the owner allows it (a palette of the picture's own
+256 colours, dithered), 24-bit otherwise; the screen decodes it row by row as it comes, without a copy. An ESP32-P4 also takes JPEG (`live_view::STILLS_JPEG`, added by `runtime_tiles::picture_ask`): it gathers the
+whole JPEG (`picture_fetch::Gather`, at most `MAX_JPEG`) and decodes it with the hardware decoder its streams use
+(`live_view::decode_still`, under the same lock of the 2D-DMA), about a tenth of a BMP's bytes on the network. A
+photograph (a camera, a cover, a photo, a poster) goes in the format the screen named first, JPEG on a P4; a drawn picture
+(a map, a vacuum's map: lines, words and flat colours, which JPEG blurs) goes as the first BMP the screen takes. Streams
+are JPEG on every P4 (`live_view`); the P4 has a hardware H.264 encoder but no decoder, so the app decodes a camera's
+H.264 and sends JPEG (`live_feed.py`).
 
 ## Capture: the screen's own camera
 
@@ -166,7 +185,16 @@ JPEG decoder serves the streams; stills as JPEG on a P4 are the next step this l
 - The core's sources (`cover:<entity>`, `camera:<entity>`, `entity:<entity>`, `step:`) for a place of that entity, under
   the same rules as the core's own pictures. `saver:picture` stays as another name for `step:`.
 - `slide_pictures` may be called from any call of a tile or card, `on_state` included.
+- `ui::live(place)`: a tile's place with the address `camera:<entity>` of its own entity streams on a screen that
+  streams, exactly as a camera tile set to Live (`runtime_tiles` live places: on the glass, the page still, nothing over
+  it; its stills under it until the first live picture). Its question names the owner `plugin_tile` and `live`; the app
+  answers with a stream into the place's room (`picture_service._stream`). A card's and a saver's places show stills.
 - `tessera::capturing(plugin, Capture::CAMERA, on)` for a plugin that uses the screen's own camera on the screen itself.
+
+A plugin never writes the glass itself: `live_view` is the one writer past LVGL, and a plugin's video goes into a place
+it laid out. A plugin with video of its own one day (an intercom's caller over SIP and RTP, for instance) gets the same
+way in: the stream's renderer stays apart from where its pictures come from, so frames a plugin receives can be handed
+to a place as the app's stream is now. Its camera going out is a capture (`capturing`), with the dot.
 
 ## How it is tested
 

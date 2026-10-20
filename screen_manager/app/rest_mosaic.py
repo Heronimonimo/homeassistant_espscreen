@@ -1,11 +1,12 @@
 """A player at rest shows its library: the covers of a folder of its library as a mosaic over its `cover` tile.
 
-A player's `cover` tile on two rows or more (1x2, 2x2, a span) is a picture over the whole card while it plays, its
-name and state on top (firmware 0.3.1). While nothing plays, Home Assistant gives no picture and the card was an empty
-block. Now this app gives the tile a picture of its own then: the covers of a folder of the player's library, side by
-side, darkened as much as the firmware asks for a cover (tile_picture SHADE), and every ROTATE_SECONDS one of them moves
-on to the next of the folder. Nothing in the firmware changes: the tile asks for its picture by a mark (`pic`), as it
-does for a cover, and the page's strip is drawn here (picture_sources, a cover tile at rest).
+A player's `cover` tile is a picture over the whole card while it plays, its name and state on top: on every size
+(firmware of the picture system; two rows or more since 0.3.1, the cover in the icon's place on one row before). While
+nothing plays, Home Assistant gives no picture and the card was an empty block. Now this app gives the tile a picture of
+its own then: the covers of a folder of the player's library, side by side, darkened as much as the firmware asks for a
+cover (tile_picture SHADE), and every ROTATE_SECONDS one of them moves on to the next of the folder. The tile asks for
+its picture by a mark (`pic`), as it does for a cover, and the page's strip is drawn here (picture_sources, a cover tile
+at rest): two covers along the card's shorter side on a taller card, one on a card of one row (rows_for).
 
 - What is at rest: a state without a song (idle, on, off, standby, a pause with nothing in it) and no picture of the
   player's own. A player that plays without a picture (a radio stream) keeps its card: the mosaic never stands for
@@ -28,7 +29,7 @@ import core
 REST_STATES = ('idle', 'on', 'off', 'standby')
 # The folders a mosaic takes, by what they hold (Home Assistant's children_media_class), in this order.
 HOLDS = ('track', 'album', 'playlist')
-ROWS = 2                 # covers along the card's shorter side
+ROWS = 2                 # covers along the shorter side of a card two rows or more high (one row: one, rows_for)
 MIN_COVERS = 4           # a folder with fewer distinct covers gives no mosaic
 POOL = 48                # covers a mosaic moves through at most: what Home Assistant gives of a folder
 ROTATE_SECONDS = 60      # one cover moves on this often
@@ -44,9 +45,14 @@ def rows_of(size):
 
 
 def wants(options):
-    """Whether a tile shows a mosaic at rest: a player's `cover` tile whose picture fills the card (two rows or more)."""
-    options = options or {}
-    return options.get('display') == 'cover' and rows_of(options.get('size')) > 1
+    """Whether a tile shows a mosaic at rest: a player's `cover` tile, whose picture fills the card on every size."""
+    return (options or {}).get('display') == 'cover'
+
+
+def rows_for(options):
+    """The covers along the card's shorter side: one on a card of one row, a strip of covers as high as the card;
+    ROWS on a taller one. A screen whose firmware still puts the cover in the icon's place gets one cover there."""
+    return 1 if rows_of((options or {}).get('size')) == 1 else ROWS
 
 
 def at_rest(state):

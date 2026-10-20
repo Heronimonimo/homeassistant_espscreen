@@ -294,15 +294,89 @@ def _moved(place, raw):
     return _flat(replace(place, w=big[0], h=big[1], fit='exact', move=0), picture).convert('RGB')
 
 
-def encode(image, fmt='bmp24'):
+MCU = 16
+# The APP15 segment a JPEG goes with (picture_fetch.h, jpeg_notes): this, its own size (width, height: it may be made
+# larger to whole MCUs), then how many corners and each corner's place (x, y, w, h), radius and ground (RGB565). JPEG
+# rings where a corner's edge meets its ground (white flecks on a light page around a dark cover), so the screen sets what
+# lies wholly outside each arc back to the ground, exactly as a BMP has it. Every value is big-endian, 2 bytes, the
+# radius 1.
+JPEG_SIZE = b'TSSR'
+MAX_CORNERS = 64
+
+
+def _whole_mcus(image):
+    """`image` grown to a multiple of MCU each way, its last column and row carried on (no seam where the screen cuts)."""
+    width, height = image.size
+    full = (-(-width // MCU) * MCU, -(-height // MCU) * MCU)
+    if full == image.size:
+        return image
+    out = image.crop((0, 0) + full)  # what lies beyond is black until it is filled below
+    if full[0] > width:
+        out.paste(image.crop((width - 1, 0, width, height)).resize((full[0] - width, height)), (width, 0))
+    if full[1] > height:
+        out.paste(out.crop((0, height - 1, full[0], height)).resize((full[0], full[1] - height)), (0, height))
+    return out
+
+
+def jpeg_notes(body):
+    """((width, height), corners) a JPEG made by encode is shown at and with: its APP15 segment, else its own size and
+    no corners. Each corner (x, y, w, h, radius, ground565)."""
+    from PIL import Image
+    if body[2:4] == b'\xff\xef' and body[6:10] == JPEG_SIZE:
+        size = int.from_bytes(body[10:12], 'big'), int.from_bytes(body[12:14], 'big')
+        count, corners, at = body[14], [], 15
+        for _ in range(count):
+            x, y, w, h = (int.from_bytes(body[at + 2 * i:at + 2 * i + 2], 'big') for i in range(4))
+            corners.append((x, y, w, h, body[at + 8], int.from_bytes(body[at + 9:at + 11], 'big')))
+            at += 11
+        return size, tuple(corners)
+    with Image.open(io.BytesIO(body)) as image:
+        return image.size, ()
+
+
+def jpeg_size(body):
+    """(width, height) a JPEG made by encode is shown at."""
+    return jpeg_notes(body)[0]
+
+
+def rgb565(colour):
+    r, g, b = rgb(colour)
+    return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
+
+
+def corners_of(question, size):
+    """The rounded corners a screen makes exact after a JPEG of `question` at `size`: each flat place's with a radius that
+    no later place lies over (a corner under another place is that place's picture), (x, y, w, h, radius, ground565).
+    None for a picture of another size than the question's box (a photo cut larger to move)."""
+    if tuple(size) != tuple(question.box):
+        return ()
+    places = question.places
+    found = [(p.x, p.y, p.w, p.h, min(p.radius, 255), rgb565(p.ground)) for n, p in enumerate(places)
+             if p.radius > 0 and not p.turn and not p.mirror and not any(_overlaps(p, later) for later in places[n + 1:])]
+    return tuple(found[:MAX_CORNERS])
+
+
+def encode(image, fmt='bmp24', corners=()):
     """`image` in the format a screen takes: `bmp24`, `bmp8` (on a palette of the picture's own 256 colours, dithered so a
     shade stays smooth: a third of the bytes, at about the quality of an RGB565 glass; Pillow's fast octree keeps it cheap
     on a Raspberry Pi) or `jpeg` (baseline, for the ESP32-P4's hardware decoder)."""
     from PIL import Image
     out = io.BytesIO()
     if fmt == 'jpeg':
-        image.convert('RGB').save(out, 'JPEG', quality=JPEG_QUALITY, optimize=True, progressive=False, subsampling='4:2:0')
-        return out.getvalue()
+        # Whole MCUs: the P4's decoder refuses a picture whose sides do not divide (a cover of 226x254, 2026-10-20: "Picture
+        # sizes not divisible by 8 are not supported"), so the picture is made a multiple of 16 each way, its last row and
+        # column carried on, and its own size goes along in an APP15 segment (JPEG_SIZE) the screen shows it at.
+        rgb = image.convert('RGB')
+        width, height = rgb.size
+        padded = _whole_mcus(rgb)
+        padded.save(out, 'JPEG', quality=JPEG_QUALITY, optimize=True, progressive=False, subsampling='4:2:0')
+        body = out.getvalue()
+        if padded.size == rgb.size and not corners:
+            return body
+        segment = JPEG_SIZE + width.to_bytes(2, 'big') + height.to_bytes(2, 'big') + bytes([len(corners)])
+        for x, y, w, h, radius, ground in corners:
+            segment += b''.join(n.to_bytes(2, 'big') for n in (x, y, w, h)) + bytes([radius]) + ground.to_bytes(2, 'big')
+        return body[:2] + b'\xff\xef' + (len(segment) + 2).to_bytes(2, 'big') + segment + body[2:]
     if fmt == 'bmp8':
         palette = image.quantize(256, method=Image.Quantize.FASTOCTREE)
         image = image.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG)
@@ -312,4 +386,6 @@ def encode(image, fmt='bmp24'):
 
 def paint(question, raws, fmt=None):
     """The bytes a screen downloads for a question: its picture (picture()) in `fmt`, the question's own when not given."""
-    return encode(picture(question, raws), fmt or question.format)
+    image = picture(question, raws)
+    fmt = fmt or question.format
+    return encode(image, fmt, corners_of(question, image.size) if fmt == 'jpeg' else ())

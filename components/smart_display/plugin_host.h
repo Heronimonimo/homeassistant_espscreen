@@ -2,6 +2,7 @@
 // The core's side of the plugin API (plugin_api.h, docs/PLUGINS.md): a plugin tile in a card, its moments, and what the
 // screen says about its plugins. plugin_host.cpp holds it, apart from main.cpp, as energy_view.cpp does.
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <ArduinoJson.h>
 #include "picture_loader.h"
@@ -46,6 +47,9 @@ uint16_t bytes(const std::string &entity);
 // A plugin tile's pictures (plugin API 0.10, tile_picture.h "parts"): the places on its card that have an address.
 // Whether the card has a place with an address: it asks for a picture, as a pictured tile does.
 bool pictured(const runtime_tiles::Widgets &w);
+// The places of a plugin tile's card that stream (0.17, ui::live): each with its camera's entity and whether it shows
+// the picture whole (contain); runtime_tiles streams them as it does a camera tile set to Live.
+void live_places(const runtime_tiles::Widgets &w, const std::function<void(lv_obj_t *, const std::string &, bool)> &each);
 // What the card asks for: every place with an address that lies within the card, as the parts of one picture; false
 // when there is none. Each place keeps the piece it takes in that picture, for picture_place.
 bool picture_ask(const runtime_tiles::Widgets &w, const runtime_tiles::Tile &t, tile_picture::Ask &a);

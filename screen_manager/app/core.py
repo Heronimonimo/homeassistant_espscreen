@@ -105,8 +105,9 @@ REF = 'main'
 # Supervisor names an app `<hash>_<slug>`, the hash being the first eight characters of the sha1 of the repository URL
 # as it was added, in lower case (supervisor/store/utils.py, get_hash_from_repository). So the URL with `#dev` is
 # another app, with data of its own, and its screens build from dev. Any other hash (a local copy, a fork, another
-# spelling of the URL) and no Supervisor at all have no channel: new screens build from main, existing ones keep the
-# `ref:` they have.
+# spelling of the URL) has no channel: new screens build from main, existing ones keep the `ref:` they have. Without a
+# Supervisor (Docker, docs/DOCKER.md) SCREEN_CHANNEL names it, which the image GitHub builds from dev carries
+# (.github/workflows/docker.yml); unset, there is none.
 CHANNELS = {'ec8ae0ed': 'main', 'fa6a7b50': 'dev'}
 CHANNEL = None
 
@@ -115,6 +116,13 @@ def channel_of(slug):
     if not isinstance(slug, str) or '_' not in slug:
         return None
     return CHANNELS.get(slug.split('_', 1)[0])
+
+def start_channel(slug, environ=os.environ):
+    """The channel at the start (server.main): the slug's under the Supervisor, SCREEN_CHANNEL without one."""
+    if slug:
+        return channel_of(slug)
+    value = str(environ.get('SCREEN_CHANNEL') or '').strip()
+    return value if value in CHANNELS.values() else None
 
 def set_channel(channel):
     """The channel this app runs in, found once at the start (server.main)."""
